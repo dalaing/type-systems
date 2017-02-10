@@ -201,18 +201,19 @@ runInfer :: Term Type T.Text -> Either Errors (Type T.Text)
 runInfer tm = runExcept . flip evalStateT initialSupplies . flip runReaderT emptyTermContext $ infer tm
 
 infer :: (Eq (ty T.Text), MonadState s m, HasTyVarSupply s, MonadReader r m, MonadError e m, AsType ty, AsTerm ty tm, HasTermContext r ty T.Text T.Text, AsUnknownTypeError e, AsUnboundTermVariable e T.Text, AsUnexpected e (ty T.Text), AsExpectedEq e (ty T.Text), AsExpectedTyArr e (ty T.Text), AsExpectedTyAll e (ty T.Text)) => tm T.Text -> m (ty T.Text)
-infer tm =
+infer tm = do
+  tyV <- freshTyVar
   fromMaybe (throwing _UnknownTypeError ()) .
-  asum .
-  fmap ($ tm) $ [
-    inferTmVar
-  , inferTmLam infer
-  , inferTmApp infer
-  , inferTmLamTy infer
-  , inferTmAppTy infer
-  , inferTmAdd infer
-  , inferTmInt
-  ]
+    asum .
+    fmap ($ tm) $ [
+      inferTmVar
+    , inferTmLam infer
+    , inferTmApp infer
+    , inferTmLamTy infer tyV
+    , inferTmAppTy infer
+    , inferTmAdd infer
+    , inferTmInt
+    ]
 
 inferTmVar :: (Ord a, MonadReader r m, MonadError e m, AsTerm ty tm, HasTermContext r ty a a, AsUnboundTermVariable e a) => tm a -> Maybe (m (ty a))
 inferTmVar tm = do
@@ -236,9 +237,9 @@ inferTmApp inferFn tm = do
     expectEq tyArg tyX
     return tyRet
 
-inferTmLamTy :: (Monad m, AsType ty, AsTerm ty tm) => (tm T.Text -> m (ty T.Text)) -> tm T.Text -> Maybe (m (ty T.Text))
-inferTmLamTy inferFn tm = do
-  (v, tmF) <- preview _TmLamTy tm
+inferTmLamTy :: (Eq a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsType ty, AsTerm ty tm) => (tm a -> m (ty a)) -> a -> tm a -> Maybe (m (ty a))
+inferTmLamTy inferFn v tm = do
+  (_, tmF) <- preview _TmLamTy (v, tm)
   return $ do
     tyA <- inferFn tmF
     return . snd $ review _TyAll (v, tyA)
@@ -267,10 +268,16 @@ inferTmInt tm = do
   return . return $ review _TyInt ()
 
 tmFst :: Term Type T.Text
-tmFst = tmLamTy "X" . tmLamTy "Y" . tmLam "x" (tyVar "X") . tmLam "y" (tyVar "Y") $ tmVar "x"
+tmFst = snd . tmLamTy "X" . snd . tmLamTy "Y" . tmLam "x" (tyVar "X") . tmLam "y" (tyVar "Y") $ tmVar "x"
 
 tyFst :: Type T.Text
-tyFst = snd . tyAll "A" . snd . tyAll "B" $ tyArr (tyVar "A") (tyArr (tyVar "B") (tyVar "A"))
+tyFst = snd . tyAll "X" . snd . tyAll "Y" $ tyArr (tyVar "X") (tyArr (tyVar "Y") (tyVar "X"))
+
+tmFstA :: Term Type T.Text
+tmFstA = snd . tmLamTy "A" . snd . tmLamTy "B" . tmLam "a" (tyVar "A") . tmLam "b" (tyVar "B") $ tmVar "a"
+
+tyFstA :: Type T.Text
+tyFstA = snd . tyAll "A" . snd . tyAll "B" $ tyArr (tyVar "A") (tyArr (tyVar "B") (tyVar "A"))
 
 tmFst2 :: Term Type T.Text
 tmFst2 = tmAppTy tmFst tyInt
