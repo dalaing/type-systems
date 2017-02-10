@@ -14,20 +14,17 @@ module SystemF.Eval (
 
 import Data.Foldable (asum)
 
-import qualified Data.Text as T
-
-import Bound
 import Control.Lens
 
 import SystemF.Scratch2
 
-value :: AsTerm ty tm => tm T.Text -> Maybe (tm T.Text)
-value tm = asum . fmap ($ tm) $ [
+value :: (Eq a, AsTerm ty tm) => a -> tm a -> Maybe (tm a)
+value x tm = asum . fmap ($ tm) $ [
     evalTmInt
-  , evalTmLam
+  , evalTmLam x
   ]
 
-step :: AsTerm ty tm => tm T.Text -> Maybe (tm T.Text)
+step :: AsTerm ty tm => tm a -> Maybe (tm a)
 step tm = asum . fmap ($ tm) $ [
     evalTmAdd1 step
   , evalTmAdd2 step
@@ -38,7 +35,7 @@ step tm = asum . fmap ($ tm) $ [
   , evalTmLamTyAppTy
   ]
 
-eval :: AsTerm ty tm => tm T.Text -> tm T.Text
+eval :: AsTerm ty tm => tm a -> tm a
 eval tm =
   case step tm of
     Nothing -> tm
@@ -46,10 +43,10 @@ eval tm =
 
 -- values
 
-evalTmLam :: AsTerm ty tm => tm T.Text -> Maybe (tm T.Text)
-evalTmLam tm = do
-  _ <- preview _TmLam tm
-  return tm
+evalTmLam :: Eq a => AsTerm ty tm => a -> tm a -> Maybe (tm a)
+evalTmLam x tm = do
+  _ <- preview _TmLam (x, tm)
+  return $ tm
 
 evalTmInt :: AsTerm ty tm => tm a -> Maybe (tm a)
 evalTmInt tm = do
@@ -64,7 +61,7 @@ evalTmApp1 evalFn tm = do
   f' <- evalFn f
   return $ review _TmApp (f', x)
 
-evalTmLamApp :: AsTerm ty tm => tm T.Text -> Maybe (tm T.Text)
+evalTmLamApp :: AsTerm ty tm => tm a -> Maybe (tm a)
 evalTmLamApp = reduceLamApp
 
 -- lamTy / appTy
@@ -75,7 +72,7 @@ evalTmAppTy1 evalFn tm = do
   f' <- evalFn f
   return $ review _TmAppTy (f', x)
 
-evalTmLamTyAppTy :: AsTerm ty tm => tm T.Text -> Maybe (tm T.Text)
+evalTmLamTyAppTy :: AsTerm ty tm => tm a -> Maybe (tm a)
 evalTmLamTyAppTy = reduceLamTyAppTy
 
 -- add

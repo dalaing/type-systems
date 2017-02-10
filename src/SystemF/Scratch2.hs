@@ -38,8 +38,6 @@ import Control.Monad (ap)
 
 import Control.Lens
 
-import qualified Data.Text as T
-
 import Bound
 import Data.Functor.Classes
 import Data.Deriving
@@ -51,7 +49,7 @@ import Data.Deriving
 -- as the b in Scope
 data Blob a =
     BVar a
-  | BTmLam T.Text (Blob a) (Scope () Blob a)
+  | BTmLam (Blob a) (Scope () Blob a)
   | BTmApp (Blob a) (Blob a)
   | BTmLamTy (Scope () Blob a)
   | BTmAppTy (Blob a) (Blob a)
@@ -80,7 +78,7 @@ instance Monad Blob where
   return = BVar
 
   BVar x >>= f = f x
-  BTmLam x t s >>= f = BTmLam x (t >>= f) (s >>>= f)
+  BTmLam t s >>= f = BTmLam (t >>= f) (s >>>= f)
   BTmApp g x >>= f = BTmApp (g >>= f) (x >>= f)
   BTmLamTy s >>= f = BTmLamTy (s >>>= f)
   BTmAppTy g x >>= f = BTmAppTy (g >>= f) (x >>= f)
@@ -112,7 +110,7 @@ class AsType ty where
 
 instance AsType Type where
   _TyVar = prism tyVar fromTyVar
-  _TyAll = prism (uncurry tyAll) (uncurry fromTyAll)
+  _TyAll = prism (uncurry toTyAll) (uncurry fromTyAll)
   _TyArr = prism (uncurry tyArr) fromTyArr
   _TyInt = prism (const tyInt) fromTyInt
 
@@ -131,8 +129,11 @@ fromTyVar (Type (BVar (VType x))) =
 fromTyVar ty =
   Left ty
 
-tyAll :: Eq a => a -> Type a -> (a, Type a)
-tyAll v (Type ty) = (v, Type (BTyAll (abstract1 (VType v) ty)))
+tyAll :: Eq a => a -> Type a -> Type a
+tyAll v = snd . toTyAll v
+
+toTyAll :: Eq a => a -> Type a -> (a, Type a)
+toTyAll v (Type ty) = (v, Type (BTyAll (abstract1 (VType v) ty)))
 
 fromTyAll :: a -> Type a -> Either (a, Type a) (a, Type a)
 fromTyAll x (Type (BTyAll s)) = Right (x, Type (instantiate1 (BVar (VType x)) s))
@@ -161,32 +162,32 @@ makeWrapped ''Term
 
 class AsTerm ty tm | tm -> ty where
   _TmVar   :: Prism' (tm a) a
-  _TmLam   :: Prism' (tm T.Text) (T.Text, ty T.Text, tm T.Text)
+  _TmLam   :: Eq a => Prism' (a, tm a) (a, ty a, tm a)
   _TmApp   :: Prism' (tm a) (tm a, tm a)
   _TmLamTy :: Eq a => Prism' (a, tm a) (a, tm a)
   _TmAppTy :: Prism' (tm a) (tm a, ty a)
   _TmInt   :: Prism' (tm a) Int
   _TmAdd   :: Prism' (tm a) (tm a, tm a)
 
-  reduceLamApp :: tm T.Text -> Maybe (tm T.Text)
-  reduceLamTyAppTy :: tm T.Text -> Maybe (tm T.Text)
+  reduceLamApp :: tm a -> Maybe (tm a)
+  reduceLamTyAppTy :: tm a -> Maybe (tm a)
 
 instance AsTerm Type (Term Type) where
   _TmVar = prism tmVar fromTmVar
-  _TmLam = prism (\(x,y,z) -> tmLam x y z) fromTmLam
+  _TmLam = prism (\(x,y,z) -> toTmLam x y z) (uncurry fromTmLam)
   _TmApp = prism (uncurry tmApp) fromTmApp
-  _TmLamTy = prism (uncurry tmLamTy) (uncurry fromTmLamTy)
+  _TmLamTy = prism (uncurry toTmLamTy) (uncurry fromTmLamTy)
   _TmAppTy = prism (uncurry tmAppTy) fromTmAppTy
   _TmAdd = prism (uncurry tmAdd) fromTmAdd
   _TmInt = prism tmInt fromTmInt
   reduceLamApp = lamApp
   reduceLamTyAppTy = lamTyAppTy
 
-lamApp :: Term Type T.Text -> Maybe (Term Type T.Text)
-lamApp (Term (BTmApp (BTmLam _ _ s) x)) = Just . Term $ instantiate1 x s
+lamApp :: Term Type a -> Maybe (Term Type a)
+lamApp (Term (BTmApp (BTmLam _ s) x)) = Just . Term $ instantiate1 x s
 lamApp _ = Nothing
 
-lamTyAppTy :: Term Type T.Text -> Maybe (Term Type T.Text)
+lamTyAppTy :: Term Type a -> Maybe (Term Type a)
 lamTyAppTy (Term (BTmAppTy (BTmLamTy s) x)) = Just . Term $ instantiate1 x s
 lamTyAppTy _ = Nothing
 
@@ -197,12 +198,15 @@ fromTmVar :: Term Type a -> Either (Term Type a) a
 fromTmVar (Term (BVar (VTerm x))) = Right x
 fromTmVar tm = Left tm
 
-tmLam :: T.Text -> Type T.Text -> Term Type T.Text -> Term Type T.Text
-tmLam v (Type ty)= Term . BTmLam v ty . abstract1 (VTerm v) . unTerm
+tmLam :: Eq a => a -> Type a -> Term Type a -> Term Type a
+tmLam x ty = snd . toTmLam x ty
 
-fromTmLam :: Term Type T.Text -> Either (Term Type T.Text) (T.Text, Type T.Text, Term Type T.Text)
-fromTmLam (Term (BTmLam x ty s)) = Right (x, Type ty, Term (instantiate1 (BVar (VTerm x)) s))
-fromTmLam tm = Left tm
+toTmLam :: Eq a => a -> Type a -> Term Type a -> (a, Term Type a)
+toTmLam v (Type ty) (Term tm) = (v, Term (BTmLam ty (abstract1 (VTerm v) tm)))
+
+fromTmLam :: a -> Term Type a -> Either (a, Term Type a) (a, Type a, Term Type a)
+fromTmLam x (Term (BTmLam ty s)) = Right (x, Type ty, Term (instantiate1 (BVar (VTerm x)) s))
+fromTmLam x tm = Left (x, tm)
 
 tmApp :: Term Type a -> Term Type a -> Term Type a
 tmApp (Term x) (Term y) = Term (BTmApp x y)
@@ -213,8 +217,11 @@ fromTmApp (Term (BTmApp tm1 tm2)) =
 fromTmApp tm =
   Left tm
 
-tmLamTy :: Eq a => a -> Term Type a -> (a, Term Type a)
-tmLamTy v (Term tm) = (v, Term (BTmLamTy (abstract1 (VType v) tm)))
+tmLamTy :: Eq a => a -> Term Type a -> Term Type a
+tmLamTy v = snd . toTmLamTy v
+
+toTmLamTy :: Eq a => a -> Term Type a -> (a, Term Type a)
+toTmLamTy v (Term tm) = (v, Term (BTmLamTy (abstract1 (VType v) tm)))
 
 fromTmLamTy :: a -> Term Type a -> Either (a, Term Type a) (a, Term Type a)
 fromTmLamTy x (Term (BTmLamTy s)) = Right (x, Term (instantiate1 (BVar (VType x)) s))

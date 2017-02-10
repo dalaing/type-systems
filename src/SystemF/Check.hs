@@ -109,7 +109,7 @@ expectEq ty1 ty2 =
 class AsExpectedTyArr e ty | e -> ty where
   _ExpectedTyArr :: Prism' e ty
 
-expectTyArr :: (MonadError e m, AsExpectedTyArr e (ty T.Text), AsType ty) => ty T.Text -> m (ty T.Text, ty T.Text)
+expectTyArr :: (MonadError e m, AsExpectedTyArr e (ty a), AsType ty) => ty a -> m (ty a, ty a)
 expectTyArr ty =
   case preview _TyArr ty of
     Just (tyArg, tyRet) -> return (tyArg, tyRet)
@@ -124,19 +124,6 @@ expectTyAll ty = do
   case preview _TyAll (x, ty) of
     Just (v, tyA) -> return (v, tyA)
     _ -> throwing _ExpectedTyAll ty
-
--- type AsSimpleSTLCErrors e tm ty = (Ord tm, Eq ty, AsUnboundTermVariable e tm, AsUnboundTypeVariable e ty, AsUnexpected e ty, AsExpectedEq e ty, AsExpectedFnTy e ty, AsExpectedFnTm e tm)
-
--- check :: (MonadReader r m, MonadError e m, AsType ty, AsTerm ty tm) => tm a -> ty a -> m ()
--- check = _
-
-{-
-check (TmLam v tyL s) ty = do
-  let Just tyL' = closed tyL
-  (tyArg, tyRet) <- expectFnTy ty
-  expectEq tyL' tyArg
-  local (termContext %~ insertTerm v tyArg) $ check (instantiate1 (TmVar v) s) tyRet
--}
 
 class AsUnknownTypeError e where
   _UnknownTypeError :: Prism' e ()
@@ -194,20 +181,22 @@ check' inferFn tm ty = do
 runCheck :: Term Type T.Text -> Type T.Text -> Either Errors ()
 runCheck tm ty = runExcept . flip evalStateT initialSupplies . flip runReaderT emptyTermContext $ check tm ty
 
-check :: (Eq (ty T.Text), MonadState s m, HasTyVarSupply s, MonadReader r m, MonadError e m, AsType ty, AsTerm ty tm, HasTermContext r ty T.Text T.Text, AsUnknownTypeError e, AsUnboundTermVariable e T.Text, AsUnexpected e (ty T.Text), AsExpectedEq e (ty T.Text), AsExpectedTyArr e (ty T.Text), AsExpectedTyAll e (ty T.Text)) => tm T.Text -> ty T.Text -> m ()
+-- TODO decouple these from text
+check :: (Ord a, Eq (ty a), MonadState s m, HasTyVarSupply s, HasTmVarSupply s, ToTyVar a, ToTmVar a, MonadReader r m, MonadError e m, AsType ty, AsTerm ty tm, HasTermContext r ty a a, AsUnknownTypeError e, AsUnboundTermVariable e a, AsUnexpected e (ty a), AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsExpectedTyAll e (ty a)) => tm a -> ty a -> m ()
 check = check' infer
 
 runInfer :: Term Type T.Text -> Either Errors (Type T.Text)
 runInfer tm = runExcept . flip evalStateT initialSupplies . flip runReaderT emptyTermContext $ infer tm
 
-infer :: (Eq (ty T.Text), MonadState s m, HasTyVarSupply s, MonadReader r m, MonadError e m, AsType ty, AsTerm ty tm, HasTermContext r ty T.Text T.Text, AsUnknownTypeError e, AsUnboundTermVariable e T.Text, AsUnexpected e (ty T.Text), AsExpectedEq e (ty T.Text), AsExpectedTyArr e (ty T.Text), AsExpectedTyAll e (ty T.Text)) => tm T.Text -> m (ty T.Text)
+infer :: (Ord a, Eq (ty a), MonadState s m, HasTyVarSupply s, HasTmVarSupply s, ToTyVar a, ToTmVar a, MonadReader r m, MonadError e m, AsType ty, AsTerm ty tm, HasTermContext r ty a a, AsUnknownTypeError e, AsUnboundTermVariable e a, AsUnexpected e (ty a), AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsExpectedTyAll e (ty a)) => tm a -> m (ty a)
 infer tm = do
+  tmV <- freshTmVar
   tyV <- freshTyVar
   fromMaybe (throwing _UnknownTypeError ()) .
     asum .
     fmap ($ tm) $ [
       inferTmVar
-    , inferTmLam infer
+    , inferTmLam infer tmV
     , inferTmApp infer
     , inferTmLamTy infer tyV
     , inferTmAppTy infer
@@ -220,14 +209,14 @@ inferTmVar tm = do
   v <- preview _TmVar tm
   return $ lookupTerm v
 
-inferTmLam :: (MonadReader r m, AsType ty, AsTerm ty tm, HasTermContext r ty T.Text T.Text) => (tm T.Text -> m (ty T.Text)) -> tm T.Text -> Maybe (m (ty T.Text))
-inferTmLam inferFn tm = do
-  (v, tyArg, tmF) <- preview _TmLam tm
+inferTmLam :: (Ord a, MonadReader r m, AsType ty, AsTerm ty tm, HasTermContext r ty a a) => (tm a -> m (ty a)) -> a -> tm a -> Maybe (m (ty a))
+inferTmLam inferFn v tm = do
+  (_, tyArg, tmF) <- preview _TmLam (v, tm)
   return $ do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq (ty T.Text), MonadError e m, AsType ty, AsTerm ty tm, AsExpectedTyArr e (ty T.Text), AsExpectedEq e (ty T.Text)) => (tm T.Text -> m (ty T.Text)) -> tm T.Text -> Maybe (m (ty T.Text))
+inferTmApp :: (Eq (ty a), MonadError e m, AsType ty, AsTerm ty tm, AsExpectedTyArr e (ty a), AsExpectedEq e (ty a)) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
 inferTmApp inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
@@ -237,7 +226,7 @@ inferTmApp inferFn tm = do
     expectEq tyArg tyX
     return tyRet
 
-inferTmLamTy :: (Eq a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsType ty, AsTerm ty tm) => (tm a -> m (ty a)) -> a -> tm a -> Maybe (m (ty a))
+inferTmLamTy :: (Monad m, Eq a, AsType ty, AsTerm ty tm) => (tm a -> m (ty a)) -> a -> tm a -> Maybe (m (ty a))
 inferTmLamTy inferFn v tm = do
   (_, tmF) <- preview _TmLamTy (v, tm)
   return $ do
@@ -268,22 +257,22 @@ inferTmInt tm = do
   return . return $ review _TyInt ()
 
 tmFst :: Term Type T.Text
-tmFst = snd . tmLamTy "X" . snd . tmLamTy "Y" . tmLam "x" (tyVar "X") . tmLam "y" (tyVar "Y") $ tmVar "x"
+tmFst = tmLamTy "X" . tmLamTy "Y" . tmLam "x" (tyVar "X") . tmLam "y" (tyVar "Y") $ tmVar "x"
 
 tyFst :: Type T.Text
-tyFst = snd . tyAll "X" . snd . tyAll "Y" $ tyArr (tyVar "X") (tyArr (tyVar "Y") (tyVar "X"))
+tyFst = tyAll "X" . tyAll "Y" $ tyArr (tyVar "X") (tyArr (tyVar "Y") (tyVar "X"))
 
 tmFstA :: Term Type T.Text
-tmFstA = snd . tmLamTy "A" . snd . tmLamTy "B" . tmLam "a" (tyVar "A") . tmLam "b" (tyVar "B") $ tmVar "a"
+tmFstA = tmLamTy "A" . tmLamTy "B" . tmLam "a" (tyVar "A") . tmLam "b" (tyVar "B") $ tmVar "a"
 
 tyFstA :: Type T.Text
-tyFstA = snd . tyAll "A" . snd . tyAll "B" $ tyArr (tyVar "A") (tyArr (tyVar "B") (tyVar "A"))
+tyFstA = tyAll "A" . tyAll "B" $ tyArr (tyVar "A") (tyArr (tyVar "B") (tyVar "A"))
 
 tmFst2 :: Term Type T.Text
 tmFst2 = tmAppTy tmFst tyInt
 
 tyFst2 :: Type T.Text
-tyFst2 = snd . tyAll "B" $ tyArr tyInt (tyArr (tyVar "B") tyInt)
+tyFst2 = tyAll "B" $ tyArr tyInt (tyArr (tyVar "B") tyInt)
 
 tmFst3 :: Term Type T.Text
 tmFst3 = tmAppTy tmFst2 (tyArr tyInt tyInt)
