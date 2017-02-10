@@ -55,7 +55,7 @@ data Blob a =
   | BTmApp (Blob a) (Blob a)
   | BTmLamTy T.Text (Scope () Blob a)
   | BTmAppTy (Blob a) (Blob a)
-  | BTyAll T.Text (Scope () Blob a)
+  | BTyAll (Scope () Blob a)
   | BTyArr (Blob a) (Blob a)
   | BTyInt
   | BTmInt Int
@@ -84,7 +84,7 @@ instance Monad Blob where
   BTmApp g x >>= f = BTmApp (g >>= f) (x >>= f)
   BTmLamTy x s >>= f = BTmLamTy x (s >>>= f)
   BTmAppTy g x >>= f = BTmAppTy (g >>= f) (x >>= f)
-  BTyAll x s >>= f = BTyAll x (s >>>= f)
+  BTyAll s >>= f = BTyAll (s >>>= f)
   BTyArr g x >>= f = BTyArr (g >>= f) (x >>= f)
   BTyInt >>= _ = BTyInt
   BTmInt i >>= _ = BTmInt i
@@ -104,7 +104,7 @@ makeWrapped ''Type
 
 class AsType ty where
   _TyVar :: Prism' (ty a) a
-  _TyAll :: Prism' (ty T.Text) (T.Text, ty T.Text)
+  _TyAll :: Eq a => Prism' (a, ty a) (a, ty a)
   _TyArr :: Prism' (ty a) (ty a, ty a)
   _TyInt :: Prism' (ty a) ()
 
@@ -112,14 +112,14 @@ class AsType ty where
 
 instance AsType Type where
   _TyVar = prism tyVar fromTyVar
-  _TyAll = prism (uncurry tyAll) fromTyAll
+  _TyAll = prism (uncurry tyAll) (uncurry fromTyAll)
   _TyArr = prism (uncurry tyArr) fromTyArr
   _TyInt = prism (const tyInt) fromTyInt
 
   substTyAll = substAll
 
 substAll :: Type a -> Type a -> Maybe (Type a)
-substAll (Type ty) (Type (BTyAll _ s)) = Just . Type $ instantiate1 ty s
+substAll (Type ty) (Type (BTyAll s)) = Just . Type $ instantiate1 ty s
 substAll _ _ = Nothing
 
 tyVar :: a -> Type a
@@ -131,12 +131,12 @@ fromTyVar (Type (BVar (VType x))) =
 fromTyVar ty =
   Left ty
 
-tyAll :: T.Text -> Type T.Text -> Type T.Text
-tyAll v = Type . BTyAll v . abstract1 (VType v) . unType
+tyAll :: Eq a => a -> Type a -> (a, Type a)
+tyAll v (Type ty) = (v, Type (BTyAll (abstract1 (VType v) ty)))
 
-fromTyAll :: Type T.Text -> Either (Type T.Text) (T.Text, Type T.Text)
-fromTyAll (Type (BTyAll x s)) = Right (x, Type (instantiate1 (BVar (VType x)) s))
-fromTyAll ty = Left ty
+fromTyAll :: a -> Type a -> Either (a, Type a) (a, Type a)
+fromTyAll x (Type (BTyAll s)) = Right (x, Type (instantiate1 (BVar (VType x)) s))
+fromTyAll x ty = Left (x, ty)
 
 tyArr :: Type a -> Type a -> Type a
 tyArr (Type x) (Type y) = Type (BTyArr x y)
