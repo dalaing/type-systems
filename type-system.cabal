@@ -13,19 +13,18 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     STLC.Type
-                     , STLC.Term
-                     , STLC.Check
-                     , SystemF.Internal
-                     , SystemF.Type.Class
-                     , SystemF.Type
-                     , SystemF.Term.Class
-                     , SystemF.Term
-                     -- , SystemF.Scratch2
-                     , SystemF.Eval
-                     , SystemF.Check
-                     , SystemF.Check.Classes
-                     , SystemF.Check.Run
+  exposed-modules:     Typed.STLC.Type
+                     , Typed.STLC.Term
+                     , Typed.STLC.Check
+                     , Typed.SystemF.Internal
+                     , Typed.SystemF.Type.Class
+                     , Typed.SystemF.Type
+                     , Typed.SystemF.Term.Class
+                     , Typed.SystemF.Term
+                     , Typed.SystemF.Eval
+                     , Typed.SystemF.Check
+                     , Typed.SystemF.Check.Classes
+                     , Typed.SystemF.Check.Run
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

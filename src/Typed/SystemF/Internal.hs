@@ -14,7 +14,7 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-module SystemF.Internal where
+module Typed.SystemF.Internal where
 
 import Control.Monad (ap)
 

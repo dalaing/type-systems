@@ -11,7 +11,7 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-module STLC.Term (
+module Typed.STLC.Term (
     Term(..)
   , lam
   ) where
@@ -25,7 +25,7 @@ import Bound
 import Data.Functor.Classes
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
-import STLC.Type
+import Typed.STLC.Type
 
 data Term a =
     TmVar a

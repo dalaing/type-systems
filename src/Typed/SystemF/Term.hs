@@ -14,7 +14,7 @@ Portability : non-portable
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-module SystemF.Term (
+module Typed.SystemF.Term (
     Term
   , tmVar
   , tmLam
@@ -29,9 +29,9 @@ import Control.Lens
 
 import Bound
 
-import SystemF.Internal
-import SystemF.Term.Class
-import SystemF.Type
+import Typed.SystemF.Internal
+import Typed.SystemF.Term.Class
+import Typed.SystemF.Type
 
 newtype Term (ty :: * -> *) a = Term (AST (ASTVar a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)

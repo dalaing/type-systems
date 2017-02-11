@@ -9,7 +9,7 @@ Portability : non-portable
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ConstraintKinds #-}
-module SystemF.Check (
+module Typed.SystemF.Check (
     TCConstraints
   , check
   , infer
@@ -25,9 +25,9 @@ import Control.Monad.Except (MonadError)
 import Control.Lens
 import Control.Monad.Error.Lens
 
-import SystemF.Type.Class
-import SystemF.Term.Class
-import SystemF.Check.Classes
+import Typed.SystemF.Type.Class
+import Typed.SystemF.Term.Class
+import Typed.SystemF.Check.Classes
 
 check' :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a)) => (tm a -> m (ty a)) -> tm a -> ty a -> m ()
 check' inferFn tm ty = do

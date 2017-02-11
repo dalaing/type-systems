@@ -14,7 +14,7 @@ Portability : non-portable
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-module SystemF.Type (
+module Typed.SystemF.Type (
     Type
   , tyVar
   , tyAll
@@ -26,8 +26,8 @@ import Control.Lens
 
 import Bound
 
-import SystemF.Internal
-import SystemF.Type.Class
+import Typed.SystemF.Internal
+import Typed.SystemF.Type.Class
 
 newtype Type a = Type (AST (ASTVar a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)

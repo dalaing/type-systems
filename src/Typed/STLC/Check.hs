@@ -11,7 +11,7 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
-module STLC.Check (
+module Typed.STLC.Check (
     check
   , runCheck
   ) where
@@ -29,8 +29,8 @@ import Control.Monad.Error.Lens (throwing)
 
 import Bound
 
-import STLC.Type
-import STLC.Term
+import Typed.STLC.Type
+import Typed.STLC.Term
 
 data TermContext tm ty = TermContext (M.Map tm (Type ty))
 

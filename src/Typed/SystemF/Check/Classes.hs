@@ -9,7 +9,7 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-module SystemF.Check.Classes (
+module Typed.SystemF.Check.Classes (
     HasTmVarSupply(..)
   , ToTmVar(..)
   , freshTmVar
@@ -45,7 +45,7 @@ import qualified Data.Text as T
 import Control.Lens
 import Control.Monad.Error.Lens (throwing)
 
-import SystemF.Type.Class
+import Typed.SystemF.Type.Class
 
 class HasTmVarSupply s where
   tmVarSupply :: Lens' s Int

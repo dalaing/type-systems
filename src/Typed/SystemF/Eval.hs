@@ -6,7 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE OverloadedStrings #-}
-module SystemF.Eval (
+module Typed.SystemF.Eval (
     value
   , step
   , eval
@@ -16,7 +16,7 @@ import Data.Foldable (asum)
 
 import Control.Lens
 
-import SystemF.Term.Class
+import Typed.SystemF.Term.Class
 
 value :: (Eq a, AsTerm ty tm) => a -> tm a -> Maybe (tm a)
 value x tm = asum . fmap ($ tm) $ [

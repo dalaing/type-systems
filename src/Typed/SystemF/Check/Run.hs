@@ -10,7 +10,7 @@ Portability : non-portable
 {-# LANGUAGE TemplateHaskell #-}
 -- only for the examples
 {-# LANGUAGE OverloadedStrings #-}
-module SystemF.Check.Run (
+module Typed.SystemF.Check.Run (
     runCheck
   , runInfer
   ) where
@@ -23,10 +23,10 @@ import Control.Monad.State (evalStateT)
 
 import Control.Lens
 
-import SystemF.Type
-import SystemF.Term
-import SystemF.Check.Classes
-import SystemF.Check
+import Typed.SystemF.Type
+import Typed.SystemF.Term
+import Typed.SystemF.Check.Classes
+import Typed.SystemF.Check
 
 data Errors =
     EUnboundTermVariable T.Text

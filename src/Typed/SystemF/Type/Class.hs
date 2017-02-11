@@ -5,7 +5,7 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
-module SystemF.Type.Class (
+module Typed.SystemF.Type.Class (
     AsType (..)
   ) where
 

@@ -11,7 +11,7 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-module STLC.Type (
+module Typed.STLC.Type (
     Type(..)
   , TypeSchemeF(..)
   , TypeScheme

@@ -8,7 +8,7 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
-module SystemF.Term.Class (
+module Typed.SystemF.Term.Class (
     AsTerm(..)
   ) where
 
