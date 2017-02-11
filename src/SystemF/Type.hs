@@ -8,94 +8,72 @@ Portability : non-portable
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 module SystemF.Type (
+    Type
+  , tyVar
+  , tyAll
+  , tyArr
+  , tyInt
   ) where
 
-import Control.Monad (ap)
-import Data.Void
+import Control.Lens
 
 import Bound
-import Data.Functor.Classes
-import Data.Deriving
 
-data Type a =
-    TyVar a
-  | TyArr (Type a) (Type a)
-  | TyAll (Scope () Type a)
-  | TyInt
-  | TyBool
-  deriving (Functor, Foldable, Traversable)
+import SystemF.Internal
+import SystemF.Type.Class
 
-deriveEq1   ''Type
-deriveOrd1  ''Type
-deriveShow1 ''Type
+newtype Type a = Type (AST (ASTVar a))
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-instance Eq a => Eq (Type a) where (==) = eq1
-instance Ord a => Ord (Type a) where compare = compare1
-instance Show a => Show (Type a) where showsPrec = showsPrec1
+makeWrapped ''Type
 
-instance Applicative Type where
-  pure = return
-  (<*>) = ap
+instance AsVar (Type a) a where
+  _Var = _Wrapped . _AVar . _ASTTyVar
 
-instance Monad Type where
-  return = TyVar
+instance AsTypeF (Type a) AST (ASTVar a) where
+  _TypeF = _Wrapped . _TypeF
 
-  TyVar x >>= f = f x
-  TyInt >>= _ = TyInt
-  TyBool >>= _ = TyBool
-  TyArr x y >>= f = TyArr (x >>= f) (y >>= f)
-  TyAll s >>= f = TyAll (s >>>= f)
+instance AsType Type where
+  _TyVar = _Var
+  _TyAll = prism (uncurry toTyAll) (uncurry fromTyAll)
+  -- _TyArr = prism (uncurry tyArr) (fromTyArr)
+  _TyArr = _TyFArr . bimapping _Unwrapped _Unwrapped
+  _TyInt = _TyFInt
 
--- use the same variable for both terms and types?
-data Term ty a =
-    TmVar a
-  | TmAppTm (Term ty a) (Term ty a)
-  | TmLamTm (ty a) (Scope () (Term ty) a)
+  substTyAll = substAll
 
-  | TmAppTy (Term ty a) (ty a)
-  | TmLamTy (Term (Scope () ty) a)
+tyVar :: a -> Type a
+tyVar = review _Var
 
-  | TmInt Int
-  | TmBool Bool
-  | TmAdd (Term ty a) (Term ty a)
-  | TmAnd (Term ty a) (Term ty a)
-  | TmEq (Term ty a) (Term ty a)
-  | TmLt (Term ty a) (Term ty a)
-  | TmIf (Term ty a) (Term ty a) (Term ty a)
-  | TmAnn (ty a) (Term ty a)
-  deriving (Functor, Foldable, Traversable)
+substAll :: Type a -> Type a -> Maybe (Type a)
+substAll ty tyA = do
+  ty' <- preview _Wrapped ty
+  tyA' <- preview _TyFAll tyA
+  return . review _Wrapped $ instantiate1 ty' tyA'
 
-deriveEq1   ''Term
-deriveOrd1  ''Term
-deriveShow1 ''Term
+tyAll :: Eq a => a -> Type a -> Type a
+tyAll v = snd . toTyAll v
 
-instance (Eq a) => Eq (Term ty a) where (==) = eq1
-instance (Ord a) => Ord (Term ty a) where compare = compare1
-instance (Show a) => Show (Term ty a) where showsPrec = showsPrec1
+toTyAll :: Eq a => a -> Type a -> (a, Type a)
+toTyAll v (Type ty) = (v, review _TyFAll (abstract1 (review _ASTTyVar v) ty))
 
-instance Applicative (Term ty) where
-  pure = return
-  (<*>) = ap
+fromTyAll :: a -> Type a -> Either (a, Type a) (a, Type a)
+fromTyAll v ty =
+  case preview _TyFAll ty of
+    Just s -> Right (v, review _Wrapped (instantiate1 (review (_AVar . _ASTTyVar) v) s))
+    Nothing -> Left (v, ty)
 
-instance Monad (Term ty) where
-  return = TmVar
+tyArr :: Type a
+      -> Type a
+      -> Type a
+tyArr x y = review _TyArr (x, y)
 
-  TmVar x >>= f = f x
-  TmLamTm ty s >>= f = TmLamTm ty (s >>>= f)
-  TmAppTm g x >>= f = TmAppTm (g >>= f) (x >>= f)
-
-  -- TmLamTy tm >>= f = TmLamTy (tm >>>= f)
-  -- TmAppTy tm ty >>= f = TmAppTy (tm >>= f) ty
-
-  TmInt i >>= _ = TmInt i
-  TmBool b >>= _ = TmBool b
-  TmAdd x y >>= f = TmAdd (x >>= f) (y >>= f)
-  TmAnd x y >>= f = TmAnd (x >>= f) (y >>= f)
-  TmEq x y >>= f = TmEq (x >>= f) (y >>= f)
-  TmLt x y >>= f = TmLt (x >>= f) (y >>= f)
-  TmIf b t e >>= f = TmIf (b >>= f) (t >>= f) (e >>= f)
-  TmAnn ty tm >>= f = TmAnn ty (tm >>= f)
+tyInt :: Type a
+tyInt = review _TyInt ()

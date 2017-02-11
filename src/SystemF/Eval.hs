@@ -16,7 +16,7 @@ import Data.Foldable (asum)
 
 import Control.Lens
 
-import SystemF.Scratch2
+import SystemF.Term.Class
 
 value :: (Eq a, AsTerm ty tm) => a -> tm a -> Maybe (tm a)
 value x tm = asum . fmap ($ tm) $ [

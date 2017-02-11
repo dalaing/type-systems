@@ -16,12 +16,16 @@ library
   exposed-modules:     STLC.Type
                      , STLC.Term
                      , STLC.Check
-                     --  , SystemF.Term
-                     -- , SystemF.Type
-                     -- , SystemF.Scratch
-                     , SystemF.Scratch2
+                     , SystemF.Internal
+                     , SystemF.Type.Class
+                     , SystemF.Type
+                     , SystemF.Term.Class
+                     , SystemF.Term
+                     -- , SystemF.Scratch2
                      , SystemF.Eval
                      , SystemF.Check
+                     , SystemF.Check.Classes
+                     , SystemF.Check.Run
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10
