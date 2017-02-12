@@ -19,8 +19,8 @@ module Fragment.Record (
   , AsTyRecord(..)
   , TmFRecord(..)
   , AsTmRecord(..)
-  , tupleFragmentLazy
-  , tupleFragmentStrict
+  , recordFragmentLazy
+  , recordFragmentStrict
   , tyRecord
   , tmRecord
   , tmRecordIx
@@ -199,14 +199,14 @@ inferRules =
     , InferRecurse inferTmRecordIx
     ]
 
-tupleFragmentLazy :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
+recordFragmentLazy :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
              => FragmentInput e s r m ty tm a
-tupleFragmentLazy =
+recordFragmentLazy =
   mappend evalRulesLazy inferRules
 
-tupleFragmentStrict :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
+recordFragmentStrict :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
              => FragmentInput e s r m ty tm a
-tupleFragmentStrict =
+recordFragmentStrict =
   mappend evalRulesStrict inferRules
 
 -- Helpers
