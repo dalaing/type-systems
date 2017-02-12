@@ -24,4 +24,4 @@ In the longer term I want to:
 - play around with affine types
 - play around with session types
 
-Who knows how much I'll get around to.
+Who knows how much I'll get around to.  In either case, this will likely be folded back into `little-languages` at some point.
