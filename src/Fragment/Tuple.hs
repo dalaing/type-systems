@@ -19,6 +19,8 @@ module Fragment.Tuple (
   , AsTyTuple(..)
   , TmFTuple(..)
   , AsTmTuple(..)
+  , AsExpectedTyTuple(..)
+  , AsTupleOutOfBounds(..)
   , tupleFragmentLazy
   , tupleFragmentStrict
   , tyTuple

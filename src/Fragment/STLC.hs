@@ -19,6 +19,7 @@ module Fragment.STLC (
   , AsTySTLC(..)
   , TmFSTLC(..)
   , AsTmSTLC(..)
+  , AsExpectedTyArr(..)
   , stlcFragmentLazy
   , stlcFragmentStrict
   , tyArr

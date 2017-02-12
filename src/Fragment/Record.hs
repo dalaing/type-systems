@@ -19,6 +19,8 @@ module Fragment.Record (
   , AsTyRecord(..)
   , TmFRecord(..)
   , AsTmRecord(..)
+  , AsExpectedTyRecord(..)
+  , AsRecordNotFound(..)
   , recordFragmentLazy
   , recordFragmentStrict
   , tyRecord

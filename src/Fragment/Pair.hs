@@ -19,6 +19,7 @@ module Fragment.Pair (
   , AsTyPair(..)
   , TmFPair(..)
   , AsTmPair(..)
+  , AsExpectedTyPair(..)
   , pairFragmentLazy
   , pairFragmentStrict
   , tyPair
