@@ -26,11 +26,13 @@ library
                      , Typed.SystemF.Check.Classes
                      , Typed.SystemF.Check.Run
                      , Fragment
+                     , Fragment.Var
                      , Fragment.Int
                      , Fragment.Bool
                      , Fragment.Pair
                      , Fragment.Tuple
                      , Fragment.Record
+                     -- , Fragment.Variant
                      , Fragment.STLC
                      -- , Fragment.SystemF
                      , Error

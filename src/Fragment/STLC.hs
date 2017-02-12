@@ -19,25 +19,18 @@ module Fragment.STLC (
   , AsTySTLC(..)
   , TmFSTLC(..)
   , AsTmSTLC(..)
-  , AsTmVar(..)
   , stlcFragmentLazy
   , stlcFragmentStrict
   , tyArr
-  , tmVar
   , tmLam
   , tmApp
   ) where
-
-import Data.Void
 
 import Control.Monad.State (MonadState)
 import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.Except (MonadError)
 
 import Control.Monad.Error.Lens (throwing)
-
-import qualified Data.Map as M
-import qualified Data.Text as T
 
 import Control.Lens
 
@@ -46,6 +39,7 @@ import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
+import Fragment.Var
 import Error
 
 data TyFSTLC f a =
@@ -82,7 +76,7 @@ instance (Ord (ty tyV), Ord1 tm, Monad tm) => Ord1 (TmFSTLC ty tyV tm) where
 instance (Show (ty tyV), Show1 tm) => Show1 (TmFSTLC ty tyV tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFSTLC)
 
-instance Bound (TmFSTLC ty Void) where
+instance Bound (TmFSTLC ty tyV) where
   TmLamF ty s >>>= f = TmLamF ty (s >>>= f)
   TmAppF x y >>>= f = TmAppF (x >>= f) (y >>= f)
 
@@ -95,11 +89,6 @@ class AsTySTLC ty where
 instance AsTySTLC f => AsTySTLC (TyFSTLC f) where
   _TySTLCP = id . _TySTLCP
 
--- Possibly _TmVar :: Prism' tm a, so we can use it with
--- Term (ASTar a) and pull an a out
-class AsTmVar tm where
-  _TmVar :: Prism' (tm a) a
-
 class AsTmSTLC ty tm | tm -> ty where
   _TmSTLCP :: Prism' (tm a) (TmFSTLC ty a tm a)
 
@@ -108,49 +97,6 @@ class AsTmSTLC ty tm | tm -> ty where
 
   _TmApp :: Prism' (tm a) (tm a, tm a)
   _TmApp = _TmSTLCP . _TmAppF
-
--- State
-
-class HasTmVarSupply s where
-  tmVarSupply :: Lens' s Int
-
-class ToTmVar a where
-  toTmVar :: Int -> a
-
-instance ToTmVar T.Text where
-  toTmVar x = T.append "x" (T.pack . show $ x)
-
-freshTmVar :: (MonadState s m, HasTmVarSupply s, ToTmVar a) => m a
-freshTmVar = do
-  x <- use tmVarSupply
-  tmVarSupply %= succ
-  return $ toTmVar x
-
--- Context
-
-data TermContext ty tmV tyV = TermContext (M.Map tmV (ty tyV))
-
-emptyTermContext :: TermContext ty tmV tyV
-emptyTermContext = TermContext M.empty
-
-instance HasTermContext (TermContext ty tmV tyV) ty tmV tyV where
-  termContext = id
-
-class HasTermContext l ty tmV tyV | l -> ty, l -> tmV, l -> tyV where
-  termContext :: Lens' l (TermContext ty tmV tyV)
-
-class AsUnboundTermVariable e tm | e -> tm where
-  _UnboundTermVariable :: Prism' e tm
-
-lookupTerm :: (Ord tmV, MonadReader r m, MonadError e m, HasTermContext r ty tmV tyV, AsUnboundTermVariable e tmV) => tmV -> m (ty tyV)
-lookupTerm v = do
-  TermContext m <- view termContext
-  case M.lookup v m of
-    Nothing -> throwing _UnboundTermVariable v
-    Just ty -> return ty
-
-insertTerm :: Ord tmV => tmV -> ty tyV -> TermContext ty tmV tyV -> TermContext ty tmV tyV
-insertTerm v ty (TermContext m) = TermContext (M.insert v ty m)
 
 -- Errors
 
@@ -182,11 +128,6 @@ stepTmLamApp tm = do
   (_, s) <- preview _TmLam f
   return $ instantiate1 x s
 
-inferTmVar :: (Ord a, MonadReader r m, MonadError e m, AsTmVar tm, HasTermContext r ty a a, AsUnboundTermVariable e a) => tm a -> Maybe (m (ty a))
-inferTmVar tm = do
-  v <- preview _TmVar tm
-  return $ lookupTerm v
-
 inferTmLam :: (Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm, HasTermContext r ty a a) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
 inferTmLam inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
@@ -206,7 +147,7 @@ inferTmApp inferFn tm = do
     expectEq tyArg tyX
     return tyRet
 
-stlcFragmentLazy :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsUnboundTermVariable e a, AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
+stlcFragmentLazy :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
             => FragmentInput e s r m ty tm a
 stlcFragmentLazy =
   FragmentInput
@@ -214,8 +155,7 @@ stlcFragmentLazy =
     [ EvalStep stepTmApp1
     , EvalBase stepTmLamApp
     ]
-    [ InferBase inferTmVar
-    , InferRecurse inferTmLam
+    [ InferRecurse inferTmLam
     , InferRecurse inferTmApp
     ]
 
@@ -226,7 +166,7 @@ stepTmApp2 valueFn stepFn tm = do
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-stlcFragmentStrict :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsUnboundTermVariable e a, AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
+stlcFragmentStrict :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
             => FragmentInput e s r m ty tm a
 stlcFragmentStrict =
   mappend stlcFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] []
@@ -235,9 +175,6 @@ stlcFragmentStrict =
 
 tyArr :: AsTySTLC ty => ty a -> ty a -> ty a
 tyArr = curry $ review _TyArr
-
-tmVar :: AsTmVar tm => a -> tm a
-tmVar = review _TmVar
 
 tmLam :: (Eq a, Monad tm, AsTmSTLC ty tm) => a -> ty a -> tm a -> tm a
 tmLam v ty tm = review _TmLam (ty, abstract1 v tm)
