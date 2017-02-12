@@ -193,7 +193,7 @@ inferMul inferFn tm = do
     return ty
 
 intFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyInt ty, AsTmInt tm)
-            => FragmentInput e s r m ty tm a
+            => FragmentInput e s r m ty p tm a
 intFragment =
   FragmentInput
     [ValueBase valInt]
@@ -208,6 +208,7 @@ intFragment =
     , InferRecurse inferAdd
     , InferRecurse inferMul
     ]
+    [] []
 
 -- Helpers
 

@@ -166,7 +166,7 @@ inferTmVariant inferFn tm = do
     expectEq tyL tyV
     return ty
 
-inferTmCaseIx :: (Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e (ty a), AsTyVariant ty, AsTmVar tm, AsTmVariant ty tm) => (tm a -> m (ty a)) -> Scope () tm a -> ty a -> m (ty a)
+inferTmCaseIx :: (Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, AsTmVar tm) => (tm a -> m (ty a)) -> Scope () tm a -> ty a -> m (ty a)
 inferTmCaseIx inferFn s ty = do
   v <- freshTmVar
   let tmV = instantiate1 (review _TmVar v) s
@@ -181,7 +181,7 @@ inferTmCase inferFn tm = do
     branchTys <- traverse (inferTmCaseIx inferFn s . snd) vTys
     expectAllEq branchTys
 
-variantFragment :: (Ord a, Eq (ty a), Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e (ty a), AsExpectedAllEq e (ty a), AsVariantNotFound e, AsExpectedEq e (ty a), AsTyVariant ty, AsTmVar tm, AsTmVariant ty tm) => FragmentInput e s r m ty tm a
+variantFragment :: (Ord a, Eq (ty a), Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e (ty a), AsExpectedAllEq e (ty a), AsVariantNotFound e, AsExpectedEq e (ty a), AsTyVariant ty, AsTmVar tm, AsTmVariant ty tm) => FragmentInput e s r m ty p tm a
 variantFragment =
   FragmentInput
     []
@@ -192,6 +192,7 @@ variantFragment =
     [ InferRecurse inferTmVariant
     , InferRecurse inferTmCase
     ]
+    [] []
 
 -- Helpers
 

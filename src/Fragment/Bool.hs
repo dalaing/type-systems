@@ -193,7 +193,7 @@ inferOr inferFn tm = do
     return ty
 
 boolFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyBool ty, AsTmBool tm)
-            => FragmentInput e s r m ty tm a
+            => FragmentInput e s r m ty p tm a
 boolFragment =
   FragmentInput
     [ValueBase valBool]
@@ -208,6 +208,7 @@ boolFragment =
     , InferRecurse inferAnd
     , InferRecurse inferOr
     ]
+    [] []
 
 -- Helpers
 

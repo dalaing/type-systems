@@ -149,7 +149,7 @@ inferTmApp inferFn tm = do
     return tyRet
 
 stlcFragmentLazy :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
-            => FragmentInput e s r m ty tm a
+            => FragmentInput e s r m ty p tm a
 stlcFragmentLazy =
   FragmentInput
     [ValueBase valTmLam]
@@ -159,6 +159,7 @@ stlcFragmentLazy =
     [ InferRecurse inferTmLam
     , InferRecurse inferTmApp
     ]
+    [] []
 
 stepTmApp2 :: AsTmSTLC ty tm => (tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 stepTmApp2 valueFn stepFn tm = do
@@ -168,9 +169,9 @@ stepTmApp2 valueFn stepFn tm = do
   return $ review _TmApp (vF, tmX')
 
 stlcFragmentStrict :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
-            => FragmentInput e s r m ty tm a
+            => FragmentInput e s r m ty p tm a
 stlcFragmentStrict =
-  mappend stlcFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] []
+  mappend stlcFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] [] [] []
 
 -- Helpers
 

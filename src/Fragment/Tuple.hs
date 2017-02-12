@@ -135,9 +135,9 @@ stepTupleIxLazy tm = do
   return $ tms !! i
 
 -- TODO check this, there might be more rules
-evalRulesLazy :: AsTmTuple tm => FragmentInput e s r m ty tm a
+evalRulesLazy :: AsTmTuple tm => FragmentInput e s r m ty p tm a
 evalRulesLazy =
-  FragmentInput [] [EvalBase stepTupleIxLazy] []
+  FragmentInput [] [EvalBase stepTupleIxLazy] [] [] []
 
 valueTupleIx :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 valueTupleIx valueFn tm = do
@@ -166,14 +166,14 @@ stepTuple valueFn stepFn tm = do
   let l = length tms
   asum . fmap (stepTupleIx valueFn stepFn tm) $ [0..l-1]
 
-evalRulesStrict :: AsTmTuple tm => FragmentInput e s r m ty tm a
+evalRulesStrict :: AsTmTuple tm => FragmentInput e s r m ty p tm a
 evalRulesStrict =
   FragmentInput
     [ ValueRecurse valueTupleIx ]
     [ EvalStep stepTupleIxStrict
     , EvalValueStep stepTuple
     ]
-    []
+    [] [] []
 
 inferTmTuple :: (Monad m, AsTyTuple ty, AsTmTuple tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
 inferTmTuple inferFn tm = do
@@ -190,7 +190,7 @@ inferTmTupleIx inferFn tm = do
     tys <- expectTyTuple tyT
     lookupTuple tys i
 
-inferRules :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm) => FragmentInput e s r m ty tm a
+inferRules :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm) => FragmentInput e s r m ty p tm a
 inferRules =
   FragmentInput
     []
@@ -198,14 +198,15 @@ inferRules =
     [ InferRecurse inferTmTuple
     , InferRecurse inferTmTupleIx
     ]
+    [] []
 
 tupleFragmentLazy :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm)
-             => FragmentInput e s r m ty tm a
+             => FragmentInput e s r m ty p tm a
 tupleFragmentLazy =
   mappend evalRulesLazy inferRules
 
 tupleFragmentStrict :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm)
-             => FragmentInput e s r m ty tm a
+             => FragmentInput e s r m ty p tm a
 tupleFragmentStrict =
   mappend evalRulesStrict inferRules
 

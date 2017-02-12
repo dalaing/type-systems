@@ -10,6 +10,8 @@ module Fragment (
     ValueRule(..)
   , EvalRule(..)
   , InferRule(..)
+  , PMatchRule(..)
+  , PCheckRule(..)
   , FragmentInput(..)
   , FragmentOutput(..)
   , prepareFragment
@@ -114,29 +116,70 @@ mkCheck inferFn =
   in
     go
 
-data FragmentInput e s r m ty tm a =
+data PMatchRule p tm a =
+    PMatchBase (p a -> tm a -> Maybe [a])
+  | PMatchRecurse ((p a -> tm a -> Maybe [a]) -> p a -> tm a -> Maybe [a])
+
+fixPMatchRule :: (p a -> tm a -> Maybe [a]) -> PMatchRule p tm a -> p a -> tm a -> Maybe [a]
+fixPMatchRule _ (PMatchBase f) = f
+fixPMatchRule pMatchFn (PMatchRecurse f) = f pMatchFn
+
+mkPMatch :: [PMatchRule p tm a] -> p a -> tm a -> Maybe [a]
+mkPMatch rules =
+  let
+    go p tm =
+      asum .
+      fmap (\r -> fixPMatchRule go r p tm) $
+      rules
+  in
+    go
+
+data PCheckRule e m p ty a =
+    PCheckBase (p a -> ty a -> Maybe (m ()))
+  | PCheckRecurse ((p a -> ty a -> m ()) -> p a -> ty a -> Maybe (m ()))
+
+fixPCheckRule :: (p a -> ty a -> m ()) -> PCheckRule e m p ty a -> p a -> ty a -> Maybe (m ())
+fixPCheckRule _ (PCheckBase f) = f
+fixPCheckRule pCheckFn (PCheckRecurse f) = f pCheckFn
+
+mkPCheck :: (MonadError e m, AsUnknownTypeError e) => [PCheckRule e m p ty a] -> p a -> ty a -> m ()
+mkPCheck rules =
+  let
+    go p ty =
+      fromMaybe (throwing _UnknownTypeError ()) .
+      asum .
+      fmap (\r -> fixPCheckRule go r p ty) $
+      rules
+  in
+    go
+
+data FragmentInput e s r m ty p tm a =
   FragmentInput {
     fiValueRules :: [ValueRule ty tm a]
   , fiEvalRules :: [EvalRule ty tm a]
   , fiInferRules :: [InferRule e s r m ty tm a]
+  , fiPMatchRules :: [PMatchRule p tm a]
+  , fiPCheckRules :: [PCheckRule e m p ty a]
   }
 
-instance Monoid (FragmentInput e s r m ty tm a) where
+instance Monoid (FragmentInput e s r m ty p tm a) where
   mempty =
-    FragmentInput mempty mempty mempty
-  mappend (FragmentInput v1 e1 i1) (FragmentInput v2 e2 i2) =
-    FragmentInput (mappend v1 v2) (mappend e1 e2) (mappend i1 i2)
+    FragmentInput mempty mempty mempty mempty mempty
+  mappend (FragmentInput v1 e1 i1 m1 c1) (FragmentInput v2 e2 i2 m2 c2) =
+    FragmentInput (mappend v1 v2) (mappend e1 e2) (mappend i1 i2) (mappend m1 m2) (mappend c1 c2)
 
-data FragmentOutput e s r m ty tm a =
+data FragmentOutput e s r m ty p tm a =
   FragmentOutput {
     foValue :: tm a -> Maybe (tm a)
   , foStep :: tm a -> Maybe (tm a)
   , foEval :: tm a -> tm a
   , foInfer :: tm a -> m (ty a)
   , foCheck :: tm a -> ty a -> m ()
+  , foPMatch :: p a -> tm a -> Maybe [a]
+  , foPCheck :: p a -> ty a -> m ()
   }
 
-prepareFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsUnknownTypeError e) => FragmentInput e s r m ty tm a -> FragmentOutput e s r m ty tm a
+prepareFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsUnknownTypeError e) => FragmentInput e s r m ty p tm a -> FragmentOutput e s r m ty p tm a
 prepareFragment fi =
   let
     v = mkValue . fiValueRules $ fi
@@ -144,5 +187,7 @@ prepareFragment fi =
     e = mkEval s
     i = mkInfer . fiInferRules $ fi
     c = mkCheck i
+    pm = mkPMatch . fiPMatchRules $ fi
+    pc = mkPCheck . fiPCheckRules $ fi
   in
-    FragmentOutput v s e i c
+    FragmentOutput v s e i c pm pc

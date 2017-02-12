@@ -92,10 +92,10 @@ inferTmVar tm = do
   return $ lookupTerm v
 
 varFragment :: (Ord a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsUnboundTermVariable e a, AsTmVar tm)
-            => FragmentInput e s r m ty tm a
+            => FragmentInput e s r m ty p tm a
 varFragment =
   FragmentInput
-    [] [] [InferBase inferTmVar]
+    [] [] [InferBase inferTmVar] [] []
 
 -- Helpers
 

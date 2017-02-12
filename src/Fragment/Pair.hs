@@ -129,9 +129,9 @@ stepSndLazy tm = do
   return tm2
 
 -- TODO check this, there might be more rules
-evalRulesLazy :: AsTmPair tm => FragmentInput e s r m ty tm a
+evalRulesLazy :: AsTmPair tm => FragmentInput e s r m ty p tm a
 evalRulesLazy =
-  FragmentInput [] [EvalBase stepFstLazy, EvalBase stepSndLazy] []
+  FragmentInput [] [EvalBase stepFstLazy, EvalBase stepSndLazy] [] [] []
 
 valueFst :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 valueFst valueFn tm = do
@@ -174,7 +174,7 @@ stepPair2 valueFn stepFn tm = do
   tm2' <- stepFn tm2
   return $ review _TmPair (v1, tm2')
 
-evalRulesStrict :: AsTmPair tm => FragmentInput e s r m ty tm a
+evalRulesStrict :: AsTmPair tm => FragmentInput e s r m ty p tm a
 evalRulesStrict =
   FragmentInput
     [ ValueRecurse valueFst
@@ -185,7 +185,7 @@ evalRulesStrict =
     , EvalStep stepPair1
     , EvalValueStep stepPair2
     ]
-    []
+    [] [] []
 
 inferTmPair :: (Monad m, AsTyPair ty, AsTmPair tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
 inferTmPair inferFn tm = do
@@ -211,7 +211,7 @@ inferTmSnd inferFn tm = do
     (_, ty2) <- expectTyPair tyP
     return ty2
 
-inferRules :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm) => FragmentInput e s r m ty tm a
+inferRules :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm) => FragmentInput e s r m ty p tm a
 inferRules =
   FragmentInput
     []
@@ -220,14 +220,15 @@ inferRules =
     , InferRecurse inferTmFst
     , InferRecurse inferTmSnd
     ]
+    [] []
 
 pairFragmentLazy :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm)
-             => FragmentInput e s r m ty tm a
+             => FragmentInput e s r m ty p tm a
 pairFragmentLazy =
   mappend evalRulesLazy inferRules
 
 pairFragmentStrict :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm)
-             => FragmentInput e s r m ty tm a
+             => FragmentInput e s r m ty p tm a
 pairFragmentStrict =
   mappend evalRulesStrict inferRules
 

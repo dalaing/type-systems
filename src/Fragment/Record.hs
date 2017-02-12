@@ -136,9 +136,9 @@ stepRecordIxLazy tm = do
   return tm'
 
 -- TODO check this, there might be more rules
-evalRulesLazy :: AsTmRecord tm => FragmentInput e s r m ty tm a
+evalRulesLazy :: AsTmRecord tm => FragmentInput e s r m ty p tm a
 evalRulesLazy =
-  FragmentInput [] [EvalBase stepRecordIxLazy] []
+  FragmentInput [] [EvalBase stepRecordIxLazy] [] [] []
 
 valueRecordIx :: AsTmRecord tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 valueRecordIx valueFn tm = do
@@ -168,14 +168,14 @@ stepRecord valueFn stepFn tm = do
   let l = length tms
   asum . fmap (stepRecordIx valueFn stepFn tm) $ [0..l-1]
 
-evalRulesStrict :: AsTmRecord tm => FragmentInput e s r m ty tm a
+evalRulesStrict :: AsTmRecord tm => FragmentInput e s r m ty p tm a
 evalRulesStrict =
   FragmentInput
     [ ValueRecurse valueRecordIx ]
     [ EvalStep stepRecordIxStrict
     , EvalValueStep stepRecord
     ]
-    []
+    [] [] []
 
 inferTmRecord :: (Monad m, AsTyRecord ty, AsTmRecord tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
 inferTmRecord inferFn tm = do
@@ -192,7 +192,7 @@ inferTmRecordIx inferFn tm = do
     tys <- expectTyRecord tyT
     lookupRecord tys i
 
-inferRules :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm) => FragmentInput e s r m ty tm a
+inferRules :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm) => FragmentInput e s r m ty p tm a
 inferRules =
   FragmentInput
     []
@@ -200,14 +200,15 @@ inferRules =
     [ InferRecurse inferTmRecord
     , InferRecurse inferTmRecordIx
     ]
+    [] []
 
 recordFragmentLazy :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
-             => FragmentInput e s r m ty tm a
+             => FragmentInput e s r m ty p tm a
 recordFragmentLazy =
   mappend evalRulesLazy inferRules
 
 recordFragmentStrict :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
-             => FragmentInput e s r m ty tm a
+             => FragmentInput e s r m ty p tm a
 recordFragmentStrict =
   mappend evalRulesStrict inferRules
 
