@@ -25,6 +25,16 @@ library
                      , Typed.SystemF.Check
                      , Typed.SystemF.Check.Classes
                      , Typed.SystemF.Check.Run
+                     , Fragment
+                     , Fragment.Int
+                     , Fragment.Bool
+                     , Fragment.Pair
+                     , Fragment.Tuple
+                     , Fragment.Record
+                     , Fragment.STLC
+                     -- , Fragment.SystemF
+                     , Error
+                     --, Scratch
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10
