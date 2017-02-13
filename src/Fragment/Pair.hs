@@ -133,21 +133,13 @@ evalRulesLazy :: AsTmPair tm => FragmentInput e s r m ty p tm a
 evalRulesLazy =
   FragmentInput [] [EvalBase stepFstLazy, EvalBase stepSndLazy] [] [] []
 
-valueFst :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
-valueFst valueFn tm = do
+valuePair :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+valuePair valueFn tm = do
   tmP <- preview _TmFst tm
   (tm1, tm2) <- preview _TmPair tmP
   v1 <- valueFn tm1
-  _ <- valueFn tm2
-  return v1
-
-valueSnd :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
-valueSnd valueFn tm = do
-  tmP <- preview _TmFst tm
-  (tm1, tm2) <- preview _TmPair tmP
-  _ <- valueFn tm1
   v2 <- valueFn tm2
-  return v2
+  return $ review _TmPair (v1, v2)
 
 stepFstStrict :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 stepFstStrict stepFn tm = do
@@ -160,6 +152,22 @@ stepSndStrict stepFn tm = do
   tmP <- preview _TmSnd tm
   tmP' <- stepFn tmP
   return $ review _TmSnd tmP'
+
+stepElimFstStrict :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepElimFstStrict valueFn tm = do
+  tmP <- preview _TmFst tm
+  (tm1, tm2) <- preview _TmPair tmP
+  v1 <- valueFn tm1
+  _ <- valueFn tm2
+  return v1
+
+stepElimSndStrict :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepElimSndStrict valueFn tm = do
+  tmP <- preview _TmSnd tm
+  (tm1, tm2) <- preview _TmPair tmP
+  _ <- valueFn tm1
+  v2 <- valueFn tm2
+  return v2
 
 stepPair1 :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 stepPair1 stepFn tm = do
@@ -177,11 +185,11 @@ stepPair2 valueFn stepFn tm = do
 evalRulesStrict :: AsTmPair tm => FragmentInput e s r m ty p tm a
 evalRulesStrict =
   FragmentInput
-    [ ValueRecurse valueFst
-    , ValueRecurse valueSnd
-    ]
+    [ ValueRecurse valuePair ]
     [ EvalStep stepFstStrict
     , EvalStep stepSndStrict
+    , EvalValue stepElimFstStrict
+    , EvalValue stepElimSndStrict
     , EvalStep stepPair1
     , EvalValueStep stepPair2
     ]

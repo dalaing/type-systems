@@ -139,18 +139,24 @@ evalRulesLazy :: AsTmTuple tm => FragmentInput e s r m ty p tm a
 evalRulesLazy =
   FragmentInput [] [EvalBase stepTupleIxLazy] [] [] []
 
-valueTupleIx :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
-valueTupleIx valueFn tm = do
-  (tmT, i) <- preview _TmTupleIx tm
-  tms <- preview _TmTuple tmT
+valueTuple :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+valueTuple valueFn tm = do
+  tms <- preview _TmTuple tm
   vs <- traverse valueFn tms
-  return $ vs !! i
+  return $ review _TmTuple vs
 
 stepTupleIxStrict :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 stepTupleIxStrict stepFn tm = do
   (tmT, i) <- preview _TmTupleIx tm
   tmT' <- stepFn tmT
   return $ review _TmTupleIx (tmT', i)
+
+stepTupleElimIxStrict :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepTupleElimIxStrict valueFn tm = do
+  (tmT, i) <- preview _TmTupleIx tm
+  tms <- preview _TmTuple tmT
+  vs <- traverse valueFn tms
+  return $ vs !! i
 
 stepTupleIx :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Int -> Maybe (tm a)
 stepTupleIx valueFn stepFn tm i = do
@@ -169,8 +175,9 @@ stepTuple valueFn stepFn tm = do
 evalRulesStrict :: AsTmTuple tm => FragmentInput e s r m ty p tm a
 evalRulesStrict =
   FragmentInput
-    [ ValueRecurse valueTupleIx ]
+    [ ValueRecurse valueTuple ]
     [ EvalStep stepTupleIxStrict
+    , EvalValue stepTupleElimIxStrict
     , EvalValueStep stepTuple
     ]
     [] [] []

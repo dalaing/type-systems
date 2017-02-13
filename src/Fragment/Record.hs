@@ -140,19 +140,25 @@ evalRulesLazy :: AsTmRecord tm => FragmentInput e s r m ty p tm a
 evalRulesLazy =
   FragmentInput [] [EvalBase stepRecordIxLazy] [] [] []
 
-valueRecordIx :: AsTmRecord tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
-valueRecordIx valueFn tm = do
-  (tmT, t) <- preview _TmRecordIx tm
-  tms <- preview _TmRecord tmT
+valueRecord :: AsTmRecord tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+valueRecord valueFn tm = do
+  tms <- preview _TmRecord tm
   vs <- traverse (traverse valueFn) tms
-  let Just v = lookup t vs
-  return v
+  return $ review _TmRecord vs
 
 stepRecordIxStrict :: AsTmRecord tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
 stepRecordIxStrict stepFn tm = do
-  (tmT, t) <- preview _TmRecordIx tm
-  tmT' <- stepFn tmT
-  return $ review _TmRecordIx (tmT', t)
+  (tmR, t) <- preview _TmRecordIx tm
+  tmR' <- stepFn tmR
+  return $ review _TmRecordIx (tmR', t)
+
+stepRecordElimIxStrict :: AsTmRecord tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepRecordElimIxStrict valueFn tm = do
+  (tmR, t) <- preview _TmRecordIx tm
+  tms <- preview _TmRecord tmR
+  vs <- traverse (traverse valueFn) tms
+  let Just v = lookup t vs
+  return v
 
 stepRecordIx :: AsTmRecord tm => (tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Int -> Maybe (tm a)
 stepRecordIx valueFn stepFn tm i = do
@@ -171,8 +177,9 @@ stepRecord valueFn stepFn tm = do
 evalRulesStrict :: AsTmRecord tm => FragmentInput e s r m ty p tm a
 evalRulesStrict =
   FragmentInput
-    [ ValueRecurse valueRecordIx ]
+    [ ValueRecurse valueRecord ]
     [ EvalStep stepRecordIxStrict
+    , EvalValue stepRecordElimIxStrict
     , EvalValueStep stepRecord
     ]
     [] [] []
