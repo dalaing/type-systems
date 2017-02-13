@@ -6,12 +6,19 @@ From there I plan to play around with options on a few different axes.
 
 In the short term I want to:
 
-- add sum and product types
 - add pattern matching
     - including redundancy and incompleteness checking
+    - use the patterns in the lambda term
+    - add warnings for unused variables in patterns
+- add let / fix / letrec
+- it would be nice to have some kind of let / letrec distinction on function declarations
+    - the idea being that if you don't have letrec / fix in your language, and you don't have
+      recursive function declarations, then you don't have recursion
 - add recursive types
+    - splitting this into data and codata could be interesting
+    - generating fold and unfold functions for recursive data types could also be interesting
+        - especially for languages that don't otherwise have recursion
 - add type classes
-    - I want to do this without dictionary passing
     - I think I want at least multi-parameter type classes and functional dependencies
 - add row types
     - in the short term I'm only after a subset of that functionality
