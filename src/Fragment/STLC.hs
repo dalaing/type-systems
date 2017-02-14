@@ -61,37 +61,37 @@ instance Show1 f => Show1 (TyFSTLC f) where
 instance Bound TyFSTLC where
   TyArrF x y >>>= f = TyArrF (x >>= f) (y >>= f)
 
-data TmFSTLC ty tyV tm tmV =
-    TmLamF (ty tyV) (Scope () tm tmV)
-  | TmAppF (tm tmV) (tm tmV)
-  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
-
-makePrisms ''TmFSTLC
-
-instance (Eq (ty tyV), Eq1 tm, Monad tm) => Eq1 (TmFSTLC ty tyV tm) where
-  liftEq = $(makeLiftEq ''TmFSTLC)
-
-instance (Ord (ty tyV), Ord1 tm, Monad tm) => Ord1 (TmFSTLC ty tyV tm) where
-  liftCompare = $(makeLiftCompare ''TmFSTLC)
-
-instance (Show (ty tyV), Show1 tm) => Show1 (TmFSTLC ty tyV tm) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TmFSTLC)
-
-instance Bound (TmFSTLC ty tyV) where
-  TmLamF ty s >>>= f = TmLamF ty (s >>>= f)
-  TmAppF x y >>>= f = TmAppF (x >>= f) (y >>= f)
-
 class AsTySTLC ty where
   _TySTLCP :: Prism' (ty a) (TyFSTLC ty a)
 
   _TyArr :: Prism' (ty a) (ty a, ty a)
   _TyArr = _TySTLCP . _TyArrF
 
+data TmFSTLC ty tm a =
+    TmLamF (ty a) (Scope () tm a)
+  | TmAppF (tm a) (tm a)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''TmFSTLC
+
+instance (Eq1 ty, Eq1 tm, Monad tm) => Eq1 (TmFSTLC ty tm) where
+  liftEq = $(makeLiftEq ''TmFSTLC)
+
+instance (Ord1 ty, Ord1 tm, Monad tm) => Ord1 (TmFSTLC ty tm) where
+  liftCompare = $(makeLiftCompare ''TmFSTLC)
+
+instance (Show1 ty, Show1 tm) => Show1 (TmFSTLC ty tm) where
+  liftShowsPrec = $(makeLiftShowsPrec ''TmFSTLC)
+
+instance Bound (TmFSTLC ty) where
+  TmLamF ty s >>>= f = TmLamF _ (s >>>= f)
+  TmAppF x y >>>= f = TmAppF (x >>= f) (y >>= f)
+
 instance AsTySTLC f => AsTySTLC (TyFSTLC f) where
   _TySTLCP = id . _TySTLCP
 
 class AsTmSTLC ty tm | tm -> ty where
-  _TmSTLCP :: Prism' (tm a) (TmFSTLC ty a tm a)
+  _TmSTLCP :: Prism' (tm a) (TmFSTLC ty tm a)
 
   _TmLam :: Prism' (tm a) (ty a, Scope () tm a)
   _TmLam = _TmSTLCP . _TmLamF

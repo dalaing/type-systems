@@ -13,6 +13,7 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Fragment.Variant (
     TyFVariant(..)
@@ -22,11 +23,16 @@ module Fragment.Variant (
   , AsExpectedTyVariant(..)
   , AsVariantNotFound(..)
   , AsExpectedAllEq(..)
+  , VariantContext
   , variantFragment
   , tyVariant
   , tmVariant
   , tmCase
   ) where
+
+-- TODO this should be split into lazy and strict versions
+-- - the strict version should make sure the term in the case is a value before proceeding
+-- - the lazy version will just match the tag and substitute the unevaluated term
 
 import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.State (MonadState)
@@ -69,6 +75,15 @@ instance Show1 f => Show1 (TyFVariant f) where
 instance Bound TyFVariant where
   TyVariantF tys >>>= f = TyVariantF (fmap (fmap (>>= f)) tys)
 
+class AsTyVariant ty where
+  _TyVariantP :: Prism' (ty a) (TyFVariant ty a)
+
+  _TyVariant :: Prism' (ty a) (N.NonEmpty (T.Text, ty a))
+  _TyVariant = _TyVariantP . _TyVariantF
+
+instance AsTyVariant f => AsTyVariant (TyFVariant f) where
+  _TyVariantP = id . _TyVariantP
+
 data TmFVariant ty tyV tm tmV =
     TmVariantF T.Text (tm tmV) (ty tyV)
   | TmCaseF (tm tmV) (Scope () tm tmV)
@@ -88,15 +103,6 @@ instance (Show (ty tyV), Show1 tm) => Show1 (TmFVariant ty tyV tm) where
 instance Bound (TmFVariant ty tyV) where
   TmVariantF t tm ty >>>= f = TmVariantF t (tm >>= f) ty
   TmCaseF tm s >>>= f = TmCaseF (tm >>= f) (s >>>= f)
-
-class AsTyVariant ty where
-  _TyVariantP :: Prism' (ty a) (TyFVariant ty a)
-
-  _TyVariant :: Prism' (ty a) (N.NonEmpty (T.Text, ty a))
-  _TyVariant = _TyVariantP . _TyVariantF
-
-instance AsTyVariant f => AsTyVariant (TyFVariant f) where
-  _TyVariantP = id . _TyVariantP
 
 class AsTmVariant ty tm | tm -> ty where
   _TmVariantP :: Prism' (tm a) (TmFVariant ty a tm a)
@@ -181,7 +187,9 @@ inferTmCase inferFn tm = do
     branchTys <- traverse (inferTmCaseIx inferFn s . snd) vTys
     expectAllEq branchTys
 
-variantFragment :: (Ord a, Eq (ty a), Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e (ty a), AsExpectedAllEq e (ty a), AsVariantNotFound e, AsExpectedEq e (ty a), AsTyVariant ty, AsTmVar tm, AsTmVariant ty tm) => FragmentInput e s r m ty p tm a
+type VariantContext e s r m ty (p :: * -> *) tm a = (Ord a, Eq (ty a), Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e (ty a), AsExpectedAllEq e (ty a), AsVariantNotFound e, AsExpectedEq e (ty a), AsTyVariant ty, AsTmVar tm, AsTmVariant ty tm)
+
+variantFragment :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
 variantFragment =
   FragmentInput
     []
