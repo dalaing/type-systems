@@ -26,7 +26,7 @@ library
                      , Typed.SystemF.Check.Classes
                      , Typed.SystemF.Check.Run
                      , Fragment
-                     , Fragment.AST
+                     , Fragment.Ast
                      , Fragment.Var
                      -- , Fragment.Case
                      , Fragment.Int
@@ -36,7 +36,7 @@ library
                      , Fragment.Record
                      , Fragment.Variant
                      --, Fragment.STLC
-                     -- , Fragment.SystemF
+                     --, Fragment.SystemF
                      , Error
                      , Language.TheLot
                      --, Scratch
