@@ -13,17 +13,24 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Fragment.Int (
     TyFInt(..)
   , AsTyInt(..)
+  , PtFInt(..)
+  , AsPtInt(..)
   , TmFInt(..)
   , AsTmInt(..)
+  , IntContext
   , intFragment
   , tyInt
+  , ptInt
   , tmInt
   , tmAdd
   , tmMul
   ) where
+
+import Control.Monad (MonadPlus(..))
 
 import Control.Monad.Except (MonadError)
 
@@ -54,6 +61,42 @@ instance Show1 (TyFInt f) where
 instance Bound TyFInt where
   TyIntF >>>= _ = TyIntF
 
+class AsTyInt ty where
+  _TyIntP :: Prism' (ty a) (TyFInt ty a)
+
+  _TyInt :: Prism' (ty a) ()
+  _TyInt = _TyIntP . _TyIntF
+
+instance AsTyInt f => AsTyInt (TyFInt f) where
+  _TyIntP = id . _TyIntP
+
+data PtFInt (f :: * -> *) a =
+  PtIntF Int
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''PtFInt
+
+instance Eq1 (PtFInt f) where
+  liftEq = $(makeLiftEq ''PtFInt)
+
+instance Ord1 (PtFInt f) where
+  liftCompare = $(makeLiftCompare ''PtFInt)
+
+instance Show1 (PtFInt f) where
+  liftShowsPrec = $(makeLiftShowsPrec ''PtFInt)
+
+instance Bound PtFInt where
+  PtIntF i >>>= _ = PtIntF i
+
+class AsPtInt p where
+  _PtIntP :: Prism' (p a) (PtFInt p a)
+
+  _PtInt :: Prism' (p a) Int
+  _PtInt = _PtIntP . _PtIntF
+
+instance AsPtInt f => AsPtInt (PtFInt f) where
+  _PtIntP = id . _PtIntP
+
 data TmFInt f a =
     TmIntF Int
   | TmAddF (f a) (f a)
@@ -75,15 +118,6 @@ instance Bound TmFInt where
   TmIntF b >>>= _ = TmIntF b
   TmAddF x y >>>= f = TmAddF (x >>= f) (y >>= f)
   TmMulF x y >>>= f = TmMulF (x >>= f) (y >>= f)
-
-class AsTyInt ty where
-  _TyIntP :: Prism' (ty a) (TyFInt ty a)
-
-  _TyInt :: Prism' (ty a) ()
-  _TyInt = _TyIntP . _TyIntF
-
-instance AsTyInt f => AsTyInt (TyFInt f) where
-  _TyIntP = id . _TyIntP
 
 class AsTmInt tm where
   _TmIntP :: Prism' (tm a) (TmFInt tm a)
@@ -192,7 +226,25 @@ inferMul inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-intFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyInt ty, AsTmInt tm)
+matchInt :: (AsPtInt p, AsTmInt tm) => p a -> tm a -> Maybe [tm a]
+matchInt p tm = do
+  i <- preview _PtInt p
+  j <- preview _TmInt tm
+  if i == j
+  then return []
+  else mzero
+
+checkInt :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsPtInt p, AsTyInt ty) => p a -> ty a -> Maybe (m [ty a])
+checkInt p ty = do
+  _ <- preview _PtInt p
+  return $ do
+    let tyI = review _TyInt ()
+    expect tyI ty
+    return []
+
+type IntContext e s r m ty p tm a = (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyInt ty, AsPtInt p, AsTmInt tm)
+
+intFragment :: IntContext e s r m ty p tm a
             => FragmentInput e s r m ty p tm a
 intFragment =
   FragmentInput
@@ -208,12 +260,16 @@ intFragment =
     , InferRecurse inferAdd
     , InferRecurse inferMul
     ]
-    [] []
+    [ PMatchBase matchInt ]
+    [ PCheckBase checkInt ]
 
 -- Helpers
 
 tyInt :: AsTyInt ty => ty a
 tyInt = review _TyInt ()
+
+ptInt :: AsPtInt p => Int -> p a
+ptInt = review _PtInt
 
 tmInt :: AsTmInt tm => Int -> tm a
 tmInt = review _TmInt

@@ -13,17 +13,24 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Fragment.Bool (
     TyFBool(..)
   , AsTyBool(..)
+  , PtFBool(..)
+  , AsPtBool(..)
   , TmFBool(..)
   , AsTmBool(..)
+  , BoolContext
   , boolFragment
   , tyBool
+  , ptBool
   , tmBool
   , tmAnd
   , tmOr
   ) where
+
+import Control.Monad (MonadPlus(..))
 
 import Control.Monad.Except (MonadError)
 
@@ -54,6 +61,42 @@ instance Show1 (TyFBool f) where
 instance Bound TyFBool where
   TyBoolF >>>= _ = TyBoolF
 
+class AsTyBool ty where
+  _TyBoolP :: Prism' (ty a) (TyFBool ty a)
+
+  _TyBool :: Prism' (ty a) ()
+  _TyBool = _TyBoolP . _TyBoolF
+
+instance AsTyBool f => AsTyBool (TyFBool f) where
+  _TyBoolP = id . _TyBoolP
+
+data PtFBool (f :: * -> *) a =
+  PtBoolF Bool
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''PtFBool
+
+instance Eq1 (PtFBool f) where
+  liftEq = $(makeLiftEq ''PtFBool)
+
+instance Ord1 (PtFBool f) where
+  liftCompare = $(makeLiftCompare ''PtFBool)
+
+instance Show1 (PtFBool f) where
+  liftShowsPrec = $(makeLiftShowsPrec ''PtFBool)
+
+instance Bound PtFBool where
+  PtBoolF b >>>= _ = PtBoolF b
+
+class AsPtBool p where
+  _PtBoolP :: Prism' (p a) (PtFBool p a)
+
+  _PtBool :: Prism' (p a) Bool
+  _PtBool = _PtBoolP . _PtBoolF
+
+instance AsPtBool f => AsPtBool (PtFBool f) where
+  _PtBoolP = id . _PtBoolP
+
 data TmFBool f a =
     TmBoolF Bool
   | TmAndF (f a) (f a)
@@ -75,15 +118,6 @@ instance Bound TmFBool where
   TmBoolF b >>>= _ = TmBoolF b
   TmAndF x y >>>= f = TmAndF (x >>= f) (y >>= f)
   TmOrF x y >>>= f = TmOrF (x >>= f) (y >>= f)
-
-class AsTyBool ty where
-  _TyBoolP :: Prism' (ty a) (TyFBool ty a)
-
-  _TyBool :: Prism' (ty a) ()
-  _TyBool = _TyBoolP . _TyBoolF
-
-instance AsTyBool f => AsTyBool (TyFBool f) where
-  _TyBoolP = id . _TyBoolP
 
 class AsTmBool tm where
   _TmBoolP :: Prism' (tm a) (TmFBool tm a)
@@ -192,7 +226,25 @@ inferOr inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-boolFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyBool ty, AsTmBool tm)
+matchBool :: (AsPtBool p, AsTmBool tm) => p a -> tm a -> Maybe [tm a]
+matchBool p tm = do
+  b <- preview _PtBool p
+  c <- preview _TmBool tm
+  if b == c
+  then return []
+  else mzero
+
+checkBool :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsPtBool p, AsTyBool ty) => p a -> ty a -> Maybe (m [ty a])
+checkBool p ty = do
+  _ <- preview _PtBool p
+  return $ do
+    let tyB = review _TyBool ()
+    expect tyB ty
+    return []
+
+type BoolContext e s r m ty p tm a = (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyBool ty, AsPtBool p, AsTmBool tm)
+
+boolFragment :: BoolContext e s r m ty p tm a
             => FragmentInput e s r m ty p tm a
 boolFragment =
   FragmentInput
@@ -208,12 +260,16 @@ boolFragment =
     , InferRecurse inferAnd
     , InferRecurse inferOr
     ]
-    [] []
+    [ PMatchBase matchBool ]
+    [ PCheckBase checkBool ]
 
 -- Helpers
 
 tyBool :: AsTyBool ty => ty a
 tyBool = review _TyBool ()
+
+ptBool :: AsPtBool p => Bool -> p a
+ptBool = review _PtBool
 
 tmBool :: AsTmBool tm => Bool -> tm a
 tmBool = review _TmBool

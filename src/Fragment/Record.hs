@@ -13,20 +13,31 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Fragment.Record (
     TyFRecord(..)
   , AsTyRecord(..)
+--  , PtFRecord(..)
+--  , AsPtRecord(..)
   , TmFRecord(..)
   , AsTmRecord(..)
   , AsExpectedTyRecord(..)
   , AsRecordNotFound(..)
+  , RecordContext
   , recordFragmentLazy
   , recordFragmentStrict
   , tyRecord
+--  , ptRecord
   , tmRecord
   , tmRecordIx
   ) where
+
+-- TODO
+-- - would be good to add in-order record creation that doesn't mention the field names
+-- - would also be good to have positional access to the fields
+-- - the named creation should be able to shuffle the labels around, as long as everything is covered and there are no duplicates
+-- - the patterns should be similar: named access in arbitrary order, or in-order anonymous access
 
 import Data.List (splitAt)
 import Data.Foldable (asum)
@@ -62,6 +73,15 @@ instance Show1 f => Show1 (TyFRecord f) where
 instance Bound TyFRecord where
   TyRecordF tys >>>= f = TyRecordF (fmap (fmap (>>= f)) tys)
 
+class AsTyRecord ty where
+  _TyRecordP :: Prism' (ty a) (TyFRecord ty a)
+
+  _TyRecord :: Prism' (ty a) [(T.Text, ty a)]
+  _TyRecord = _TyRecordP . _TyRecordF
+
+instance AsTyRecord f => AsTyRecord (TyFRecord f) where
+  _TyRecordP = id . _TyRecordP
+
 -- TODO look at creation without labels (we can get them from the types)
 -- TODO if we do that, add position based access as well
 
@@ -84,15 +104,6 @@ instance Show1 f => Show1 (TmFRecord f) where
 instance Bound TmFRecord where
   TmRecordF tms >>>= f = TmRecordF (fmap (fmap (>>= f)) tms)
   TmRecordIxF tm t >>>= f = TmRecordIxF (tm >>= f) t
-
-class AsTyRecord ty where
-  _TyRecordP :: Prism' (ty a) (TyFRecord ty a)
-
-  _TyRecord :: Prism' (ty a) [(T.Text, ty a)]
-  _TyRecord = _TyRecordP . _TyRecordF
-
-instance AsTyRecord f => AsTyRecord (TyFRecord f) where
-  _TyRecordP = id . _TyRecordP
 
 class AsTmRecord tm where
   _TmRecordP :: Prism' (tm a) (TmFRecord tm a)
@@ -209,12 +220,14 @@ inferRules =
     ]
     [] []
 
-recordFragmentLazy :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
+type RecordContext e s r m ty (p :: * -> *) tm a = (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
+
+recordFragmentLazy :: RecordContext e s r m ty p tm a
              => FragmentInput e s r m ty p tm a
 recordFragmentLazy =
   mappend evalRulesLazy inferRules
 
-recordFragmentStrict :: (MonadError e m, AsExpectedTyRecord e (ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord tm)
+recordFragmentStrict :: RecordContext e s r m ty p tm a
              => FragmentInput e s r m ty p tm a
 recordFragmentStrict =
   mappend evalRulesStrict inferRules
@@ -223,6 +236,9 @@ recordFragmentStrict =
 
 tyRecord :: AsTyRecord ty => [(T.Text, ty a)] -> ty a
 tyRecord = review _TyRecord
+
+-- ptRecord :: AsPtRecord pt => [pt a] -> pt a
+-- ptRecord = review _PtRecord
 
 tmRecord :: AsTmRecord tm => [(T.Text, tm a)] -> tm a
 tmRecord = review _TmRecord

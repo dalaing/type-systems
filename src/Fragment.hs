@@ -18,11 +18,11 @@ module Fragment (
   , mkCheck
   ) where
 
-import Control.Monad.Except (MonadError)
-import Control.Monad.Error.Lens (throwing)
-
 import Data.Maybe (fromMaybe)
 import Data.Foldable (asum)
+
+import Control.Monad.Except (MonadError)
+import Control.Monad.Error.Lens (throwing)
 
 import Error (AsUnexpected(..), expect, AsUnknownTypeError(..))
 
@@ -117,33 +117,33 @@ mkCheck inferFn =
     go
 
 data PMatchRule p tm a =
-    PMatchBase (p a -> tm a -> Maybe [a])
-  | PMatchRecurse ((p a -> tm a -> Maybe [a]) -> p a -> tm a -> Maybe [a])
+    PMatchBase (p a -> tm a -> Maybe [tm a])
+  | PMatchRecurse ((p a -> tm a -> Maybe [tm a]) -> p a -> tm a -> Maybe [tm a])
 
-fixPMatchRule :: (p a -> tm a -> Maybe [a]) -> PMatchRule p tm a -> p a -> tm a -> Maybe [a]
+fixPMatchRule :: (p a -> tm a -> Maybe [tm a]) -> PMatchRule p tm a -> p a -> tm a -> Maybe [tm a]
 fixPMatchRule _ (PMatchBase f) = f
 fixPMatchRule pMatchFn (PMatchRecurse f) = f pMatchFn
 
-mkPMatch :: [PMatchRule p tm a] -> p a -> tm a -> Maybe [a]
-mkPMatch rules =
+mkPMatch :: [PMatchRule p tm a] -> p a -> tm a -> Maybe [tm a]
+mkPMatch rules x y =
   let
     go p tm =
       asum .
       fmap (\r -> fixPMatchRule go r p tm) $
       rules
   in
-    go
+    fmap reverse $ go x y
 
 data PCheckRule e m p ty a =
-    PCheckBase (p a -> ty a -> Maybe (m ()))
-  | PCheckRecurse ((p a -> ty a -> m ()) -> p a -> ty a -> Maybe (m ()))
+    PCheckBase (p a -> ty a -> Maybe (m [ty a]))
+  | PCheckRecurse ((p a -> ty a -> m [ty a]) -> p a -> ty a -> Maybe (m [ty a]))
 
-fixPCheckRule :: (p a -> ty a -> m ()) -> PCheckRule e m p ty a -> p a -> ty a -> Maybe (m ())
+fixPCheckRule :: (p a -> ty a -> m [ty a]) -> PCheckRule e m p ty a -> p a -> ty a -> Maybe (m [ty a])
 fixPCheckRule _ (PCheckBase f) = f
 fixPCheckRule pCheckFn (PCheckRecurse f) = f pCheckFn
 
-mkPCheck :: (MonadError e m, AsUnknownTypeError e) => [PCheckRule e m p ty a] -> p a -> ty a -> m ()
-mkPCheck rules =
+mkPCheck :: (MonadError e m, AsUnknownTypeError e) => [PCheckRule e m p ty a] -> p a -> ty a -> m [ty a]
+mkPCheck rules x y =
   let
     go p ty =
       fromMaybe (throwing _UnknownTypeError ()) .
@@ -151,7 +151,11 @@ mkPCheck rules =
       fmap (\r -> fixPCheckRule go r p ty) $
       rules
   in
-    go
+    fmap reverse $ go x y
+
+-- TODO split matching and finding bindings
+-- - matching is done at run time, we want to find bindings at compile time
+-- - use Data.Sequence for the bindings
 
 data FragmentInput e s r m ty p tm a =
   FragmentInput {
@@ -166,7 +170,12 @@ instance Monoid (FragmentInput e s r m ty p tm a) where
   mempty =
     FragmentInput mempty mempty mempty mempty mempty
   mappend (FragmentInput v1 e1 i1 m1 c1) (FragmentInput v2 e2 i2 m2 c2) =
-    FragmentInput (mappend v1 v2) (mappend e1 e2) (mappend i1 i2) (mappend m1 m2) (mappend c1 c2)
+    FragmentInput
+      (mappend v1 v2)
+      (mappend e1 e2)
+      (mappend i1 i2)
+      (mappend m1 m2)
+      (mappend c1 c2)
 
 data FragmentOutput e s r m ty p tm a =
   FragmentOutput {
@@ -175,8 +184,8 @@ data FragmentOutput e s r m ty p tm a =
   , foEval :: tm a -> tm a
   , foInfer :: tm a -> m (ty a)
   , foCheck :: tm a -> ty a -> m ()
-  , foPMatch :: p a -> tm a -> Maybe [a]
-  , foPCheck :: p a -> ty a -> m ()
+  , foPMatch :: p a -> tm a -> Maybe [tm a]
+  , foPCheck :: p a -> ty a -> m [ty a]
   }
 
 prepareFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsUnknownTypeError e) => FragmentInput e s r m ty p tm a -> FragmentOutput e s r m ty p tm a

@@ -13,21 +13,27 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Fragment.Tuple (
     TyFTuple(..)
   , AsTyTuple(..)
+  , PtFTuple(..)
+  , AsPtTuple(..)
   , TmFTuple(..)
   , AsTmTuple(..)
   , AsExpectedTyTuple(..)
   , AsTupleOutOfBounds(..)
+  , TupleContext
   , tupleFragmentLazy
   , tupleFragmentStrict
   , tyTuple
+  , ptTuple
   , tmTuple
   , tmTupleIx
   ) where
 
+import Control.Monad (zipWithM)
 import Data.List (splitAt)
 import Data.Foldable (asum)
 
@@ -60,6 +66,39 @@ instance Show1 f => Show1 (TyFTuple f) where
 instance Bound TyFTuple where
   TyTupleF tys >>>= f = TyTupleF (fmap (>>= f) tys)
 
+class AsTyTuple ty where
+  _TyTupleP :: Prism' (ty a) (TyFTuple ty a)
+
+  _TyTuple :: Prism' (ty a) [ty a]
+  _TyTuple = _TyTupleP . _TyTupleF
+
+instance AsTyTuple f => AsTyTuple (TyFTuple f) where
+  _TyTupleP = id . _TyTupleP
+
+data PtFTuple f a =
+  PtTupleF [f a]
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''PtFTuple
+
+instance Eq1 f => Eq1 (PtFTuple f) where
+  liftEq = $(makeLiftEq ''PtFTuple)
+
+instance Ord1 f => Ord1 (PtFTuple f) where
+  liftCompare = $(makeLiftCompare ''PtFTuple)
+
+instance Show1 f => Show1 (PtFTuple f) where
+  liftShowsPrec = $(makeLiftShowsPrec ''PtFTuple)
+
+class AsPtTuple pt where
+  _PtTupleP :: Prism' (pt a) (PtFTuple pt a)
+
+  _PtTuple :: Prism' (pt a) [pt a]
+  _PtTuple = _PtTupleP . _PtTupleF
+
+instance AsPtTuple pt => AsPtTuple (PtFTuple pt) where
+  _PtTupleP = id . _PtTupleP
+
 data TmFTuple f a =
     TmTupleF [f a]
   | TmTupleIxF (f a) Int
@@ -79,15 +118,6 @@ instance Show1 f => Show1 (TmFTuple f) where
 instance Bound TmFTuple where
   TmTupleF tms >>>= f = TmTupleF (fmap (>>= f) tms)
   TmTupleIxF tm i >>>= f = TmTupleIxF (tm >>= f) i
-
-class AsTyTuple ty where
-  _TyTupleP :: Prism' (ty a) (TyFTuple ty a)
-
-  _TyTuple :: Prism' (ty a) [ty a]
-  _TyTuple = _TyTupleP . _TyTupleF
-
-instance AsTyTuple f => AsTyTuple (TyFTuple f) where
-  _TyTupleP = id . _TyTupleP
 
 class AsTmTuple tm where
   _TmTupleP :: Prism' (tm a) (TmFTuple tm a)
@@ -207,20 +237,45 @@ inferRules =
     ]
     [] []
 
-tupleFragmentLazy :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm)
+matchTuple :: (AsPtTuple p, AsTmTuple tm) => (p a -> tm a -> Maybe [tm a]) -> p a -> tm a -> Maybe [tm a]
+matchTuple matchFn p tm = do
+  pts <- preview _PtTuple p
+  tms <- preview _TmTuple tm
+  tmss <- zipWithM matchFn pts tms
+  return $ mconcat tmss
+
+checkTuple :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTyTuple ty, AsPtTuple p) => (p a -> ty a -> m [ty a]) -> p a -> ty a -> Maybe (m [ty a])
+checkTuple checkFn p ty = do
+  pts <- preview _PtTuple p
+  return $ do
+    tys <- expectTyTuple ty
+    ms <- zipWithM checkFn pts tys
+    return $ mconcat ms
+
+patternRules :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTyTuple ty, AsPtTuple p, AsTmTuple tm) => FragmentInput e s r m ty p tm a
+patternRules =
+  FragmentInput
+    [] [] [] [ PMatchRecurse matchTuple ] [ PCheckRecurse checkTuple ]
+
+type TupleContext e s r m ty p tm a = (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsPtTuple p, AsTmTuple tm)
+
+tupleFragmentLazy :: TupleContext e s r m ty p tm a
              => FragmentInput e s r m ty p tm a
 tupleFragmentLazy =
-  mappend evalRulesLazy inferRules
+  evalRulesLazy `mappend` inferRules `mappend` patternRules
 
-tupleFragmentStrict :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm)
+tupleFragmentStrict :: TupleContext e s r m ty p tm a
              => FragmentInput e s r m ty p tm a
 tupleFragmentStrict =
-  mappend evalRulesStrict inferRules
+  evalRulesStrict `mappend` inferRules `mappend` patternRules
 
 -- Helpers
 
 tyTuple :: AsTyTuple ty => [ty a] -> ty a
 tyTuple = review _TyTuple
+
+ptTuple :: AsPtTuple pt => [pt a] -> pt a
+ptTuple = review _PtTuple
 
 tmTuple :: AsTmTuple tm => [tm a] -> tm a
 tmTuple = review _TmTuple

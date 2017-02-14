@@ -13,16 +13,21 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Fragment.Pair (
     TyFPair(..)
   , AsTyPair(..)
+  , PtFPair(..)
+  , AsPtPair(..)
   , TmFPair(..)
   , AsTmPair(..)
   , AsExpectedTyPair(..)
+  , PairContext
   , pairFragmentLazy
   , pairFragmentStrict
   , tyPair
+  , ptPair
   , tmPair
   , tmFst
   , tmSnd
@@ -57,6 +62,39 @@ instance Show1 f => Show1 (TyFPair f) where
 instance Bound TyFPair where
   TyPairF x y >>>= f = TyPairF (x >>= f) (y >>= f)
 
+class AsTyPair ty where
+  _TyPairP :: Prism' (ty a) (TyFPair ty a)
+
+  _TyPair :: Prism' (ty a) (ty a, ty a)
+  _TyPair = _TyPairP . _TyPairF
+
+instance AsTyPair f => AsTyPair (TyFPair f) where
+  _TyPairP = id . _TyPairP
+
+data PtFPair f a =
+    PtPairF (f a) (f a)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''PtFPair
+
+instance Eq1 f => Eq1 (PtFPair f) where
+  liftEq = $(makeLiftEq ''PtFPair)
+
+instance Ord1 f => Ord1 (PtFPair f) where
+  liftCompare = $(makeLiftCompare ''PtFPair)
+
+instance Show1 f => Show1 (PtFPair f) where
+  liftShowsPrec = $(makeLiftShowsPrec ''PtFPair)
+
+class AsPtPair pt where
+  _PtPairP :: Prism' (pt a) (PtFPair pt a)
+
+  _PtPair :: Prism' (pt a) (pt a, pt a)
+  _PtPair = _PtPairP . _PtPairF
+
+instance AsPtPair pt => AsPtPair (PtFPair pt) where
+  _PtPairP = id . _PtPairP
+
 data TmFPair f a =
     TmPairF (f a) (f a)
   | TmFstF (f a)
@@ -78,15 +116,6 @@ instance Bound TmFPair where
   TmPairF x y >>>= f = TmPairF (x >>= f) (y >>= f)
   TmFstF x >>>= f = TmFstF (x >>= f)
   TmSndF x >>>= f = TmSndF (x >>= f)
-
-class AsTyPair ty where
-  _TyPairP :: Prism' (ty a) (TyFPair ty a)
-
-  _TyPair :: Prism' (ty a) (ty a, ty a)
-  _TyPair = _TyPairP . _TyPairF
-
-instance AsTyPair f => AsTyPair (TyFPair f) where
-  _TyPairP = id . _TyPairP
 
 class AsTmPair tm where
   _TmPairP :: Prism' (tm a) (TmFPair tm a)
@@ -222,28 +251,54 @@ inferTmSnd inferFn tm = do
 inferRules :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm) => FragmentInput e s r m ty p tm a
 inferRules =
   FragmentInput
-    []
-    []
+    [] []
     [ InferRecurse inferTmPair
     , InferRecurse inferTmFst
     , InferRecurse inferTmSnd
     ]
     [] []
 
-pairFragmentLazy :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm)
+matchPair :: (AsPtPair p, AsTmPair tm) => (p a -> tm a -> Maybe [tm a]) -> p a -> tm a -> Maybe [tm a]
+matchPair matchFn p tm = do
+  (p1, p2) <- preview _PtPair p
+  (tm1, tm2) <- preview _TmPair tm
+  tms1 <- matchFn p1 tm1
+  tms2 <- matchFn p2 tm2
+  return $ tms1 ++ tms2
+
+checkPair :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsPtPair p) => (p a -> ty a -> m [ty a]) -> p a -> ty a -> Maybe (m [ty a])
+checkPair checkFn p ty = do
+  (p1, p2) <- preview _PtPair p
+  return $ do
+    (ty1, ty2) <- expectTyPair ty
+    mappend <$> checkFn p1 ty1 <*> checkFn p2 ty2
+
+patternRules :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsPtPair p, AsTmPair tm) => FragmentInput e s r m ty p tm a
+patternRules =
+  FragmentInput
+    [] [] []
+    [ PMatchRecurse matchPair ]
+    [ PCheckRecurse checkPair ]
+
+type PairContext e s r m ty p tm a = (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsPtPair p, AsTmPair tm)
+
+pairFragmentLazy :: PairContext e s r m ty p tm a
              => FragmentInput e s r m ty p tm a
 pairFragmentLazy =
-  mappend evalRulesLazy inferRules
+  evalRulesLazy `mappend` inferRules `mappend` patternRules
 
-pairFragmentStrict :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm)
+pairFragmentStrict :: PairContext e s r m ty p tm a
              => FragmentInput e s r m ty p tm a
 pairFragmentStrict =
-  mappend evalRulesStrict inferRules
+  evalRulesStrict `mappend` inferRules `mappend` patternRules
 
 -- Helpers
 
 tyPair :: AsTyPair ty => ty a -> ty a -> ty a
 tyPair = curry $ review _TyPair
+
+ptPair :: AsPtPair p => p a -> p a -> p a
+ptPair = curry $ review _PtPair
 
 tmPair :: AsTmPair tm => tm a -> tm a -> tm a
 tmPair = curry $ review _TmPair

@@ -26,17 +26,21 @@ library
                      , Typed.SystemF.Check.Classes
                      , Typed.SystemF.Check.Run
                      , Fragment
+                     , Fragment.AST
                      , Fragment.Var
+                     -- , Fragment.Case
                      , Fragment.Int
                      , Fragment.Bool
                      , Fragment.Pair
                      , Fragment.Tuple
                      , Fragment.Record
                      , Fragment.Variant
-                     , Fragment.STLC
+                     --, Fragment.STLC
                      -- , Fragment.SystemF
                      , Error
+                     , Language.TheLot
                      --, Scratch
+                     -- , Scratch2
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10
