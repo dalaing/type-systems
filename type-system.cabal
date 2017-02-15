@@ -38,9 +38,10 @@ library
                      --, Fragment.STLC
                      --, Fragment.SystemF
                      , Error
+                     , Util
                      , Language.TheLot
                      --, Scratch
-                     -- , Scratch2
+                     , Scratch2
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

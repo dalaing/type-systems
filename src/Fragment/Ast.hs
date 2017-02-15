@@ -16,6 +16,7 @@ Portability : non-portable
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RankNTypes #-}
 module Fragment.Ast (
     AstVar(..)
   , _ATyVar
@@ -27,6 +28,8 @@ module Fragment.Ast (
   , _APattern
   , _ATerm
   , Type(..)
+  , Bitransversable(..)
+  , _Type
   , Pattern(..)
   , Term(..)
   ) where
@@ -34,11 +37,15 @@ module Fragment.Ast (
 import Control.Monad (ap)
 import GHC.Exts (Constraint)
 
+import Control.Error
+
 import Control.Lens
 
 import Bound
 import Data.Functor.Classes
 import Data.Deriving
+
+import Util
 
 data AstVar a =
     ATyVar a
@@ -104,9 +111,37 @@ instance (TripleConstraint1 Functor ty pt tm, Bound ty, Bound pt, Bound (tm ty p
   APattern pt >>= f = APattern (pt >>>= f)
   ATerm tm >>= f = ATerm (tm >>>= f)
 
-data Type ty a = TyVar a | Type (ty (Type ty) a)
+data Type ty a = TyVar a | TyTree (ty (Type ty) a)
 
 makePrisms ''Type
+
+typeToAst :: (Traversable (ty (Type ty)), Bitransversable ty) => Type ty a -> Ast ty pt tm (AstVar a)
+typeToAst = runIdentity . typeToAst' (Identity . ATyVar)
+
+typeToAst' :: (Traversable (ty (Type ty)), Bitransversable ty) => (a -> Identity b) -> Type ty a -> Identity (Ast ty pt tm b)
+typeToAst' fV x = typeToAst'' =<< traverse fV x
+
+typeToAst'' :: (Traversable (ty (Type ty)), Bitransversable ty) => Type ty a -> Identity (Ast ty pt tm a)
+typeToAst'' (TyVar x) = Identity (AVar x)
+typeToAst'' (TyTree ty) = fmap AType . bitransverse typeToAst' pure $ ty
+
+astToType :: (TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Ast ty pt tm (AstVar a) -> Maybe (Type ty a)
+astToType = astToType' fV
+  where
+    fV (ATyVar x) = Just x
+    fV _ = Nothing
+
+astToType' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => (a -> Maybe b) -> Ast ty pt tm a -> Maybe (Type ty b)
+astToType' fV x = astToType'' =<< traverse fV x
+
+astToType'' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Ast ty pt tm a -> Maybe (Type ty a)
+astToType'' (AVar x) = Just (TyVar x)
+astToType'' (AType ty) = fmap TyTree . bitransverse astToType' pure $ ty
+astToType'' _ = Nothing
+
+_Type :: (Traversable (ty (Type ty)), TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Prism' (Ast ty pt tm (AstVar a)) (Type ty a)
+_Type = prism typeToAst (\x -> note x . astToType $ x)
+
 
 deriving instance (Eq a, Eq (ty (Type ty) a)) => Eq (Type ty a)
 deriving instance (Ord a, Ord (ty (Type ty) a)) => Ord (Type ty a)
@@ -131,11 +166,10 @@ instance (Functor (ty (Type ty)), Bound ty) => Applicative (Type ty) where
 
 instance (Functor (ty (Type ty)), Bound ty) => Monad (Type ty) where
   return = TyVar
-
   TyVar x >>= f = f x
-  Type x >>= f = Type (x >>>= f)
+  TyTree x >>= f = TyTree (x >>>= f)
 
-data Pattern pt a = PtVar a | Pattern (pt (Pattern pt) a)
+data Pattern pt a = PtVar a | PtTree (pt (Pattern pt) a)
 
 makePrisms ''Pattern
 
@@ -162,9 +196,8 @@ instance (Functor (pt (Pattern pt)), Bound pt) => Applicative (Pattern pt) where
 
 instance (Functor (pt (Pattern pt)), Bound pt) => Monad (Pattern pt) where
   return = PtVar
-
   PtVar x >>= f = f x
-  Pattern x >>= f = Pattern (x >>>= f)
+  PtTree x >>= f = PtTree (x >>>= f)
 
 newtype Term ty pt tm a = Term (Ast ty pt tm (AstVar a))
 
