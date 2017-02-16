@@ -28,10 +28,16 @@ module Fragment.Ast (
   , _APattern
   , _ATerm
   , Type(..)
-  , Bitransversable(..)
+  , _TyVar
+  , _TyTree
   , _Type
   , Pattern(..)
+  , _PtVar
+  , _PtTree
+  , _Pattern
   , Term(..)
+  , TripleConstraint
+  , TripleConstraint1
   ) where
 
 import Control.Monad (ap)
@@ -59,6 +65,7 @@ deriveShow1 ''AstVar
 
 makePrisms ''AstVar
 
+-- with type families, we could add annotations here by just adding some more constraints
 data Ast ty pt tm a =
     AVar a
   | AType (ty (Ast ty pt tm) a)
@@ -142,7 +149,6 @@ astToType'' _ = Nothing
 _Type :: (Traversable (ty (Type ty)), TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Prism' (Ast ty pt tm (AstVar a)) (Type ty a)
 _Type = prism typeToAst (\x -> note x . astToType $ x)
 
-
 deriving instance (Eq a, Eq (ty (Type ty) a)) => Eq (Type ty a)
 deriving instance (Ord a, Ord (ty (Type ty) a)) => Ord (Type ty a)
 deriving instance (Show a, Show (ty (Type ty) a)) => Show (Type ty a)
@@ -199,6 +205,33 @@ instance (Functor (pt (Pattern pt)), Bound pt) => Monad (Pattern pt) where
   PtVar x >>= f = f x
   PtTree x >>= f = PtTree (x >>>= f)
 
+patternToAst :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Ast pt pt tm (AstVar a)
+patternToAst = runIdentity . patternToAst' (Identity . APtVar)
+
+patternToAst' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => (a -> Identity b) -> Pattern pt a -> Identity (Ast pt pt tm b)
+patternToAst' fV x = patternToAst'' =<< traverse fV x
+
+patternToAst'' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Identity (Ast pt pt tm a)
+patternToAst'' (PtVar x) = Identity (AVar x)
+patternToAst'' (PtTree pt) = fmap APattern . bitransverse patternToAst' pure $ pt
+
+astToPattern :: (TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => Ast pt pt tm (AstVar a) -> Maybe (Pattern pt a)
+astToPattern = astToPattern' fV
+  where
+    fV (APtVar x) = Just x
+    fV _ = Nothing
+
+astToPattern' :: (TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => (a -> Maybe b) -> Ast pt pt tm a -> Maybe (Pattern pt b)
+astToPattern' fV x = astToPattern'' =<< traverse fV x
+
+astToPattern'' :: (TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => Ast pt pt tm a -> Maybe (Pattern pt a)
+astToPattern'' (AVar x) = Just (PtVar x)
+astToPattern'' (APattern pt) = fmap PtTree . bitransverse astToPattern' pure $ pt
+astToPattern'' _ = Nothing
+
+_Pattern :: (Traversable (pt (Pattern pt)), TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => Prism' (Ast pt pt tm (AstVar a)) (Pattern pt a)
+_Pattern = prism patternToAst (\x -> note x . astToPattern $ x)
+
 newtype Term ty pt tm a = Term (Ast ty pt tm (AstVar a))
 
 makeWrapped ''Term
@@ -219,7 +252,3 @@ instance (TripleConstraint1 Show1 ty pt tm) => Show1 (Term ty pt tm) where
 deriving instance (TripleConstraint1 Functor ty pt tm) => Functor (Term ty pt tm)
 deriving instance (TripleConstraint1 Foldable ty pt tm) => Foldable (Term ty pt tm)
 deriving instance (TripleConstraint1 Traversable ty pt tm) => Traversable (Term ty pt tm)
-
--- TODO a prism from Ast ty pt tm (AstVar a) <-> Pattern pt a
--- _Pattern :: Traversable (pt (Ast ty pt tm)) => Prism' (Ast ty pt tm (AstVar a)) (Pattern pt a)
--- _Pattern = _APattern . below _APtVar . _Unwrapped

@@ -40,8 +40,8 @@ library
                      , Error
                      , Util
                      , Language.TheLot
-                     --, Scratch
-                     , Scratch2
+                     -- , Scratch
+                     -- , Scratch2
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

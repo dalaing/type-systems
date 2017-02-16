@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Util (
     Bitransversable(..)
   , mkPair
@@ -13,8 +14,13 @@ module Util (
 
 import Control.Lens
 
+import Bound.Scope
+
 class Bitransversable s where
   bitransverse :: Applicative f => (forall a b. (a -> f b) -> t a -> f (u b)) -> (c -> f d) -> s t c -> f (s u d)
+
+instance Bitransversable (Scope b) where
+  bitransverse = bitransverseScope
 
 mkPair :: Prism' a b -> Prism' c d -> Prism' (a,c) (b, d)
 mkPair p1 p2 = prism f g
