@@ -12,6 +12,7 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -39,10 +40,11 @@ import Control.Lens
 import Control.Monad.Error.Lens (throwing)
 
 import Bound
-import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
+import Fragment.Ast
+import Util
 
 data TyFPair f a =
   TyPairF (f a) (f a)
@@ -50,26 +52,24 @@ data TyFPair f a =
 
 makePrisms ''TyFPair
 
-instance Eq1 f => Eq1 (TyFPair f) where
-  liftEq = $(makeLiftEq ''TyFPair)
-
-instance Ord1 f => Ord1 (TyFPair f) where
-  liftCompare = $(makeLiftCompare ''TyFPair)
-
-instance Show1 f => Show1 (TyFPair f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TyFPair)
+deriveEq1 ''TyFPair
+deriveOrd1 ''TyFPair
+deriveShow1 ''TyFPair
 
 instance Bound TyFPair where
   TyPairF x y >>>= f = TyPairF (x >>= f) (y >>= f)
 
+instance Bitransversable TyFPair where
+  bitransverse fT fL (TyPairF x y) = TyPairF <$> fT fL x <*> fT fL y
+
 class AsTyPair ty where
-  _TyPairP :: Prism' (ty a) (TyFPair ty a)
+  _TyPairP :: Prism' (ty k a) (TyFPair k a)
 
-  _TyPair :: Prism' (ty a) (ty a, ty a)
-  _TyPair = _TyPairP . _TyPairF
+  _TyPair :: Prism' (Type ty a) (Type ty a, Type ty a)
+  _TyPair = _TyTree . _TyPairP . _TyPairF
 
-instance AsTyPair f => AsTyPair (TyFPair f) where
-  _TyPairP = id . _TyPairP
+instance AsTyPair TyFPair where
+  _TyPairP = id
 
 data PtFPair f a =
     PtPairF (f a) (f a)
@@ -77,25 +77,20 @@ data PtFPair f a =
 
 makePrisms ''PtFPair
 
-instance Eq1 f => Eq1 (PtFPair f) where
-  liftEq = $(makeLiftEq ''PtFPair)
-
-instance Ord1 f => Ord1 (PtFPair f) where
-  liftCompare = $(makeLiftCompare ''PtFPair)
-
-instance Show1 f => Show1 (PtFPair f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''PtFPair)
+deriveEq1 ''PtFPair
+deriveOrd1 ''PtFPair
+deriveShow1 ''PtFPair
 
 class AsPtPair pt where
-  _PtPairP :: Prism' (pt a) (PtFPair pt a)
+  _PtPairP :: Prism' (pt k a) (PtFPair k a)
 
-  _PtPair :: Prism' (pt a) (pt a, pt a)
-  _PtPair = _PtPairP . _PtPairF
+  _PtPair :: Prism' (Pattern pt a) (Pattern pt a, Pattern pt a)
+  _PtPair = _PtTree . _PtPairP . _PtPairF
 
-instance AsPtPair pt => AsPtPair (PtFPair pt) where
-  _PtPairP = id . _PtPairP
+instance AsPtPair PtFPair where
+  _PtPairP = id
 
-data TmFPair f a =
+data TmFPair (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmPairF (f a) (f a)
   | TmFstF (f a)
   | TmSndF (f a)
@@ -103,41 +98,41 @@ data TmFPair f a =
 
 makePrisms ''TmFPair
 
-instance Eq1 f => Eq1 (TmFPair f) where
-  liftEq = $(makeLiftEq ''TmFPair)
+deriveEq1 ''TmFPair
+deriveOrd1 ''TmFPair
+deriveShow1 ''TmFPair
 
-instance Ord1 f => Ord1 (TmFPair f) where
-  liftCompare = $(makeLiftCompare ''TmFPair)
-
-instance Show1 f => Show1 (TmFPair f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TmFPair)
-
-instance Bound TmFPair where
+instance Bound (TmFPair ty pt) where
   TmPairF x y >>>= f = TmPairF (x >>= f) (y >>= f)
   TmFstF x >>>= f = TmFstF (x >>= f)
   TmSndF x >>>= f = TmSndF (x >>= f)
 
-class AsTmPair tm where
-  _TmPairP :: Prism' (tm a) (TmFPair tm a)
+instance Bitransversable (TmFPair ty pt) where
+  bitransverse fT fL (TmPairF x y) = TmPairF <$> fT fL x <*> fT fL y
+  bitransverse fT fL (TmFstF x) = TmFstF <$> fT fL x
+  bitransverse fT fL (TmSndF x) = TmSndF <$> fT fL x
 
-  _TmPair :: Prism' (tm a) (tm a, tm a)
-  _TmPair = _TmPairP . _TmPairF
+class AsTmPair ty pt tm where
+  _TmPairP :: Prism' (tm ty pt k a) (TmFPair ty pt k a)
 
-  _TmFst :: Prism' (tm a) (tm a)
-  _TmFst = _TmPairP . _TmFstF
+  _TmPair :: Prism' (Term ty pt tm a) (Term ty pt tm a, Term ty pt tm a)
+  _TmPair = _Wrapped . _ATerm . _TmPairP . _TmPairF . bimapping _Unwrapped _Unwrapped
 
-  _TmSnd :: Prism' (tm a) (tm a)
-  _TmSnd = _TmPairP . _TmSndF
+  _TmFst :: Prism' (Term ty pt tm a) (Term ty pt tm a)
+  _TmFst = _Wrapped . _ATerm . _TmPairP . _TmFstF . _Unwrapped
 
-instance AsTmPair f => AsTmPair (TmFPair f) where
-  _TmPairP = id . _TmPairP
+  _TmSnd :: Prism' (Term ty pt tm a) (Term ty pt tm a)
+  _TmSnd = _Wrapped . _ATerm . _TmPairP . _TmSndF . _Unwrapped
+
+instance AsTmPair ty pt TmFPair where
+  _TmPairP = id
 
 -- Errors
 
 class AsExpectedTyPair e ty | e -> ty where
   _ExpectedTyPair :: Prism' e ty
 
-expectTyPair :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty) => ty a -> m (ty a, ty a)
+expectTyPair :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty) => Type ty a -> m (Type ty a, Type ty a)
 expectTyPair ty =
   case preview _TyPair ty of
     Just (ty1, ty2) -> return (ty1, ty2)
@@ -145,24 +140,24 @@ expectTyPair ty =
 
 -- Rules
 
-stepFstLazy :: AsTmPair tm => tm a -> Maybe (tm a)
+stepFstLazy :: AsTmPair ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepFstLazy tm = do
   tmP <- preview _TmFst tm
   (tm1, _) <- preview _TmPair tmP
   return tm1
 
-stepSndLazy :: AsTmPair tm => tm a -> Maybe (tm a)
+stepSndLazy :: AsTmPair ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepSndLazy tm = do
   tmP <- preview _TmSnd tm
   (_, tm2) <- preview _TmPair tmP
   return tm2
 
 -- TODO check this, there might be more rules
-evalRulesLazy :: AsTmPair tm => FragmentInput e s r m ty p tm a
+evalRulesLazy :: AsTmPair ty pt tm => FragmentInput e s r m ty pt tm a
 evalRulesLazy =
   FragmentInput [] [EvalBase stepFstLazy, EvalBase stepSndLazy] [] [] []
 
-valuePair :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+valuePair :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 valuePair valueFn tm = do
   tmP <- preview _TmFst tm
   (tm1, tm2) <- preview _TmPair tmP
@@ -170,19 +165,19 @@ valuePair valueFn tm = do
   v2 <- valueFn tm2
   return $ review _TmPair (v1, v2)
 
-stepFstStrict :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepFstStrict :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepFstStrict stepFn tm = do
   tmP <- preview _TmFst tm
   tmP' <- stepFn tmP
   return $ review _TmFst tmP'
 
-stepSndStrict :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepSndStrict :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepSndStrict stepFn tm = do
   tmP <- preview _TmSnd tm
   tmP' <- stepFn tmP
   return $ review _TmSnd tmP'
 
-stepElimFstStrict :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepElimFstStrict :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepElimFstStrict valueFn tm = do
   tmP <- preview _TmFst tm
   (tm1, tm2) <- preview _TmPair tmP
@@ -190,7 +185,7 @@ stepElimFstStrict valueFn tm = do
   _ <- valueFn tm2
   return v1
 
-stepElimSndStrict :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepElimSndStrict :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepElimSndStrict valueFn tm = do
   tmP <- preview _TmSnd tm
   (tm1, tm2) <- preview _TmPair tmP
@@ -198,20 +193,20 @@ stepElimSndStrict valueFn tm = do
   v2 <- valueFn tm2
   return v2
 
-stepPair1 :: AsTmPair tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepPair1 :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepPair1 stepFn tm = do
   (tm1, tm2) <- preview _TmPair tm
   tm1' <- stepFn tm1
   return $ review _TmPair (tm1', tm2)
 
-stepPair2 :: AsTmPair tm => (tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepPair2 :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepPair2 valueFn stepFn tm = do
   (tm1, tm2) <- preview _TmPair tm
   v1 <- valueFn tm1
   tm2' <- stepFn tm2
   return $ review _TmPair (v1, tm2')
 
-evalRulesStrict :: AsTmPair tm => FragmentInput e s r m ty p tm a
+evalRulesStrict :: AsTmPair ty pt tm => FragmentInput e s r m ty pt tm a
 evalRulesStrict =
   FragmentInput
     [ ValueRecurse valuePair ]
@@ -224,7 +219,7 @@ evalRulesStrict =
     ]
     [] [] []
 
-inferTmPair :: (Monad m, AsTyPair ty, AsTmPair tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmPair :: (Monad m, AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmPair inferFn tm = do
   (tm1, tm2) <- preview _TmPair tm
   return $ do
@@ -232,7 +227,7 @@ inferTmPair inferFn tm = do
     ty2 <- inferFn tm2
     return $ review _TyPair (ty1, ty2)
 
-inferTmFst :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmFst :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmFst inferFn tm = do
   tmP <- preview _TmFst tm
   return $ do
@@ -240,7 +235,7 @@ inferTmFst inferFn tm = do
     (ty1, _) <- expectTyPair tyP
     return ty1
 
-inferTmSnd :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmSnd :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmSnd inferFn tm = do
   tmP <- preview _TmFst tm
   return $ do
@@ -248,7 +243,7 @@ inferTmSnd inferFn tm = do
     (_, ty2) <- expectTyPair tyP
     return ty2
 
-inferRules :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsTmPair tm) => FragmentInput e s r m ty p tm a
+inferRules :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsTmPair ty pt tm) => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput
     [] []
@@ -258,7 +253,7 @@ inferRules =
     ]
     [] []
 
-matchPair :: (AsPtPair p, AsTmPair tm) => (p a -> tm a -> Maybe [tm a]) -> p a -> tm a -> Maybe [tm a]
+matchPair :: (AsPtPair pt, AsTmPair ty pt tm) => (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchPair matchFn p tm = do
   (p1, p2) <- preview _PtPair p
   (tm1, tm2) <- preview _TmPair tm
@@ -266,45 +261,45 @@ matchPair matchFn p tm = do
   tms2 <- matchFn p2 tm2
   return $ tms1 ++ tms2
 
-checkPair :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsPtPair p) => (p a -> ty a -> m [ty a]) -> p a -> ty a -> Maybe (m [ty a])
+checkPair :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsPtPair pt) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkPair checkFn p ty = do
   (p1, p2) <- preview _PtPair p
   return $ do
     (ty1, ty2) <- expectTyPair ty
     mappend <$> checkFn p1 ty1 <*> checkFn p2 ty2
 
-patternRules :: (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsPtPair p, AsTmPair tm) => FragmentInput e s r m ty p tm a
+patternRules :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsPtPair pt, AsTmPair ty pt tm) => FragmentInput e s r m ty pt tm a
 patternRules =
   FragmentInput
     [] [] []
     [ PMatchRecurse matchPair ]
     [ PCheckRecurse checkPair ]
 
-type PairContext e s r m ty p tm a = (MonadError e m, AsExpectedTyPair e (ty a), AsTyPair ty, AsPtPair p, AsTmPair tm)
+type PairContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsPtPair pt, AsTmPair ty pt tm)
 
-pairFragmentLazy :: PairContext e s r m ty p tm a
-             => FragmentInput e s r m ty p tm a
+pairFragmentLazy :: PairContext e s r m ty pt tm a
+             => FragmentInput e s r m ty pt tm a
 pairFragmentLazy =
   evalRulesLazy `mappend` inferRules `mappend` patternRules
 
-pairFragmentStrict :: PairContext e s r m ty p tm a
-             => FragmentInput e s r m ty p tm a
+pairFragmentStrict :: PairContext e s r m ty pt tm a
+             => FragmentInput e s r m ty pt tm a
 pairFragmentStrict =
   evalRulesStrict `mappend` inferRules `mappend` patternRules
 
 -- Helpers
 
-tyPair :: AsTyPair ty => ty a -> ty a -> ty a
+tyPair :: AsTyPair ty => Type ty a -> Type ty a -> Type ty a
 tyPair = curry $ review _TyPair
 
-ptPair :: AsPtPair p => p a -> p a -> p a
+ptPair :: AsPtPair pt => Pattern pt a -> Pattern pt a -> Pattern pt a
 ptPair = curry $ review _PtPair
 
-tmPair :: AsTmPair tm => tm a -> tm a -> tm a
+tmPair :: AsTmPair ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
 tmPair = curry $ review _TmPair
 
-tmFst :: AsTmPair tm => tm a -> tm a
+tmFst :: AsTmPair ty pt tm => Term ty pt tm a -> Term ty pt tm a
 tmFst = review _TmFst
 
-tmSnd :: AsTmPair tm => tm a -> tm a
+tmSnd :: AsTmPair ty pt tm => Term ty pt tm a -> Term ty pt tm a
 tmSnd = review _TmSnd

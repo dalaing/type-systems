@@ -36,6 +36,7 @@ module Fragment.Ast (
   , _PtTree
   , _Pattern
   , Term(..)
+  , _TmVar
   , TripleConstraint
   , TripleConstraint1
   ) where
@@ -252,3 +253,6 @@ instance (TripleConstraint1 Show1 ty pt tm) => Show1 (Term ty pt tm) where
 deriving instance (TripleConstraint1 Functor ty pt tm) => Functor (Term ty pt tm)
 deriving instance (TripleConstraint1 Foldable ty pt tm) => Foldable (Term ty pt tm)
 deriving instance (TripleConstraint1 Traversable ty pt tm) => Traversable (Term ty pt tm)
+
+_TmVar :: Prism' (Term ty pt tm a) a
+_TmVar = _Wrapped . _AVar . _ATmVar

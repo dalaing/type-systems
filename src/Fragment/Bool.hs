@@ -12,6 +12,7 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Bool (
@@ -37,11 +38,12 @@ import Control.Monad.Except (MonadError)
 import Control.Lens
 
 import Bound
-import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
+import Fragment.Ast
 import Error
+import Util
 
 data TyFBool (f :: * -> *) a =
   TyBoolF
@@ -49,26 +51,24 @@ data TyFBool (f :: * -> *) a =
 
 makePrisms ''TyFBool
 
-instance Eq1 (TyFBool f) where
-  liftEq = $(makeLiftEq ''TyFBool)
-
-instance Ord1 (TyFBool f) where
-  liftCompare = $(makeLiftCompare ''TyFBool)
-
-instance Show1 (TyFBool f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TyFBool)
+deriveEq1 ''TyFBool
+deriveOrd1 ''TyFBool
+deriveShow1 ''TyFBool
 
 instance Bound TyFBool where
   TyBoolF >>>= _ = TyBoolF
 
+instance Bitransversable TyFBool where
+  bitransverse _ _ TyBoolF = pure TyBoolF
+
 class AsTyBool ty where
-  _TyBoolP :: Prism' (ty a) (TyFBool ty a)
+  _TyBoolP :: Prism' (ty k a) (TyFBool k a)
 
-  _TyBool :: Prism' (ty a) ()
-  _TyBool = _TyBoolP . _TyBoolF
+  _TyBool :: Prism' (Type ty a) ()
+  _TyBool = _TyTree . _TyBoolP . _TyBoolF
 
-instance AsTyBool f => AsTyBool (TyFBool f) where
-  _TyBoolP = id . _TyBoolP
+instance AsTyBool TyFBool where
+  _TyBoolP = id
 
 data PtFBool (f :: * -> *) a =
   PtBoolF Bool
@@ -76,28 +76,26 @@ data PtFBool (f :: * -> *) a =
 
 makePrisms ''PtFBool
 
-instance Eq1 (PtFBool f) where
-  liftEq = $(makeLiftEq ''PtFBool)
-
-instance Ord1 (PtFBool f) where
-  liftCompare = $(makeLiftCompare ''PtFBool)
-
-instance Show1 (PtFBool f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''PtFBool)
+deriveEq1 ''PtFBool
+deriveOrd1 ''PtFBool
+deriveShow1 ''PtFBool
 
 instance Bound PtFBool where
   PtBoolF b >>>= _ = PtBoolF b
 
-class AsPtBool p where
-  _PtBoolP :: Prism' (p a) (PtFBool p a)
+instance Bitransversable PtFBool where
+  bitransverse _ _ (PtBoolF b) = pure $ PtBoolF b
 
-  _PtBool :: Prism' (p a) Bool
-  _PtBool = _PtBoolP . _PtBoolF
+class AsPtBool pt where
+  _PtBoolP :: Prism' (pt k a) (PtFBool k a)
 
-instance AsPtBool f => AsPtBool (PtFBool f) where
-  _PtBoolP = id . _PtBoolP
+  _PtBool :: Prism' (Pattern pt a) Bool
+  _PtBool = _PtTree . _PtBoolP . _PtBoolF
 
-data TmFBool f a =
+instance AsPtBool PtFBool where
+  _PtBoolP = id
+
+data TmFBool (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmBoolF Bool
   | TmAndF (f a) (f a)
   | TmOrF (f a) (f a)
@@ -105,107 +103,107 @@ data TmFBool f a =
 
 makePrisms ''TmFBool
 
-instance (Eq1 f) => Eq1 (TmFBool f) where
-  liftEq = $(makeLiftEq ''TmFBool)
+deriveEq1 ''TmFBool
+deriveOrd1 ''TmFBool
+deriveShow1 ''TmFBool
 
-instance (Ord1 f) => Ord1 (TmFBool f) where
-  liftCompare = $(makeLiftCompare ''TmFBool)
-
-instance (Show1 f) => Show1 (TmFBool f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TmFBool)
-
-instance Bound TmFBool where
+instance Bound (TmFBool ty pt) where
   TmBoolF b >>>= _ = TmBoolF b
   TmAndF x y >>>= f = TmAndF (x >>= f) (y >>= f)
   TmOrF x y >>>= f = TmOrF (x >>= f) (y >>= f)
 
-class AsTmBool tm where
-  _TmBoolP :: Prism' (tm a) (TmFBool tm a)
+instance Bitransversable (TmFBool ty pt) where
+  bitransverse _ _ (TmBoolF b) = pure $ TmBoolF b
+  bitransverse fT fL (TmAndF x y) = TmAndF <$> fT fL x <*> fT fL y
+  bitransverse fT fL (TmOrF x y) = TmOrF <$> fT fL x <*> fT fL y
 
-  _TmBool :: Prism' (tm a) Bool
-  _TmBool = _TmBoolP . _TmBoolF
+class AsTmBool ty pt tm where
+  _TmBoolP :: Prism' (tm ty pt k a) (TmFBool ty pt k a)
 
-  _TmAnd :: Prism' (tm a) (tm a, tm a)
-  _TmAnd = _TmBoolP . _TmAndF
+  _TmBool :: Prism' (Term ty pt tm a) Bool
+  _TmBool = _Wrapped . _ATerm . _TmBoolP . _TmBoolF
 
-  _TmOr :: Prism' (tm a) (tm a, tm a)
-  _TmOr = _TmBoolP . _TmOrF
+  _TmAnd :: Prism' (Term ty pt tm a) (Term ty pt tm a, Term ty pt tm a)
+  _TmAnd = _Wrapped . _ATerm . _TmBoolP . _TmAndF . bimapping _Unwrapped _Unwrapped
 
-instance AsTmBool f => AsTmBool (TmFBool f) where
-  _TmBoolP = id . _TmBoolP
+  _TmOr :: Prism' (Term ty pt tm a) (Term ty pt tm a, Term ty pt tm a)
+  _TmOr = _Wrapped . _ATerm . _TmBoolP . _TmOrF . bimapping _Unwrapped _Unwrapped
 
-valBool :: AsTmBool tm => tm a -> Maybe (tm a)
+instance AsTmBool ty pt TmFBool where
+  _TmBoolP = id
+
+valBool :: AsTmBool ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 valBool tm = do
   _ <- preview _TmBool tm
   return tm
 
-stepAnd1 :: AsTmBool tm
-         => (tm a -> Maybe (tm a))
-         -> tm a
-         -> Maybe (tm a)
+stepAnd1 :: AsTmBool ty pt tm
+         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
+         -> Term ty pt tm a
+         -> Maybe (Term ty pt tm a)
 stepAnd1 stepFn tm = do
   (tm1, tm2) <- preview _TmAnd tm
   tm1' <- stepFn tm1
   return . review _TmAnd $ (tm1', tm2)
 
-stepAnd2 :: AsTmBool tm
-         => (tm a -> Maybe (tm a))
-         -> tm a
-         -> Maybe (tm a)
+stepAnd2 :: AsTmBool ty pt tm
+         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
+         -> Term ty pt tm a
+         -> Maybe (Term ty pt tm a)
 stepAnd2 stepFn tm = do
   (tm1, tm2) <- preview _TmAnd tm
   _ <- preview _TmBool tm1
   tm2' <- stepFn tm2
   return . review _TmAnd $ (tm1, tm2')
 
-stepAndBool :: AsTmBool tm
-           => tm a
-           -> Maybe (tm a)
+stepAndBool :: AsTmBool ty pt tm
+           => Term ty pt tm a
+           -> Maybe (Term ty pt tm a)
 stepAndBool tm = do
   (tm1, tm2) <- preview _TmAnd tm
   b1 <- preview _TmBool tm1
   b2 <- preview _TmBool tm2
   return . review _TmBool $ b1 && b2
 
-stepOr1 :: AsTmBool tm
-         => (tm a -> Maybe (tm a))
-         -> tm a
-         -> Maybe (tm a)
+stepOr1 :: AsTmBool ty pt tm
+         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
+         -> Term ty pt tm a
+         -> Maybe (Term ty pt tm a)
 stepOr1 stepFn tm = do
   (tm1, tm2) <- preview _TmOr tm
   tm1' <- stepFn tm1
   return . review _TmOr $ (tm1', tm2)
 
-stepOr2 :: AsTmBool tm
-         => (tm a -> Maybe (tm a))
-         -> tm a
-         -> Maybe (tm a)
+stepOr2 :: AsTmBool ty pt tm
+         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
+         -> Term ty pt tm a
+         -> Maybe (Term ty pt tm a)
 stepOr2 stepFn tm = do
   (tm1, tm2) <- preview _TmOr tm
   _ <- preview _TmBool tm1
   tm2' <- stepFn tm2
   return . review _TmOr $ (tm1, tm2')
 
-stepOrBool :: AsTmBool tm
-           => tm a
-           -> Maybe (tm a)
+stepOrBool :: AsTmBool ty pt tm
+           => Term ty pt tm a
+           -> Maybe (Term ty pt tm a)
 stepOrBool tm = do
   (tm1, tm2) <- preview _TmOr tm
   b1 <- preview _TmBool tm1
   b2 <- preview _TmBool tm2
   return . review _TmBool $ b1 || b2
 
-inferBool :: (Monad m, AsTyBool ty, AsTmBool tm)
-         => tm a
-         -> Maybe (m (ty a))
+inferBool :: (Monad m, AsTyBool ty, AsTmBool ty pt tm)
+         => Term ty pt tm a
+         -> Maybe (m (Type ty a))
 inferBool tm = do
   _ <- preview _TmBool tm
   return . return . review _TyBool $ ()
 
-inferAnd :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyBool ty, AsTmBool tm)
-         => (tm a -> m (ty a))
-         -> tm a
-         -> Maybe (m (ty a))
+inferAnd :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyBool ty, AsTmBool ty pt tm)
+         => (Term ty pt tm a -> m (Type ty a))
+         -> Term ty pt tm a
+         -> Maybe (m (Type ty a))
 inferAnd inferFn tm = do
   (tm1, tm2) <- preview _TmAnd tm
   return $ do
@@ -214,10 +212,10 @@ inferAnd inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-inferOr :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyBool ty, AsTmBool tm)
-         => (tm a -> m (ty a))
-         -> tm a
-         -> Maybe (m (ty a))
+inferOr :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyBool ty, AsTmBool ty pt tm)
+         => (Term ty pt tm a -> m (Type ty a))
+         -> Term ty pt tm a
+         -> Maybe (m (Type ty a))
 inferOr inferFn tm = do
   (tm1, tm2) <- preview _TmOr tm
   return $ do
@@ -226,7 +224,7 @@ inferOr inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-matchBool :: (AsPtBool p, AsTmBool tm) => p a -> tm a -> Maybe [tm a]
+matchBool :: (AsPtBool pt, AsTmBool ty pt tm) => Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchBool p tm = do
   b <- preview _PtBool p
   c <- preview _TmBool tm
@@ -234,7 +232,7 @@ matchBool p tm = do
   then return []
   else mzero
 
-checkBool :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsPtBool p, AsTyBool ty) => p a -> ty a -> Maybe (m [ty a])
+checkBool :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsPtBool pt, AsTyBool ty) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkBool p ty = do
   _ <- preview _PtBool p
   return $ do
@@ -242,10 +240,10 @@ checkBool p ty = do
     expect tyB ty
     return []
 
-type BoolContext e s r m ty p tm a = (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsTyBool ty, AsPtBool p, AsTmBool tm)
+type BoolContext e s r m ty pt tm a = (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)
 
-boolFragment :: BoolContext e s r m ty p tm a
-            => FragmentInput e s r m ty p tm a
+boolFragment :: BoolContext e s r m ty pt tm a
+            => FragmentInput e s r m ty pt tm a
 boolFragment =
   FragmentInput
     [ValueBase valBool]
@@ -265,17 +263,17 @@ boolFragment =
 
 -- Helpers
 
-tyBool :: AsTyBool ty => ty a
+tyBool :: AsTyBool ty => Type ty a
 tyBool = review _TyBool ()
 
-ptBool :: AsPtBool p => Bool -> p a
+ptBool :: AsPtBool pt => Bool -> Pattern pt a
 ptBool = review _PtBool
 
-tmBool :: AsTmBool tm => Bool -> tm a
+tmBool :: AsTmBool ty pt tm => Bool -> Term ty pt tm a
 tmBool = review _TmBool
 
-tmAnd :: AsTmBool tm => tm a -> tm a -> tm a
+tmAnd :: AsTmBool ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
 tmAnd = curry $ review _TmAnd
 
-tmOr :: AsTmBool tm => tm a -> tm a -> tm a
+tmOr :: AsTmBool ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
 tmOr = curry $ review _TmOr

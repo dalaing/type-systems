@@ -12,6 +12,7 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -43,10 +44,11 @@ import Control.Lens
 import Control.Monad.Error.Lens (throwing)
 
 import Bound
-import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
+import Fragment.Ast
+import Util
 
 data TyFTuple f a =
   TyTupleF [f a]
@@ -54,26 +56,24 @@ data TyFTuple f a =
 
 makePrisms ''TyFTuple
 
-instance Eq1 f => Eq1 (TyFTuple f) where
-  liftEq = $(makeLiftEq ''TyFTuple)
-
-instance Ord1 f => Ord1 (TyFTuple f) where
-  liftCompare = $(makeLiftCompare ''TyFTuple)
-
-instance Show1 f => Show1 (TyFTuple f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TyFTuple)
+deriveEq1 ''TyFTuple
+deriveOrd1 ''TyFTuple
+deriveShow1 ''TyFTuple
 
 instance Bound TyFTuple where
   TyTupleF tys >>>= f = TyTupleF (fmap (>>= f) tys)
 
+instance Bitransversable TyFTuple where
+  bitransverse fT fL (TyTupleF fs) = TyTupleF <$> traverse (fT fL) fs
+
 class AsTyTuple ty where
-  _TyTupleP :: Prism' (ty a) (TyFTuple ty a)
+  _TyTupleP :: Prism' (ty k a) (TyFTuple k a)
 
-  _TyTuple :: Prism' (ty a) [ty a]
-  _TyTuple = _TyTupleP . _TyTupleF
+  _TyTuple :: Prism' (Type ty a) [Type ty a]
+  _TyTuple = _TyTree . _TyTupleP . _TyTupleF
 
-instance AsTyTuple f => AsTyTuple (TyFTuple f) where
-  _TyTupleP = id . _TyTupleP
+instance AsTyTuple TyFTuple where
+  _TyTupleP = id
 
 data PtFTuple f a =
   PtTupleF [f a]
@@ -81,62 +81,56 @@ data PtFTuple f a =
 
 makePrisms ''PtFTuple
 
-instance Eq1 f => Eq1 (PtFTuple f) where
-  liftEq = $(makeLiftEq ''PtFTuple)
-
-instance Ord1 f => Ord1 (PtFTuple f) where
-  liftCompare = $(makeLiftCompare ''PtFTuple)
-
-instance Show1 f => Show1 (PtFTuple f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''PtFTuple)
+deriveEq1 ''PtFTuple
+deriveOrd1 ''PtFTuple
+deriveShow1 ''PtFTuple
 
 class AsPtTuple pt where
-  _PtTupleP :: Prism' (pt a) (PtFTuple pt a)
+  _PtTupleP :: Prism' (pt k a) (PtFTuple k a)
 
-  _PtTuple :: Prism' (pt a) [pt a]
-  _PtTuple = _PtTupleP . _PtTupleF
+  _PtTuple :: Prism' (Pattern pt a) [Pattern pt a]
+  _PtTuple = _PtTree . _PtTupleP . _PtTupleF
 
-instance AsPtTuple pt => AsPtTuple (PtFTuple pt) where
-  _PtTupleP = id . _PtTupleP
+instance AsPtTuple PtFTuple where
+  _PtTupleP = id
 
-data TmFTuple f a =
+data TmFTuple (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmTupleF [f a]
   | TmTupleIxF (f a) Int
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TmFTuple
 
-instance Eq1 f => Eq1 (TmFTuple f) where
-  liftEq = $(makeLiftEq ''TmFTuple)
+deriveEq1 ''TmFTuple
+deriveOrd1 ''TmFTuple
+deriveShow1 ''TmFTuple
 
-instance Ord1 f => Ord1 (TmFTuple f) where
-  liftCompare = $(makeLiftCompare ''TmFTuple)
-
-instance Show1 f => Show1 (TmFTuple f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TmFTuple)
-
-instance Bound TmFTuple where
+instance Bound (TmFTuple ty pt) where
   TmTupleF tms >>>= f = TmTupleF (fmap (>>= f) tms)
   TmTupleIxF tm i >>>= f = TmTupleIxF (tm >>= f) i
 
-class AsTmTuple tm where
-  _TmTupleP :: Prism' (tm a) (TmFTuple tm a)
+instance Bitransversable (TmFTuple ty tp) where
+  bitransverse fT fL (TmTupleF tms) = TmTupleF <$> traverse (fT fL) tms
+  bitransverse fT fL (TmTupleIxF tm i) = TmTupleIxF <$> fT fL tm <*> pure i
 
-  _TmTuple :: Prism' (tm a) [tm a]
-  _TmTuple = _TmTupleP . _TmTupleF
+class AsTmTuple ty pt tm where
+  _TmTupleP :: Prism' (tm ty pt k a) (TmFTuple ty pt k a)
 
-  _TmTupleIx :: Prism' (tm a) (tm a, Int)
-  _TmTupleIx = _TmTupleP . _TmTupleIxF
+  _TmTuple :: Prism' (Term ty pt tm a) [Term ty pt tm a]
+  _TmTuple = _Wrapped . _ATerm . _TmTupleP . _TmTupleF . mapping _Unwrapped
 
-instance AsTmTuple f => AsTmTuple (TmFTuple f) where
-  _TmTupleP = id . _TmTupleP
+  _TmTupleIx :: Prism' (Term ty pt tm a) (Term ty pt tm a, Int)
+  _TmTupleIx = _Wrapped . _ATerm . _TmTupleP . _TmTupleIxF . bimapping _Unwrapped id
+
+instance AsTmTuple ty pt TmFTuple where
+  _TmTupleP = id
 
 -- Errors
 
 class AsExpectedTyTuple e ty | e -> ty where
   _ExpectedTyTuple :: Prism' e ty
 
-expectTyTuple :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTyTuple ty) => ty a -> m [ty a]
+expectTyTuple :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTyTuple ty) => Type ty a -> m [Type ty a]
 expectTyTuple ty =
   case preview _TyTuple ty of
     Just tys -> return tys
@@ -158,37 +152,37 @@ lookupTuple ts i =
 
 -- Rules
 
-stepTupleIxLazy :: AsTmTuple tm => tm a -> Maybe (tm a)
+stepTupleIxLazy :: AsTmTuple ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTupleIxLazy tm = do
   (tmT ,i) <- preview _TmTupleIx tm
   tms <- preview _TmTuple tmT
   return $ tms !! i
 
 -- TODO check this, there might be more rules
-evalRulesLazy :: AsTmTuple tm => FragmentInput e s r m ty p tm a
+evalRulesLazy :: AsTmTuple ty pt tm => FragmentInput e s r m ty pt tm a
 evalRulesLazy =
   FragmentInput [] [EvalBase stepTupleIxLazy] [] [] []
 
-valueTuple :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+valueTuple :: AsTmTuple ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 valueTuple valueFn tm = do
   tms <- preview _TmTuple tm
   vs <- traverse valueFn tms
   return $ review _TmTuple vs
 
-stepTupleIxStrict :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepTupleIxStrict :: AsTmTuple ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTupleIxStrict stepFn tm = do
   (tmT, i) <- preview _TmTupleIx tm
   tmT' <- stepFn tmT
   return $ review _TmTupleIx (tmT', i)
 
-stepTupleElimIxStrict :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepTupleElimIxStrict :: AsTmTuple ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTupleElimIxStrict valueFn tm = do
   (tmT, i) <- preview _TmTupleIx tm
   tms <- preview _TmTuple tmT
   vs <- traverse valueFn tms
   return $ vs !! i
 
-stepTupleIx :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Int -> Maybe (tm a)
+stepTupleIx :: AsTmTuple ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Int -> Maybe (Term ty pt tm a)
 stepTupleIx valueFn stepFn tm i = do
   tms <- preview _TmTuple tm
   let (vs, s : ts) = splitAt i tms
@@ -196,13 +190,13 @@ stepTupleIx valueFn stepFn tm i = do
   s' <- stepFn s
   return $ review _TmTuple (vs' ++ s' : ts)
 
-stepTuple :: AsTmTuple tm => (tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepTuple :: AsTmTuple ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTuple valueFn stepFn tm = do
   tms <- preview _TmTuple tm
   let l = length tms
   asum . fmap (stepTupleIx valueFn stepFn tm) $ [0..l-1]
 
-evalRulesStrict :: AsTmTuple tm => FragmentInput e s r m ty p tm a
+evalRulesStrict :: AsTmTuple ty pt tm => FragmentInput e s r m ty pt tm a
 evalRulesStrict =
   FragmentInput
     [ ValueRecurse valueTuple ]
@@ -212,14 +206,14 @@ evalRulesStrict =
     ]
     [] [] []
 
-inferTmTuple :: (Monad m, AsTyTuple ty, AsTmTuple tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmTuple :: (Monad m, AsTyTuple ty, AsTmTuple ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmTuple inferFn tm = do
   tms <- preview _TmTuple tm
   return $ do
     tys <- traverse inferFn tms
     return $ review _TyTuple tys
 
-inferTmTupleIx :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmTupleIx :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmTupleIx inferFn tm = do
   (tmT, i) <- preview _TmTupleIx tm
   return $ do
@@ -227,7 +221,7 @@ inferTmTupleIx inferFn tm = do
     tys <- expectTyTuple tyT
     lookupTuple tys i
 
-inferRules :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple tm) => FragmentInput e s r m ty p tm a
+inferRules :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput
     []
@@ -237,14 +231,14 @@ inferRules =
     ]
     [] []
 
-matchTuple :: (AsPtTuple p, AsTmTuple tm) => (p a -> tm a -> Maybe [tm a]) -> p a -> tm a -> Maybe [tm a]
+matchTuple :: (AsPtTuple pt, AsTmTuple ty pt tm) => (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchTuple matchFn p tm = do
   pts <- preview _PtTuple p
   tms <- preview _TmTuple tm
   tmss <- zipWithM matchFn pts tms
   return $ mconcat tmss
 
-checkTuple :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTyTuple ty, AsPtTuple p) => (p a -> ty a -> m [ty a]) -> p a -> ty a -> Maybe (m [ty a])
+checkTuple :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTyTuple ty, AsPtTuple pt) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkTuple checkFn p ty = do
   pts <- preview _PtTuple p
   return $ do
@@ -252,33 +246,33 @@ checkTuple checkFn p ty = do
     ms <- zipWithM checkFn pts tys
     return $ mconcat ms
 
-patternRules :: (MonadError e m, AsExpectedTyTuple e (ty a), AsTyTuple ty, AsPtTuple p, AsTmTuple tm) => FragmentInput e s r m ty p tm a
+patternRules :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
 patternRules =
   FragmentInput
     [] [] [] [ PMatchRecurse matchTuple ] [ PCheckRecurse checkTuple ]
 
-type TupleContext e s r m ty p tm a = (MonadError e m, AsExpectedTyTuple e (ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsPtTuple p, AsTmTuple tm)
+type TupleContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm)
 
-tupleFragmentLazy :: TupleContext e s r m ty p tm a
-             => FragmentInput e s r m ty p tm a
+tupleFragmentLazy :: TupleContext e s r m ty pt tm a
+             => FragmentInput e s r m ty pt tm a
 tupleFragmentLazy =
   evalRulesLazy `mappend` inferRules `mappend` patternRules
 
-tupleFragmentStrict :: TupleContext e s r m ty p tm a
-             => FragmentInput e s r m ty p tm a
+tupleFragmentStrict :: TupleContext e s r m ty pt tm a
+             => FragmentInput e s r m ty pt tm a
 tupleFragmentStrict =
   evalRulesStrict `mappend` inferRules `mappend` patternRules
 
 -- Helpers
 
-tyTuple :: AsTyTuple ty => [ty a] -> ty a
+tyTuple :: AsTyTuple ty => [Type ty a] -> Type ty a
 tyTuple = review _TyTuple
 
-ptTuple :: AsPtTuple pt => [pt a] -> pt a
+ptTuple :: AsPtTuple pt => [Pattern pt a] -> Pattern pt a
 ptTuple = review _PtTuple
 
-tmTuple :: AsTmTuple tm => [tm a] -> tm a
+tmTuple :: AsTmTuple ty pt tm => [Term ty pt tm a] -> Term ty pt tm a
 tmTuple = review _TmTuple
 
-tmTupleIx :: AsTmTuple tm => tm a -> Int -> tm a
+tmTupleIx :: AsTmTuple ty pt tm => Term ty pt tm a -> Int -> Term ty pt tm a
 tmTupleIx = curry $ review _TmTupleIx

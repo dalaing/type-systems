@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment (
     ValueRule(..)
   , EvalRule(..)
@@ -24,22 +25,23 @@ import Data.Foldable (asum)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
 
+import Fragment.Ast
 import Error (AsUnexpected(..), expect, AsUnknownTypeError(..))
 
-data ValueRule (ty :: * -> *) tm a =
-    ValueBase (tm a -> Maybe (tm a))
-  | ValueRecurse ((tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a))
+data ValueRule ty pt tm a =
+    ValueBase (Term ty pt tm a -> Maybe (Term ty pt tm a))
+  | ValueRecurse ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
 
-fixValueRule :: (tm a -> Maybe (tm a))
-             -> ValueRule ty tm a
-             -> tm a
-             -> Maybe (tm a )
+fixValueRule :: (Term ty pt tm a -> Maybe (Term ty pt tm a))
+             -> ValueRule ty pt tm a
+             -> Term ty pt tm a
+             -> Maybe (Term ty pt tm a )
 fixValueRule _ (ValueBase f) = f
 fixValueRule valueFn (ValueRecurse f) = f valueFn
 
-mkValue :: [ValueRule ty tm a]
-        -> tm a
-        -> Maybe (tm a)
+mkValue :: [ValueRule ty pt tm a]
+        -> Term ty pt tm a
+        -> Maybe (Term ty pt tm a)
 mkValue rules =
   let
     go tm = asum .
@@ -48,26 +50,26 @@ mkValue rules =
   in
     go
 
-data EvalRule (ty :: * -> *) tm a =
-    EvalBase (tm a -> Maybe (tm a))
-  | EvalValue ((tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a))
-  | EvalStep ((tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a))
-  | EvalValueStep ((tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a))
+data EvalRule ty pt tm a =
+    EvalBase (Term ty pt tm a -> Maybe (Term ty pt tm a))
+  | EvalValue ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
+  | EvalStep ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
+  | EvalValueStep ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
 
-fixEvalRule :: (tm a -> Maybe (tm a))
-            -> (tm a -> Maybe (tm a))
-            -> EvalRule ty tm a
-            -> tm a
-            -> Maybe (tm a )
+fixEvalRule :: (Term ty pt tm a -> Maybe (Term ty pt tm a))
+            -> (Term ty pt tm a -> Maybe (Term ty pt tm a))
+            -> EvalRule ty pt tm a
+            -> Term ty pt tm a
+            -> Maybe (Term ty pt tm a )
 fixEvalRule _ _ (EvalBase f) = f
 fixEvalRule valueFn _ (EvalValue f) = f valueFn
 fixEvalRule _ evalFn (EvalStep f) = f evalFn
 fixEvalRule valueFn evalFn (EvalValueStep f) = f valueFn evalFn
 
-mkStep :: (tm a -> Maybe (tm a))
-       -> [EvalRule ty tm a]
-       -> tm a
-       -> Maybe (tm a)
+mkStep :: (Term ty pt tm a -> Maybe (Term ty pt tm a))
+       -> [EvalRule ty pt tm a]
+       -> Term ty pt tm a
+       -> Maybe (Term ty pt tm a)
 mkStep valueFn rules =
   let
     stepFn tm = asum .
@@ -76,7 +78,7 @@ mkStep valueFn rules =
   in
     stepFn
 
-mkEval :: (tm a -> Maybe (tm a)) -> tm a -> tm a
+mkEval :: (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Term ty pt tm a
 mkEval stepFn =
   let
     go tm = case stepFn tm of
@@ -85,18 +87,18 @@ mkEval stepFn =
   in
     go
 
-data InferRule e s r m ty tm a =
-    InferBase (tm a -> Maybe (m (ty a)))
-  | InferRecurse ((tm a -> m (ty a)) -> tm a -> Maybe (m (ty a)))
+data InferRule e s r m ty pt tm a =
+    InferBase (Term ty pt tm a -> Maybe (m (Type ty a)))
+  | InferRecurse ((Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a)))
 
-fixInferRule :: (tm a -> m (ty a))
-             -> InferRule e s r m ty tm a
-             -> tm a
-             -> Maybe (m (ty a))
+fixInferRule :: (Term ty pt tm a -> m (Type ty a))
+             -> InferRule e s r m ty pt tm a
+             -> Term ty pt tm a
+             -> Maybe (m (Type ty a))
 fixInferRule _ (InferBase f) = f
 fixInferRule inferFn (InferRecurse f) = f inferFn
 
-mkInfer :: (MonadError e m, AsUnknownTypeError e) => [InferRule e s r m ty tm a] -> tm a -> m (ty a)
+mkInfer :: (MonadError e m, AsUnknownTypeError e) => [InferRule e s r m ty pt tm a] -> Term ty pt tm a -> m (Type ty a)
 mkInfer rules =
   let
     go tm =
@@ -107,7 +109,7 @@ mkInfer rules =
   in
     go
 
-mkCheck :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a)) => (tm a -> m (ty a)) -> tm a -> ty a -> m ()
+mkCheck :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a)) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Type ty a -> m ()
 mkCheck inferFn =
   let
     go tm ty = do
@@ -116,15 +118,15 @@ mkCheck inferFn =
   in
     go
 
-data PMatchRule p tm a =
-    PMatchBase (p a -> tm a -> Maybe [tm a])
-  | PMatchRecurse ((p a -> tm a -> Maybe [tm a]) -> p a -> tm a -> Maybe [tm a])
+data PMatchRule ty pt tm a =
+    PMatchBase (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
+  | PMatchRecurse ((Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
 
-fixPMatchRule :: (p a -> tm a -> Maybe [tm a]) -> PMatchRule p tm a -> p a -> tm a -> Maybe [tm a]
+fixPMatchRule :: (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> PMatchRule ty pt tm a -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 fixPMatchRule _ (PMatchBase f) = f
 fixPMatchRule pMatchFn (PMatchRecurse f) = f pMatchFn
 
-mkPMatch :: [PMatchRule p tm a] -> p a -> tm a -> Maybe [tm a]
+mkPMatch :: [PMatchRule ty pt tm a] -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 mkPMatch rules x y =
   let
     go p tm =
@@ -132,17 +134,17 @@ mkPMatch rules x y =
       fmap (\r -> fixPMatchRule go r p tm) $
       rules
   in
-    fmap reverse $ go x y
+    go x y
 
-data PCheckRule e m p ty a =
-    PCheckBase (p a -> ty a -> Maybe (m [ty a]))
-  | PCheckRecurse ((p a -> ty a -> m [ty a]) -> p a -> ty a -> Maybe (m [ty a]))
+data PCheckRule e m pt ty a =
+    PCheckBase (Pattern pt a -> Type ty a -> Maybe (m [Type ty a]))
+  | PCheckRecurse ((Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a]))
 
-fixPCheckRule :: (p a -> ty a -> m [ty a]) -> PCheckRule e m p ty a -> p a -> ty a -> Maybe (m [ty a])
+fixPCheckRule :: (Pattern pt a -> Type ty a -> m [Type ty a]) -> PCheckRule e m pt ty a -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 fixPCheckRule _ (PCheckBase f) = f
 fixPCheckRule pCheckFn (PCheckRecurse f) = f pCheckFn
 
-mkPCheck :: (MonadError e m, AsUnknownTypeError e) => [PCheckRule e m p ty a] -> p a -> ty a -> m [ty a]
+mkPCheck :: (MonadError e m, AsUnknownTypeError e) => [PCheckRule e m pt ty a] -> Pattern pt a -> Type ty a -> m [Type ty a]
 mkPCheck rules x y =
   let
     go p ty =
@@ -151,22 +153,22 @@ mkPCheck rules x y =
       fmap (\r -> fixPCheckRule go r p ty) $
       rules
   in
-    fmap reverse $ go x y
+    go x y
 
 -- TODO split matching and finding bindings
 -- - matching is done at run time, we want to find bindings at compile time
 -- - use Data.Sequence for the bindings
 
-data FragmentInput e s r m ty p tm a =
+data FragmentInput e s r m ty pt tm a =
   FragmentInput {
-    fiValueRules :: [ValueRule ty tm a]
-  , fiEvalRules :: [EvalRule ty tm a]
-  , fiInferRules :: [InferRule e s r m ty tm a]
-  , fiPMatchRules :: [PMatchRule p tm a]
-  , fiPCheckRules :: [PCheckRule e m p ty a]
+    fiValueRules :: [ValueRule ty pt tm a]
+  , fiEvalRules :: [EvalRule ty pt tm a]
+  , fiInferRules :: [InferRule e s r m ty pt tm a]
+  , fiPMatchRules :: [PMatchRule ty pt tm a]
+  , fiPCheckRules :: [PCheckRule e m pt ty a]
   }
 
-instance Monoid (FragmentInput e s r m ty p tm a) where
+instance Monoid (FragmentInput e s r m ty pt tm a) where
   mempty =
     FragmentInput mempty mempty mempty mempty mempty
   mappend (FragmentInput v1 e1 i1 m1 c1) (FragmentInput v2 e2 i2 m2 c2) =
@@ -177,18 +179,18 @@ instance Monoid (FragmentInput e s r m ty p tm a) where
       (mappend m1 m2)
       (mappend c1 c2)
 
-data FragmentOutput e s r m ty p tm a =
+data FragmentOutput e s r m ty pt tm a =
   FragmentOutput {
-    foValue :: tm a -> Maybe (tm a)
-  , foStep :: tm a -> Maybe (tm a)
-  , foEval :: tm a -> tm a
-  , foInfer :: tm a -> m (ty a)
-  , foCheck :: tm a -> ty a -> m ()
-  , foPMatch :: p a -> tm a -> Maybe [tm a]
-  , foPCheck :: p a -> ty a -> m [ty a]
+    foValue :: Term ty pt tm a -> Maybe (Term ty pt tm a)
+  , foStep :: Term ty pt tm a -> Maybe (Term ty pt tm a)
+  , foEval :: Term ty pt tm a -> Term ty pt tm a
+  , foInfer :: Term ty pt tm a -> m (Type ty a)
+  , foCheck :: Term ty pt tm a -> Type ty a -> m ()
+  , foPMatch :: Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+  , foPCheck :: Pattern pt a -> Type ty a -> m [Type ty a]
   }
 
-prepareFragment :: (Eq (ty a), MonadError e m, AsUnexpected e (ty a), AsUnknownTypeError e) => FragmentInput e s r m ty p tm a -> FragmentOutput e s r m ty p tm a
+prepareFragment :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsUnknownTypeError e) => FragmentInput e s r m ty pt tm a -> FragmentOutput e s r m ty pt tm a
 prepareFragment fi =
   let
     v = mkValue . fiValueRules $ fi

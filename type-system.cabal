@@ -33,13 +33,13 @@ library
                      , Fragment.Bool
                      , Fragment.Pair
                      , Fragment.Tuple
-                     , Fragment.Record
-                     , Fragment.Variant
+                     -- , Fragment.Record
+                     --, Language.TheLot
+                     --, Fragment.Variant
                      --, Fragment.STLC
                      --, Fragment.SystemF
                      , Error
                      , Util
-                     , Language.TheLot
                      -- , Scratch
                      -- , Scratch2
   -- other-modules:       

@@ -16,11 +16,10 @@ Portability : non-portable
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Var (
-    PtFVar(..)
-  , AsPtVar(..)
+    PtFWild(..)
+  , AsPtWild(..)
   , PtVarContext
   , ptVarFragment
-  , AsTmVar(..)
   , HasTmVarSupply(..)
   , ToTmVar(..)
   , freshTmVar
@@ -45,52 +44,63 @@ import qualified Data.Text as T
 import Control.Lens
 import Control.Monad.Error.Lens
 
-import Fragment
+import Bound
+import Data.Deriving
 
-data PtFVar (f :: * -> *) a =
+import Fragment
+import Fragment.Ast
+import Util
+
+data PtFWild (f :: * -> *) a =
     PtWildF
-  | PtVarF a
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-makePrisms ''PtFVar
+makePrisms ''PtFWild
 
-class AsPtVar pt where
-  _PtVarP :: Prism' (pt a) (PtFVar pt a)
+deriveEq1 ''PtFWild
+deriveOrd1 ''PtFWild
+deriveShow1 ''PtFWild
 
-  _PtWild :: Prism' (pt a) ()
-  _PtWild = _PtVarP . _PtWildF
+instance Bound PtFWild where
+  PtWildF >>>= _ = PtWildF
 
-  _PtVar :: Prism' (pt a) a
-  _PtVar = _PtVarP . _PtVarF
+instance Bitransversable PtFWild where
+  bitransverse _ _ PtWildF = pure PtWildF
 
-instance AsPtVar pt => AsPtVar (PtFVar pt) where
-  _PtVarP = id . _PtVarP
+class AsPtWild pt where
+  _PtWildP :: Prism' (pt k a) (PtFWild k a)
 
-matchWild :: AsPtVar p => p a -> tm a -> Maybe [tm a]
+  _PtWild :: Prism' (Pattern pt a) ()
+  _PtWild = _PtTree . _PtWildP . _PtWildF
+
+instance AsPtWild PtFWild where
+  _PtWildP = id
+
+matchWild :: AsPtWild pt => Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchWild p _ = do
   _ <- preview _PtWild p
   return []
 
-matchVar :: AsPtVar p => p a -> tm a -> Maybe [tm a]
-matchVar p tm = do
-  _ <- preview _PtVar p
-  return [tm]
-
-checkWild :: (Monad m, AsPtVar p) => p a -> ty a -> Maybe (m [ty a])
+checkWild :: (Monad m, AsPtWild pt) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkWild p _ = do
   _ <- preview _PtWild p
   return $
     return []
 
-checkVar :: (Monad m, AsPtVar p) => p a -> ty a -> Maybe (m [ty a])
+matchVar :: Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+matchVar p tm = do
+  _ <- preview _PtVar p
+  return [tm]
+
+checkVar :: Monad m => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkVar p ty = do
   _ <- preview _PtVar p
   return $
     return [ty]
 
-type PtVarContext e s r m (ty :: * -> *) p (tm :: * -> *) a = (Monad m, AsPtVar p)
+type PtVarContext e s r m (ty :: (* -> *) -> * -> *) pt (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Monad m, AsPtWild pt)
 
-ptVarFragment :: (Monad m, AsPtVar p) => FragmentInput e s r m ty p tm a
+ptVarFragment :: PtVarContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 ptVarFragment =
   FragmentInput
     []
@@ -102,11 +112,6 @@ ptVarFragment =
     [ PCheckBase checkWild
     , PCheckBase checkVar
     ]
-
--- Possibly _TmVar :: Prism' tm a, so we can use it with
--- Term (ASTar a) and pull an a out
-class AsTmVar tm where
-  _TmVar :: Prism' (tm a) a
 
 -- State
 
@@ -130,7 +135,7 @@ freshTmVar = do
 
 -- Context
 
-data TermContext ty tmV tyV = TermContext (M.Map tmV (ty tyV))
+data TermContext ty tmV tyV = TermContext (M.Map tmV (Type ty tyV))
 
 emptyTermContext :: TermContext ty tmV tyV
 emptyTermContext = TermContext M.empty
@@ -144,32 +149,32 @@ class HasTermContext l ty tmV tyV | l -> ty, l -> tmV, l -> tyV where
 class AsUnboundTermVariable e tm | e -> tm where
   _UnboundTermVariable :: Prism' e tm
 
-lookupTerm :: (Ord tmV, MonadReader r m, MonadError e m, HasTermContext r ty tmV tyV, AsUnboundTermVariable e tmV) => tmV -> m (ty tyV)
+lookupTerm :: (Ord tmV, MonadReader r m, MonadError e m, HasTermContext r ty tmV tyV, AsUnboundTermVariable e tmV) => tmV -> m (Type ty tyV)
 lookupTerm v = do
   TermContext m <- view termContext
   case M.lookup v m of
     Nothing -> throwing _UnboundTermVariable v
     Just ty -> return ty
 
-insertTerm :: Ord tmV => tmV -> ty tyV -> TermContext ty tmV tyV -> TermContext ty tmV tyV
+insertTerm :: Ord tmV => tmV -> Type ty tyV -> TermContext ty tmV tyV -> TermContext ty tmV tyV
 insertTerm v ty (TermContext m) = TermContext (M.insert v ty m)
 
 -- Rules
 
-inferTmVar :: (Ord a, MonadReader r m, MonadError e m, AsTmVar tm, HasTermContext r ty a a, AsUnboundTermVariable e a) => tm a -> Maybe (m (ty a))
+inferTmVar :: (Ord a, MonadReader r m, MonadError e m, HasTermContext r ty a a, AsUnboundTermVariable e a) => Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmVar tm = do
   v <- preview _TmVar tm
   return $ lookupTerm v
 
-type TmVarContext e s r m ty (p :: * -> *) tm a = (Ord a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsUnboundTermVariable e a, AsTmVar tm)
+type TmVarContext e s r m ty (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Ord a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsUnboundTermVariable e a)
 
-tmVarFragment :: TmVarContext e s r m ty p tm a
-            => FragmentInput e s r m ty p tm a
+tmVarFragment :: TmVarContext e s r m ty pt tm a
+            => FragmentInput e s r m ty pt tm a
 tmVarFragment =
   FragmentInput
     [] [] [InferBase inferTmVar] [] []
 
 -- Helpers
 
-tmVar :: AsTmVar tm => a -> tm a
+tmVar :: a -> Term ty pt tm a
 tmVar = review _TmVar
