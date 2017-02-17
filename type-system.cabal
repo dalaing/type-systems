@@ -28,7 +28,7 @@ library
                      , Fragment
                      , Fragment.Ast
                      , Fragment.Var
-                     -- , Fragment.Case
+                     , Fragment.Case
                      , Fragment.Int
                      , Fragment.Bool
                      , Fragment.Pair

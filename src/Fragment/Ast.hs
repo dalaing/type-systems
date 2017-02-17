@@ -206,31 +206,31 @@ instance (Functor (pt (Pattern pt)), Bound pt) => Monad (Pattern pt) where
   PtVar x >>= f = f x
   PtTree x >>= f = PtTree (x >>>= f)
 
-patternToAst :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Ast pt pt tm (AstVar a)
+patternToAst :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Ast ty pt tm (AstVar a)
 patternToAst = runIdentity . patternToAst' (Identity . APtVar)
 
-patternToAst' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => (a -> Identity b) -> Pattern pt a -> Identity (Ast pt pt tm b)
+patternToAst' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => (a -> Identity b) -> Pattern pt a -> Identity (Ast ty pt tm b)
 patternToAst' fV x = patternToAst'' =<< traverse fV x
 
-patternToAst'' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Identity (Ast pt pt tm a)
+patternToAst'' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Identity (Ast ty pt tm a)
 patternToAst'' (PtVar x) = Identity (AVar x)
 patternToAst'' (PtTree pt) = fmap APattern . bitransverse patternToAst' pure $ pt
 
-astToPattern :: (TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => Ast pt pt tm (AstVar a) -> Maybe (Pattern pt a)
+astToPattern :: (TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => Ast ty pt tm (AstVar a) -> Maybe (Pattern pt a)
 astToPattern = astToPattern' fV
   where
     fV (APtVar x) = Just x
     fV _ = Nothing
 
-astToPattern' :: (TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => (a -> Maybe b) -> Ast pt pt tm a -> Maybe (Pattern pt b)
+astToPattern' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => (a -> Maybe b) -> Ast ty pt tm a -> Maybe (Pattern pt b)
 astToPattern' fV x = astToPattern'' =<< traverse fV x
 
-astToPattern'' :: (TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => Ast pt pt tm a -> Maybe (Pattern pt a)
+astToPattern'' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => Ast ty pt tm a -> Maybe (Pattern pt a)
 astToPattern'' (AVar x) = Just (PtVar x)
 astToPattern'' (APattern pt) = fmap PtTree . bitransverse astToPattern' pure $ pt
 astToPattern'' _ = Nothing
 
-_Pattern :: (Traversable (pt (Pattern pt)), TripleConstraint1 Traversable pt pt tm, Bitransversable pt) => Prism' (Ast pt pt tm (AstVar a)) (Pattern pt a)
+_Pattern :: (Traversable (pt (Pattern pt)), TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => Prism' (Ast ty pt tm (AstVar a)) (Pattern pt a)
 _Pattern = prism patternToAst (\x -> note x . astToPattern $ x)
 
 newtype Term ty pt tm a = Term (Ast ty pt tm (AstVar a))

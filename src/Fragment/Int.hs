@@ -224,10 +224,14 @@ inferMul inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-matchInt :: (AsPtInt pt, AsTmInt ty pt tm) => Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
-matchInt p tm = do
+matchInt :: (AsPtInt pt, AsTmInt ty pt tm)
+         => (Term ty pt tm a -> Term ty pt tm a)
+         -> Pattern pt a
+         -> Term ty pt tm a
+         -> Maybe [Term ty pt tm a]
+matchInt eval p tm = do
   i <- preview _PtInt p
-  j <- preview _TmInt tm
+  j <- preview _TmInt (eval tm)
   if i == j
   then return []
   else mzero
@@ -258,7 +262,7 @@ intFragment =
     , InferRecurse inferAdd
     , InferRecurse inferMul
     ]
-    [ PMatchBase matchInt ]
+    [ PMatchEval matchInt ]
     [ PCheckBase checkInt ]
 
 -- Helpers

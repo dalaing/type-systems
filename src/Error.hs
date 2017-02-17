@@ -12,6 +12,8 @@ module Error (
   , expect
   , AsExpectedEq(..)
   , expectEq
+  , AsExpectedAllEq(..)
+  , expectAllEq
   , AsUnknownTypeError(..)
   ) where
 
@@ -19,6 +21,8 @@ import Control.Monad (unless)
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
+
+import qualified Data.List.NonEmpty as N
 
 import Control.Lens
 
@@ -40,3 +44,11 @@ expectEq ty1 ty2 =
 
 class AsUnknownTypeError e where
   _UnknownTypeError :: Prism' e ()
+
+class AsExpectedAllEq e ty | e -> ty where
+  _ExpectedAllEq :: Prism' e (N.NonEmpty ty)
+
+expectAllEq :: (Eq (ty a), MonadError e m, AsExpectedAllEq e (ty a)) => N.NonEmpty (ty a) -> m (ty a)
+expectAllEq (ty N.:| tys)
+  | all (== ty) tys = return ty
+  | otherwise = throwing _ExpectedAllEq (ty N.:| tys)

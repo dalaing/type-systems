@@ -53,6 +53,7 @@ import Fragment.Tuple
 import Fragment.Record
 -- import Fragment.Variant
 import Fragment.STLC
+import Fragment.Case
 
 data TypeF f a =
     TyLInt (TyFInt f a)
@@ -158,6 +159,7 @@ data TermF ty pt f a =
   | TmLRecord (TmFRecord ty pt f a)
 --  | TmLVariant (TmFVariant Type Void Term a)
   | TmLSTLC (TmFSTLC ty pt f a)
+  | TmLCase (TmFCase ty pt f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TermF
@@ -191,6 +193,9 @@ instance AsTmRecord ty pt TermF where
 instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSTLC ty pt TermF where
   _TmSTLCP = _TmLSTLC
 
+instance AsTmCase ty pt TermF where
+  _TmCaseP = _TmLCase
+
 instance Bound (TermF ty pt) where
   TmLInt i >>>= f = TmLInt (i >>>= f)
   TmLBool b >>>= f = TmLBool (b >>>= f)
@@ -199,6 +204,7 @@ instance Bound (TermF ty pt) where
   TmLRecord r >>>= f = TmLRecord (r >>>= f)
 --  TmLVariant v >>= f = TmLVariant (v >>>= f)
   TmLSTLC lc >>>= f = TmLSTLC (lc >>>= f)
+  TmLCase c >>>= f = TmLCase (c >>>= f)
 
 instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLInt i) = TmLInt <$> bitransverse fT fL i
@@ -207,6 +213,7 @@ instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLTuple t) = TmLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TmLRecord r) = TmLRecord <$> bitransverse fT fL r
   bitransverse fT fL (TmLSTLC lc) = TmLSTLC <$> bitransverse fT fL lc
+  bitransverse fT fL (TmLCase c) = TmLCase <$> bitransverse fT fL c
 
 data Error ty a =
     EUnexpected (ty a) (ty a)
@@ -274,6 +281,7 @@ type LContext e s r m ty pt tm a =
   , TupleContext e s r m ty pt tm a
   , RecordContext e s r m ty pt tm a
   , STLCContext e s r m ty pt tm a
+  , CaseContext e s r m ty pt tm a
   , AsUnknownTypeError e
   )
 
@@ -281,10 +289,10 @@ fragmentInputBase :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt 
 fragmentInputBase = mconcat [ptVarFragment, tmVarFragment, intFragment, boolFragment]
 
 fragmentInputLazy :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy, stlcFragmentLazy]
+fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy, stlcFragmentLazy, caseFragmentLazy]
 
 fragmentInputStrict :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict, stlcFragmentStrict]
+fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict, stlcFragmentStrict, caseFragmentStrict]
 
 type M e s r = StateT s (ReaderT r (Except e))
 
@@ -297,15 +305,27 @@ runM s r m =
 
 type LTerm = Term TypeF PatternF TermF
 type LType = Type TypeF
+type LPattern = Pattern PatternF
 
 type Output a = FragmentOutput (Error LType a) Int (TermContext TypeF a a) (M (Error LType a) Int (TermContext TypeF a a)) TypeF PatternF TermF a
 
 fragmentOutputLazy :: (Ord a, Eq (LType a), ToTmVar a) => Output a
-fragmentOutputLazy = prepareFragment fragmentInputLazy
+fragmentOutputLazy = prepareFragmentLazy fragmentInputLazy
 
 fragmentOutputStrict :: (Ord a, Eq (LType a), ToTmVar a) => Output a
-fragmentOutputStrict = prepareFragment fragmentInputStrict
+fragmentOutputStrict = prepareFragmentStrict fragmentInputStrict
 
+runStepLazy :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runStepLazy =
+  foStep fragmentOutputLazy
+
+runValueStrict :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runValueStrict =
+  foValue fragmentOutputStrict
+
+runStepStrict :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runStepStrict =
+  foStep fragmentOutputStrict
 
 runEvalLazy :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> LTerm a
 runEvalLazy =

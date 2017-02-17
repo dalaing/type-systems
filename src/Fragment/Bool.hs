@@ -224,10 +224,14 @@ inferOr inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-matchBool :: (AsPtBool pt, AsTmBool ty pt tm) => Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
-matchBool p tm = do
+matchBool :: (AsPtBool pt, AsTmBool ty pt tm)
+          => (Term ty pt tm a -> Term ty pt tm a)
+          -> Pattern pt a
+          -> Term ty pt tm a
+          -> Maybe [Term ty pt tm a]
+matchBool eval p tm = do
   b <- preview _PtBool p
-  c <- preview _TmBool tm
+  c <- preview _TmBool (eval tm)
   if b == c
   then return []
   else mzero
@@ -258,7 +262,7 @@ boolFragment =
     , InferRecurse inferAnd
     , InferRecurse inferOr
     ]
-    [ PMatchBase matchBool ]
+    [ PMatchEval matchBool ]
     [ PCheckBase checkBool ]
 
 -- Helpers

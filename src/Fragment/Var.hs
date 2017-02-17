@@ -23,7 +23,6 @@ module Fragment.Var (
   , HasTmVarSupply(..)
   , ToTmVar(..)
   , freshTmVar
-  , tmVar
   , TermContext(..)
   , emptyTermContext
   , HasTermContext(..)
@@ -32,6 +31,10 @@ module Fragment.Var (
   , insertTerm
   , TmVarContext
   , tmVarFragment
+  , tyVar
+  , ptVar
+  , ptWild
+  , tmVar
   ) where
 
 import Control.Monad.State (MonadState)
@@ -175,6 +178,15 @@ tmVarFragment =
     [] [] [InferBase inferTmVar] [] []
 
 -- Helpers
+
+tyVar :: a -> Type ty a
+tyVar = review _TyVar
+
+ptVar :: a -> Pattern pt a
+ptVar = review _PtVar
+
+ptWild :: AsPtWild pt => Pattern pt a
+ptWild = review _PtWild ()
 
 tmVar :: a -> Term ty pt tm a
 tmVar = review _TmVar

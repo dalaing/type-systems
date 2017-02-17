@@ -165,8 +165,7 @@ evalRulesLazy =
 
 valuePair :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 valuePair valueFn tm = do
-  tmP <- preview _TmFst tm
-  (tm1, tm2) <- preview _TmPair tmP
+  (tm1, tm2) <- preview _TmPair tm
   v1 <- valueFn tm1
   v2 <- valueFn tm2
   return $ review _TmPair (v1, v2)
