@@ -16,6 +16,7 @@ Portability : non-portable
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Language.TheLot (
     runEvalStrict
   , runEvalLazy
@@ -25,9 +26,6 @@ module Language.TheLot (
 
 -- TODO reexport the helpers
 -- TODO probably should put them into their own module for that
-
-import Control.Monad (ap)
-import Data.Void
 
 import Control.Monad.Reader
 import Control.Monad.Except
@@ -40,7 +38,7 @@ import Control.Lens
 
 import Bound
 import Data.Functor.Classes
-import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
+import Data.Deriving
 
 import Fragment
 import Fragment.Ast
@@ -54,7 +52,7 @@ import Fragment.Pair
 import Fragment.Tuple
 import Fragment.Record
 -- import Fragment.Variant
--- import Fragment.STLC
+import Fragment.STLC
 
 data TypeF f a =
     TyLInt (TyFInt f a)
@@ -63,7 +61,7 @@ data TypeF f a =
   | TyLTuple (TyFTuple f a)
   | TyLRecord (TyFRecord f a)
 --  | TyLVariant (TyFVariant Type a)
---  | TyLSTLC (TyFSTLC Type a)
+ | TyLSTLC (TyFSTLC f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 deriveEq1 ''TypeF
@@ -90,8 +88,8 @@ instance AsTyRecord TypeF where
 -- instance AsTyVariant Type where
 --  _TyVariantP = _TyLVariant
 
---instance AsTySTLC Type where
---  _TySTLCP = _TyLSTLC
+instance AsTySTLC TypeF where
+  _TySTLCP = _TyLSTLC
 
 instance Bound TypeF where
   TyLInt i >>>= f = TyLInt (i >>>= f)
@@ -99,6 +97,7 @@ instance Bound TypeF where
   TyLPair p >>>= f = TyLPair (p >>>= f)
   TyLTuple t >>>= f = TyLTuple (t >>>= f)
   TyLRecord r >>>= f = TyLRecord (r >>>= f)
+  TyLSTLC lc >>>= f = TyLSTLC (lc >>>= f)
 
 instance Bitransversable TypeF where
   bitransverse fT fL (TyLInt i) = TyLInt <$> bitransverse fT fL i
@@ -106,6 +105,7 @@ instance Bitransversable TypeF where
   bitransverse fT fL (TyLPair p) = TyLPair <$> bitransverse fT fL p
   bitransverse fT fL (TyLTuple t) = TyLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TyLRecord r) = TyLRecord <$> bitransverse fT fL r
+  bitransverse fT fL (TyLSTLC lc) = TyLSTLC <$> bitransverse fT fL lc
 
 data PatternF f a =
     PtLWild (PtFWild f a)
@@ -157,14 +157,18 @@ data TermF ty pt f a =
   | TmLTuple (TmFTuple ty pt f a)
   | TmLRecord (TmFRecord ty pt f a)
 --  | TmLVariant (TmFVariant Type Void Term a)
---  | TmLSTLC (TmFSTLC Type Void Term a)
+  | TmLSTLC (TmFSTLC ty pt f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-deriveEq1 ''TermF
-deriveOrd1 ''TermF
-deriveShow1 ''TermF
-
 makePrisms ''TermF
+
+instance (Eq1 f, Monad f) => Eq1 (TermF ty pt f) where
+  liftEq = $(makeLiftEq ''TermF)
+
+instance (Ord1 f, Monad f) => Ord1 (TermF ty pt f) where
+  liftCompare = $(makeLiftCompare ''TermF)
+
+deriveShow1 ''TermF
 
 instance AsTmInt ty pt TermF where
   _TmIntP = _TmLInt
@@ -184,8 +188,8 @@ instance AsTmRecord ty pt TermF where
 -- instance AsTmVariant Type Term where
 --  _TmVariantP = _TmLVariant
 
--- instance AsTmSTLC Type Term where
---  _TmSTLCP = _TmLSTLC
+instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSTLC ty pt TermF where
+  _TmSTLCP = _TmLSTLC
 
 instance Bound (TermF ty pt) where
   TmLInt i >>>= f = TmLInt (i >>>= f)
@@ -194,7 +198,7 @@ instance Bound (TermF ty pt) where
   TmLTuple t >>>= f = TmLTuple (t >>>= f)
   TmLRecord r >>>= f = TmLRecord (r >>>= f)
 --  TmLVariant v >>= f = TmLVariant (v >>>= f)
---  TmLSTLC s >>= f = TmLSTLC (s >>>= f)
+  TmLSTLC lc >>>= f = TmLSTLC (lc >>>= f)
 
 instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLInt i) = TmLInt <$> bitransverse fT fL i
@@ -202,6 +206,7 @@ instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLPair p) = TmLPair <$> bitransverse fT fL p
   bitransverse fT fL (TmLTuple t) = TmLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TmLRecord r) = TmLRecord <$> bitransverse fT fL r
+  bitransverse fT fL (TmLSTLC lc) = TmLSTLC <$> bitransverse fT fL lc
 
 data Error ty a =
     EUnexpected (ty a) (ty a)
@@ -214,7 +219,7 @@ data Error ty a =
   | EExpectedTyVariant (ty a)
   | EVariantNotFound T.Text
   | EExpectedAllEq (N.NonEmpty (ty a))
---  | EExpectedTyArr (ty a)
+  | EExpectedTyArr (ty a)
   | EUnboundTermVariable a
   | EUnknownTypeError
   deriving (Eq, Ord, Show)
@@ -251,8 +256,8 @@ instance AsRecordNotFound (Error ty a) where
 -- instance AsExpectedAllEq (Error ty a) (ty a) where
 --  _ExpectedAllEq = _EExpectedAllEq
 
--- instance AsExpectedTyArr (Error ty a) (ty a) where
---  _ExpectedTyArr = _EExpectedTyArr
+instance AsExpectedTyArr (Error ty a) (ty a) where
+  _ExpectedTyArr = _EExpectedTyArr
 
 instance AsUnboundTermVariable (Error ty a) a where
   _UnboundTermVariable = _EUnboundTermVariable
@@ -268,6 +273,7 @@ type LContext e s r m ty pt tm a =
   , PairContext e s r m ty pt tm a
   , TupleContext e s r m ty pt tm a
   , RecordContext e s r m ty pt tm a
+  , STLCContext e s r m ty pt tm a
   , AsUnknownTypeError e
   )
 
@@ -275,10 +281,10 @@ fragmentInputBase :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt 
 fragmentInputBase = mconcat [ptVarFragment, tmVarFragment, intFragment, boolFragment]
 
 fragmentInputLazy :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy]
+fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy, stlcFragmentLazy]
 
 fragmentInputStrict :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict]
+fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict, stlcFragmentStrict]
 
 type M e s r = StateT s (ReaderT r (Except e))
 

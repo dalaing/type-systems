@@ -12,14 +12,18 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
+-- {-# LANGUAGE OverloadedStrings #-}
 module Fragment.STLC (
     TyFSTLC(..)
   , AsTySTLC(..)
   , TmFSTLC(..)
   , AsTmSTLC(..)
   , AsExpectedTyArr(..)
+  , STLCContext
   , stlcFragmentLazy
   , stlcFragmentStrict
   , tyArr
@@ -40,71 +44,81 @@ import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
+import Fragment.Ast
 import Fragment.Var
 import Error
+import Util
 
 data TyFSTLC f a =
   TyArrF (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
+deriveEq1 ''TyFSTLC
+deriveOrd1 ''TyFSTLC
+deriveShow1 ''TyFSTLC
+
 makePrisms ''TyFSTLC
 
-instance Eq1 f => Eq1 (TyFSTLC f) where
-  liftEq = $(makeLiftEq ''TyFSTLC)
+class AsTySTLC ty where
+  _TySTLCP :: Prism' (ty k a) (TyFSTLC k a)
 
-instance Ord1 f => Ord1 (TyFSTLC f) where
-  liftCompare = $(makeLiftCompare ''TyFSTLC)
+  _TyArr :: Prism' (Type ty a) (Type ty a, Type ty a)
+  _TyArr = _TyTree . _TySTLCP . _TyArrF
 
-instance Show1 f => Show1 (TyFSTLC f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TyFSTLC)
+instance AsTySTLC TyFSTLC where
+  _TySTLCP = id
 
 instance Bound TyFSTLC where
   TyArrF x y >>>= f = TyArrF (x >>= f) (y >>= f)
 
-class AsTySTLC ty where
-  _TySTLCP :: Prism' (ty a) (TyFSTLC ty a)
+instance Bitransversable TyFSTLC where
+  bitransverse fT fL (TyArrF x y) = TyArrF <$> fT fL x <*> fT fL y
 
-  _TyArr :: Prism' (ty a) (ty a, ty a)
-  _TyArr = _TySTLCP . _TyArrF
-
-data TmFSTLC ty tm a =
-    TmLamF (ty a) (Scope () tm a)
-  | TmAppF (tm a) (tm a)
+data TmFSTLC (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+    TmLamF (k a) (Scope () k a)
+  | TmAppF (k a) (k a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TmFSTLC
 
-instance (Eq1 ty, Eq1 tm, Monad tm) => Eq1 (TmFSTLC ty tm) where
+instance (Eq1 k, Monad k) => Eq1 (TmFSTLC ty pt k) where
   liftEq = $(makeLiftEq ''TmFSTLC)
 
-instance (Ord1 ty, Ord1 tm, Monad tm) => Ord1 (TmFSTLC ty tm) where
+instance (Ord1 k,  Monad k) => Ord1 (TmFSTLC ty pt k) where
   liftCompare = $(makeLiftCompare ''TmFSTLC)
 
-instance (Show1 ty, Show1 tm) => Show1 (TmFSTLC ty tm) where
+instance (Show1 k) => Show1 (TmFSTLC ty pt k) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFSTLC)
 
-instance Bound (TmFSTLC ty) where
-  TmLamF ty s >>>= f = TmLamF _ (s >>>= f)
+class (TripleConstraint1 Traversable ty pt tm, Bitransversable ty, Traversable (ty (Type ty))) => AsTmSTLC ty pt tm where
+  _TmSTLCP :: Prism' (tm ty pt k a) (TmFSTLC ty pt k a)
+
+  _TmSTLCLink :: Prism' (Term ty pt tm a) (TmFSTLC ty pt (Ast ty pt tm) (AstVar a))
+  _TmSTLCLink = _Wrapped . _ATerm . _TmSTLCP
+
+  _TmLam :: Prism' (Term ty pt tm a) (Type ty a, Scope () (Ast ty pt tm) (AstVar a))
+  _TmLam = _TmSTLCLink . _TmLamF . mkPair _Type id
+
+  _TmApp :: Prism' (Term ty pt tm a) (Term ty pt tm a, Term ty pt tm a)
+  _TmApp = _TmSTLCLink . _TmAppF . mkPair _Unwrapped _Unwrapped
+
+instance (TripleConstraint1 Traversable ty pt TmFSTLC, Bitransversable ty, Traversable (ty (Type ty))) => AsTmSTLC ty pt TmFSTLC where
+  _TmSTLCP = id
+
+instance Bound (TmFSTLC ty pt) where
+  TmLamF ty s >>>= f = TmLamF (ty >>= f) (s >>>= f)
   TmAppF x y >>>= f = TmAppF (x >>= f) (y >>= f)
 
-instance AsTySTLC f => AsTySTLC (TyFSTLC f) where
-  _TySTLCP = id . _TySTLCP
-
-class AsTmSTLC ty tm | tm -> ty where
-  _TmSTLCP :: Prism' (tm a) (TmFSTLC ty tm a)
-
-  _TmLam :: Prism' (tm a) (ty a, Scope () tm a)
-  _TmLam = _TmSTLCP . _TmLamF
-
-  _TmApp :: Prism' (tm a) (tm a, tm a)
-  _TmApp = _TmSTLCP . _TmAppF
+instance Bitransversable (TmFSTLC ty pt) where
+  bitransverse fT fL (TmLamF ty s) = TmLamF <$> fT fL ty <*> bitransverse fT fL s
+  bitransverse fT fL (TmAppF x y) = TmAppF <$> fT fL x <*> fT fL y
 
 -- Errors
 
 class AsExpectedTyArr e ty | e -> ty where
   _ExpectedTyArr :: Prism' e ty
 
-expectTyArr :: (MonadError e m, AsExpectedTyArr e (ty a), AsTySTLC ty) => ty a -> m (ty a, ty a)
+expectTyArr :: (MonadError e m, AsExpectedTyArr e (Type ty a), AsTySTLC ty) => Type ty a -> m (Type ty a, Type ty a)
 expectTyArr ty =
   case preview _TyArr ty of
     Just (tyArg, tyRet) -> return (tyArg, tyRet)
@@ -112,33 +126,33 @@ expectTyArr ty =
 
 -- Rules
 
-valTmLam :: AsTmSTLC ty tm => tm a -> Maybe (tm a)
+valTmLam :: AsTmSTLC ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 valTmLam tm = do
   _ <- preview _TmLam tm
   return  tm
 
-stepTmApp1 :: AsTmSTLC ty tm => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepTmApp1 :: AsTmSTLC ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmApp1 evalFn tm = do
   (f, x) <- preview _TmApp tm
   f' <- evalFn f
   return $ review _TmApp (f', x)
 
-stepTmLamApp :: (Monad tm, AsTmSTLC ty tm) => tm a -> Maybe (tm a)
+stepTmLamApp :: (Bound ty, Bound pt, Bound (tm ty pt)) => AsTmSTLC ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmLamApp tm = do
-  (f, x) <- preview _TmApp tm
-  (_, s) <- preview _TmLam f
-  return $ instantiate1 x s
+  (tmF, tmX) <- preview _TmApp tm
+  (_, s) <- preview _TmLam tmF
+  return . review _Wrapped . instantiate1 (review _Unwrapped tmX) $ s
 
-inferTmLam :: (Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm, HasTermContext r ty a a) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmLam :: (Ord a, Bound ty, Bound pt, Bound (tm ty pt), MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmSTLC ty pt tm, HasTermContext r ty a a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmLam inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
   return $ do
     v <- freshTmVar
-    let tmF = instantiate1 (review _TmVar v) s
+    let tmF = review _Wrapped $ instantiate1 (review (_AVar . _ATmVar) v) s
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq (ty a), MonadError e m, AsTySTLC ty, AsTmSTLC ty tm, AsExpectedTyArr e (ty a), AsExpectedEq e (ty a)) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmApp :: (Eq (Type ty a), MonadError e m, AsTySTLC ty, AsTmSTLC ty pt tm, AsExpectedTyArr e (Type ty a), AsExpectedEq e (Type ty a)) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmApp inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
@@ -148,8 +162,9 @@ inferTmApp inferFn tm = do
     expectEq tyArg tyX
     return tyRet
 
-stlcFragmentLazy :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
-            => FragmentInput e s r m ty p tm a
+type STLCContext e s r m ty pt tm a = (Eq (Type ty a), Ord a, Bound ty, Bound pt, Bound (tm ty pt), MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (Type ty a), AsExpectedTyArr e (Type ty a), AsTySTLC ty, AsTmSTLC ty pt tm)
+
+stlcFragmentLazy :: STLCContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 stlcFragmentLazy =
   FragmentInput
     [ValueBase valTmLam]
@@ -161,25 +176,24 @@ stlcFragmentLazy =
     ]
     [] []
 
-stepTmApp2 :: AsTmSTLC ty tm => (tm a -> Maybe (tm a)) -> (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepTmApp2 :: AsTmSTLC ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmApp2 valueFn stepFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   vF <- valueFn tmF
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-stlcFragmentStrict :: (Eq (ty a), Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (ty a), AsExpectedTyArr e (ty a), AsTySTLC ty, AsTmVar tm, AsTmSTLC ty tm)
-            => FragmentInput e s r m ty p tm a
+stlcFragmentStrict :: STLCContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 stlcFragmentStrict =
   mappend stlcFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] [] [] []
 
 -- Helpers
 
-tyArr :: AsTySTLC ty => ty a -> ty a -> ty a
+tyArr :: AsTySTLC ty => Type ty a -> Type ty a -> Type ty a
 tyArr = curry $ review _TyArr
 
-tmLam :: (Eq a, Monad tm, AsTmSTLC ty tm) => a -> ty a -> tm a -> tm a
-tmLam v ty tm = review _TmLam (ty, abstract1 v tm)
+tmLam :: (Eq a, AsTmSTLC ty pt tm, Bound ty, Bound pt, Bound (tm ty pt)) => a -> Type ty a -> Term ty pt tm a -> Term ty pt tm a
+tmLam v ty tm = review _TmLam (ty, abstract1 (review _ATmVar v) . review _Unwrapped $ tm)
 
-tmApp :: AsTmSTLC ty tm => tm a -> tm a -> tm a
+tmApp :: AsTmSTLC ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
 tmApp = curry $ review _TmApp

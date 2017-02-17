@@ -34,7 +34,7 @@ library
                      , Fragment.Pair
                      , Fragment.Tuple
                      , Fragment.Record
-                     --, Fragment.STLC
+                     , Fragment.STLC
                      --, Fragment.Variant
                      --, Fragment.SystemF
                      , Error
