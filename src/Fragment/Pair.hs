@@ -81,6 +81,12 @@ deriveEq1 ''PtFPair
 deriveOrd1 ''PtFPair
 deriveShow1 ''PtFPair
 
+instance Bound PtFPair where
+  PtPairF x y >>>= f = PtPairF (x >>= f) (y >>= f)
+
+instance Bitransversable PtFPair where
+  bitransverse fT fL (PtPairF x y) = PtPairF <$> fT fL x <*> fT fL y
+
 class AsPtPair pt where
   _PtPairP :: Prism' (pt k a) (PtFPair k a)
 

@@ -43,9 +43,10 @@ import Data.Functor.Classes
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
 import Fragment
+import Fragment.Ast
 import Error
+import Util
 
--- import Fragment.AST
 import Fragment.Var
 import Fragment.Int
 import Fragment.Bool
@@ -55,39 +56,35 @@ import Fragment.Record
 -- import Fragment.Variant
 -- import Fragment.STLC
 
-data Type a =
-    TyLInt (TyFInt Type a)
-  | TyLBool (TyFBool Type a)
-  | TyLPair (TyFPair Type a)
-  | TyLTuple (TyFTuple Type a)
-  | TyLRecord (TyFRecord Type a)
+data TypeF f a =
+    TyLInt (TyFInt f a)
+  | TyLBool (TyFBool f a)
+  | TyLPair (TyFPair f a)
+  | TyLTuple (TyFTuple f a)
+  | TyLRecord (TyFRecord f a)
 --  | TyLVariant (TyFVariant Type a)
 --  | TyLSTLC (TyFSTLC Type a)
-  deriving (Functor, Foldable, Traversable)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-deriveEq1 ''Type
-deriveOrd1 ''Type
-deriveShow1 ''Type
+deriveEq1 ''TypeF
+deriveOrd1 ''TypeF
+deriveShow1 ''TypeF
 
-instance Eq a => Eq (Type a) where (==) = eq1
-instance Ord a => Ord (Type a) where compare = compare1
-instance Show a => Show (Type a) where showsPrec = showsPrec1
+makePrisms ''TypeF
 
-makePrisms ''Type
-
-instance AsTyInt Type where
+instance AsTyInt TypeF where
   _TyIntP = _TyLInt
 
-instance AsTyBool Type where
+instance AsTyBool TypeF where
   _TyBoolP = _TyLBool
 
-instance AsTyPair Type where
+instance AsTyPair TypeF where
   _TyPairP = _TyLPair
 
-instance AsTyTuple Type where
+instance AsTyTuple TypeF where
   _TyTupleP = _TyLTuple
 
-instance AsTyRecord Type where
+instance AsTyRecord TypeF where
   _TyRecordP = _TyLRecord
 
 -- instance AsTyVariant Type where
@@ -96,84 +93,92 @@ instance AsTyRecord Type where
 --instance AsTySTLC Type where
 --  _TySTLCP = _TyLSTLC
 
-data Pattern a =
-    PtLVar (PtFVar Pattern a)
-  | PtLInt (PtFInt Pattern a)
-  | PtLBool (PtFBool Pattern a)
-  | PtLPair (PtFPair Pattern a)
-  | PtLTuple (PtFTuple Pattern a)
+instance Bound TypeF where
+  TyLInt i >>>= f = TyLInt (i >>>= f)
+  TyLBool b >>>= f = TyLBool (b >>>= f)
+  TyLPair p >>>= f = TyLPair (p >>>= f)
+  TyLTuple t >>>= f = TyLTuple (t >>>= f)
+  TyLRecord r >>>= f = TyLRecord (r >>>= f)
+
+instance Bitransversable TypeF where
+  bitransverse fT fL (TyLInt i) = TyLInt <$> bitransverse fT fL i
+  bitransverse fT fL (TyLBool b) = TyLBool <$> bitransverse fT fL b
+  bitransverse fT fL (TyLPair p) = TyLPair <$> bitransverse fT fL p
+  bitransverse fT fL (TyLTuple t) = TyLTuple <$> bitransverse fT fL t
+  bitransverse fT fL (TyLRecord r) = TyLRecord <$> bitransverse fT fL r
+
+data PatternF f a =
+    PtLWild (PtFWild f a)
+  | PtLInt (PtFInt f a)
+  | PtLBool (PtFBool f a)
+  | PtLPair (PtFPair f a)
+  | PtLTuple (PtFTuple f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-makePrisms ''Pattern
+deriveEq1 ''PatternF
+deriveOrd1 ''PatternF
+deriveShow1 ''PatternF
 
-instance AsPtVar Pattern where
-  _PtVarP = _PtLVar
+makePrisms ''PatternF
 
-instance AsPtInt Pattern where
+instance AsPtWild PatternF where
+  _PtWildP = _PtLWild
+
+instance AsPtInt PatternF where
   _PtIntP = _PtLInt
 
-instance AsPtBool Pattern where
+instance AsPtBool PatternF where
   _PtBoolP = _PtLBool
 
-instance AsPtPair Pattern where
+instance AsPtPair PatternF where
   _PtPairP = _PtLPair
 
-instance AsPtTuple Pattern where
+instance AsPtTuple PatternF where
   _PtTupleP = _PtLTuple
 
-data Term a =
-    TmLVar a
-  | TmLInt (TmFInt Term a)
-  | TmLBool (TmFBool Term a)
-  | TmLPair (TmFPair Term a)
-  | TmLTuple (TmFTuple Term a)
-  | TmLRecord (TmFRecord Term a)
+instance Bound PatternF where
+  PtLWild w >>>= f = PtLWild (w >>>= f)
+  PtLInt i >>>= f = PtLInt (i >>>= f)
+  PtLBool b >>>= f = PtLBool (b >>>= f)
+  PtLPair p >>>= f = PtLPair (p >>>= f)
+  PtLTuple t >>>= f = PtLTuple (t >>>= f)
+
+instance Bitransversable PatternF where
+  bitransverse fT fL (PtLWild w) = PtLWild <$> bitransverse fT fL w
+  bitransverse fT fL (PtLInt i) = PtLInt <$> bitransverse fT fL i
+  bitransverse fT fL (PtLBool b) = PtLBool <$> bitransverse fT fL b
+  bitransverse fT fL (PtLPair p) = PtLPair <$> bitransverse fT fL p
+  bitransverse fT fL (PtLTuple t) = PtLTuple <$> bitransverse fT fL t
+
+data TermF ty pt f a =
+    TmLInt (TmFInt ty pt f a)
+  | TmLBool (TmFBool ty pt f a)
+  | TmLPair (TmFPair ty pt f a)
+  | TmLTuple (TmFTuple ty pt f a)
+  | TmLRecord (TmFRecord ty pt f a)
 --  | TmLVariant (TmFVariant Type Void Term a)
 --  | TmLSTLC (TmFSTLC Type Void Term a)
-  deriving (Functor, Foldable, Traversable)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-deriveEq1 ''Term
-deriveOrd1 ''Term
-deriveShow1 ''Term
+deriveEq1 ''TermF
+deriveOrd1 ''TermF
+deriveShow1 ''TermF
 
-instance Eq a => Eq (Term a) where (==) = eq1
-instance Ord a => Ord (Term a) where compare = compare1
-instance Show a => Show (Term a) where showsPrec = showsPrec1
+makePrisms ''TermF
 
-instance Applicative Term where
-  pure = return
-  (<*>) = ap
-
-instance Monad Term where
-  return = TmLVar
-
-  TmLVar x >>= f = f x
-  TmLInt i >>= f = TmLInt (i >>>= f)
-  TmLBool b >>= f = TmLBool (b >>>= f)
-  TmLPair p >>= f = TmLPair (p >>>= f)
-  TmLTuple t >>= f = TmLTuple (t >>>= f)
-  TmLRecord r >>= f = TmLRecord (r >>>= f)
---  TmLVariant v >>= f = TmLVariant (v >>>= f)
---  TmLSTLC s >>= f = TmLSTLC (s >>>= f)
-
-makePrisms ''Term
-
-instance AsTmVar Term where
-  _TmVar = _TmLVar
-
-instance AsTmInt Term where
+instance AsTmInt ty pt TermF where
   _TmIntP = _TmLInt
 
-instance AsTmBool Term where
+instance AsTmBool ty pt TermF where
   _TmBoolP = _TmLBool
 
-instance AsTmPair Term where
+instance AsTmPair ty pt TermF where
   _TmPairP = _TmLPair
 
-instance AsTmTuple Term where
+instance AsTmTuple ty pt TermF where
   _TmTupleP = _TmLTuple
 
-instance AsTmRecord Term where
+instance AsTmRecord ty pt TermF where
   _TmRecordP = _TmLRecord
 
 -- instance AsTmVariant Type Term where
@@ -181,6 +186,22 @@ instance AsTmRecord Term where
 
 -- instance AsTmSTLC Type Term where
 --  _TmSTLCP = _TmLSTLC
+
+instance Bound (TermF ty pt) where
+  TmLInt i >>>= f = TmLInt (i >>>= f)
+  TmLBool b >>>= f = TmLBool (b >>>= f)
+  TmLPair p >>>= f = TmLPair (p >>>= f)
+  TmLTuple t >>>= f = TmLTuple (t >>>= f)
+  TmLRecord r >>>= f = TmLRecord (r >>>= f)
+--  TmLVariant v >>= f = TmLVariant (v >>>= f)
+--  TmLSTLC s >>= f = TmLSTLC (s >>>= f)
+
+instance Bitransversable (TermF ty tp) where
+  bitransverse fT fL (TmLInt i) = TmLInt <$> bitransverse fT fL i
+  bitransverse fT fL (TmLBool b) = TmLBool <$> bitransverse fT fL b
+  bitransverse fT fL (TmLPair p) = TmLPair <$> bitransverse fT fL p
+  bitransverse fT fL (TmLTuple t) = TmLTuple <$> bitransverse fT fL t
+  bitransverse fT fL (TmLRecord r) = TmLRecord <$> bitransverse fT fL r
 
 data Error ty a =
     EUnexpected (ty a) (ty a)
@@ -239,24 +260,24 @@ instance AsUnboundTermVariable (Error ty a) a where
 instance AsUnknownTypeError (Error ty a) where
   _UnknownTypeError = _EUnknownTypeError
 
-type LContext e s r m ty p tm a =
-  ( TmVarContext e s r m ty p tm a
-  , PtVarContext e s r m ty p tm a
-  , IntContext e s r m ty p tm a
-  , BoolContext e s r m ty p tm a
-  , PairContext e s r m ty p tm a
-  , TupleContext e s r m ty p tm a
-  , RecordContext e s r m ty p tm a
+type LContext e s r m ty pt tm a =
+  ( TmVarContext e s r m ty pt tm a
+  , PtVarContext e s r m ty pt tm a
+  , IntContext e s r m ty pt tm a
+  , BoolContext e s r m ty pt tm a
+  , PairContext e s r m ty pt tm a
+  , TupleContext e s r m ty pt tm a
+  , RecordContext e s r m ty pt tm a
   , AsUnknownTypeError e
   )
 
-fragmentInputBase :: LContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+fragmentInputBase :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 fragmentInputBase = mconcat [ptVarFragment, tmVarFragment, intFragment, boolFragment]
 
-fragmentInputLazy :: LContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+fragmentInputLazy :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy]
 
-fragmentInputStrict :: LContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+fragmentInputStrict :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict]
 
 type M e s r = StateT s (ReaderT r (Except e))
@@ -268,27 +289,31 @@ runM s r m =
   flip evalStateT s $
   m
 
-type Output a = FragmentOutput (Error Type a) Int (TermContext Type a a) (M (Error Type a) Int (TermContext Type a a)) Type Pattern Term a
+type LTerm = Term TypeF PatternF TermF
+type LType = Type TypeF
 
-fragmentOutputLazy :: (Ord a, Eq (Type a), ToTmVar a) => Output a
+type Output a = FragmentOutput (Error LType a) Int (TermContext TypeF a a) (M (Error LType a) Int (TermContext TypeF a a)) TypeF PatternF TermF a
+
+fragmentOutputLazy :: (Ord a, Eq (LType a), ToTmVar a) => Output a
 fragmentOutputLazy = prepareFragment fragmentInputLazy
 
-fragmentOutputStrict :: (Ord a, Eq (Type a), ToTmVar a) => Output a
+fragmentOutputStrict :: (Ord a, Eq (LType a), ToTmVar a) => Output a
 fragmentOutputStrict = prepareFragment fragmentInputStrict
 
-runEvalLazy :: (Ord a, Eq (Type a), ToTmVar a) => Term a -> Term a
+
+runEvalLazy :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> LTerm a
 runEvalLazy =
   foEval fragmentOutputLazy
 
-runEvalStrict :: (Ord a, Eq (Type a), ToTmVar a) => Term a -> Term a
+runEvalStrict :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> LTerm a
 runEvalStrict =
   foEval fragmentOutputStrict
 
-runInfer :: (Ord a, ToTmVar a) => Term a -> Either (Error Type a) (Type a)
+runInfer :: (Ord a, ToTmVar a) => LTerm a -> Either (Error LType a) (LType a)
 runInfer =
   runM 0 emptyTermContext .
   foInfer fragmentOutputLazy
 
-runCheck :: (Ord a, ToTmVar a) => Term a -> Type a -> Either (Error Type a) ()
+runCheck :: (Ord a, ToTmVar a) => LTerm a -> LType a -> Either (Error LType a) ()
 runCheck tm ty =
   runM 0 emptyTermContext $ foCheck fragmentOutputLazy tm ty

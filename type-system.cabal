@@ -33,15 +33,15 @@ library
                      , Fragment.Bool
                      , Fragment.Pair
                      , Fragment.Tuple
-                     -- , Fragment.Record
-                     --, Language.TheLot
-                     --, Fragment.Variant
+                     , Fragment.Record
                      --, Fragment.STLC
+                     --, Fragment.Variant
                      --, Fragment.SystemF
                      , Error
                      , Util
                      -- , Scratch
                      -- , Scratch2
+                     , Language.TheLot
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

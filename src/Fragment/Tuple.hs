@@ -64,7 +64,7 @@ instance Bound TyFTuple where
   TyTupleF tys >>>= f = TyTupleF (fmap (>>= f) tys)
 
 instance Bitransversable TyFTuple where
-  bitransverse fT fL (TyTupleF fs) = TyTupleF <$> traverse (fT fL) fs
+  bitransverse fT fL (TyTupleF tys) = TyTupleF <$> traverse (fT fL) tys
 
 class AsTyTuple ty where
   _TyTupleP :: Prism' (ty k a) (TyFTuple k a)
@@ -84,6 +84,12 @@ makePrisms ''PtFTuple
 deriveEq1 ''PtFTuple
 deriveOrd1 ''PtFTuple
 deriveShow1 ''PtFTuple
+
+instance Bound PtFTuple where
+  PtTupleF pts >>>= f = PtTupleF (fmap (>>= f) pts)
+
+instance Bitransversable PtFTuple where
+  bitransverse fT fL (PtTupleF pts) = PtTupleF <$> traverse (fT fL) pts
 
 class AsPtTuple pt where
   _PtTupleP :: Prism' (pt k a) (PtFTuple k a)
