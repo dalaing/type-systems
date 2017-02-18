@@ -28,6 +28,7 @@ import Control.Monad.Error.Lens (throwing)
 
 import Fragment.Ast
 import Error (AsUnexpected(..), expect, AsUnknownTypeError(..))
+import Util
 
 data ValueRule ty pt tm a =
     ValueBase (Term ty pt tm a -> Maybe (Term ty pt tm a))
@@ -119,7 +120,7 @@ mkInfer pc rules =
   in
     go
 
-mkCheck :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a)) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Type ty a -> m ()
+mkCheck :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Type ty a -> m ()
 mkCheck inferFn =
   let
     go tm ty = do
@@ -202,7 +203,7 @@ data FragmentOutput e s r m ty pt tm a =
   , foPCheck :: Pattern pt a -> Type ty a -> m [Type ty a]
   }
 
-prepareFragment :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsUnknownTypeError e)
+prepareFragment :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
                 => (Term ty pt tm a -> Term ty pt tm a)
                 -> FragmentInput e s r m ty pt tm a
                 -> FragmentOutput e s r m ty pt tm a
@@ -218,12 +219,12 @@ prepareFragment innerMatchEval fi =
   in
     FragmentOutput v s e i c pm pc
 
-prepareFragmentStrict :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsUnknownTypeError e)
+prepareFragmentStrict :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
                 => FragmentInput e s r m ty pt tm a
                 -> FragmentOutput e s r m ty pt tm a
 prepareFragmentStrict = prepareFragment id
 
-prepareFragmentLazy :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsUnknownTypeError e)
+prepareFragmentLazy :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
                 => FragmentInput e s r m ty pt tm a
                 -> FragmentOutput e s r m ty pt tm a
 prepareFragmentLazy fi =

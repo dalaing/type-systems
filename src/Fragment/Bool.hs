@@ -55,6 +55,9 @@ deriveEq1 ''TyFBool
 deriveOrd1 ''TyFBool
 deriveShow1 ''TyFBool
 
+instance EqRec TyFBool where
+  liftEqRec _ _ TyBoolF TyBoolF = True
+
 instance Bound TyFBool where
   TyBoolF >>>= _ = TyBoolF
 
@@ -200,7 +203,7 @@ inferBool tm = do
   _ <- preview _TmBool tm
   return . return . review _TyBool $ ()
 
-inferAnd :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyBool ty, AsTmBool ty pt tm)
+inferAnd :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsTmBool ty pt tm)
          => (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
@@ -212,7 +215,7 @@ inferAnd inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-inferOr :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyBool ty, AsTmBool ty pt tm)
+inferOr :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsTmBool ty pt tm)
          => (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
@@ -236,7 +239,7 @@ matchBool eval p tm = do
   then return []
   else mzero
 
-checkBool :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsPtBool pt, AsTyBool ty) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkBool :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsPtBool pt, AsTyBool ty) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkBool p ty = do
   _ <- preview _PtBool p
   return $ do
@@ -244,7 +247,7 @@ checkBool p ty = do
     expect tyB ty
     return []
 
-type BoolContext e s r m ty pt tm a = (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)
+type BoolContext e s r m ty pt tm a = (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)
 
 boolFragment :: BoolContext e s r m ty pt tm a
             => FragmentInput e s r m ty pt tm a

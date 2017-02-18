@@ -7,6 +7,7 @@ Portability : non-portable
 -}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Error (
     AsUnexpected(..)
   , expect
@@ -26,18 +27,22 @@ import qualified Data.List.NonEmpty as N
 
 import Control.Lens
 
-class AsUnexpected e ty | e -> ty where
-  _Unexpected :: Prism' e (ty, ty)
+import Fragment.Ast
 
-expect :: (Eq ty, MonadError e m, AsUnexpected e ty) => ty -> ty -> m ()
+import Util
+
+class AsUnexpected e ty a | e -> ty, e -> a where
+  _Unexpected :: Prism' e (Type ty a, Type ty a)
+
+expect :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => Type ty a -> Type ty a -> m ()
 expect ty1 ty2 =
   unless (ty1 == ty2) $
     throwing _Unexpected (ty1, ty2)
 
-class AsExpectedEq e ty | e -> ty where
-  _ExpectedEq :: Prism' e (ty, ty)
+class AsExpectedEq e ty a | e -> ty, e -> a where
+  _ExpectedEq :: Prism' e (Type ty a, Type ty a)
 
-expectEq :: (Eq ty, MonadError e m, AsExpectedEq e ty) => ty -> ty -> m ()
+expectEq :: (Eq a, EqRec ty, MonadError e m, AsExpectedEq e ty a) => Type ty a -> Type ty a -> m ()
 expectEq ty1 ty2 =
   unless (ty1 == ty2) $
     throwing _ExpectedEq (ty1, ty2)
@@ -45,10 +50,10 @@ expectEq ty1 ty2 =
 class AsUnknownTypeError e where
   _UnknownTypeError :: Prism' e ()
 
-class AsExpectedAllEq e ty | e -> ty where
-  _ExpectedAllEq :: Prism' e (N.NonEmpty ty)
+class AsExpectedAllEq e ty a | e -> ty, e -> a where
+  _ExpectedAllEq :: Prism' e (N.NonEmpty (Type ty a))
 
-expectAllEq :: (Eq (ty a), MonadError e m, AsExpectedAllEq e (ty a)) => N.NonEmpty (ty a) -> m (ty a)
+expectAllEq :: (Eq a, EqRec ty, MonadError e m, AsExpectedAllEq e ty a) => N.NonEmpty (Type ty a) -> m (Type ty a)
 expectAllEq (ty N.:| tys)
   | all (== ty) tys = return ty
   | otherwise = throwing _ExpectedAllEq (ty N.:| tys)

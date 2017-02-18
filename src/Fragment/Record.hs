@@ -67,6 +67,13 @@ deriveEq1 ''TyFRecord
 deriveOrd1 ''TyFRecord
 deriveShow1 ''TyFRecord
 
+instance EqRec TyFRecord where
+  liftEqRec eR _ (TyRecordF xs) (TyRecordF ys) =
+    let
+      f (l1, x1) (l2, x2) = l1 == l2 && eR x1 x2
+    in
+      and $ zipWith f xs ys
+
 instance Bound TyFRecord where
   TyRecordF tys >>>= f = TyRecordF (fmap (fmap (>>= f)) tys)
 
@@ -121,10 +128,10 @@ instance AsTmRecord ty pt TmFRecord where
 
 -- Errors
 
-class AsExpectedTyRecord e ty | e -> ty where
-  _ExpectedTyRecord :: Prism' e ty
+class AsExpectedTyRecord e ty a | e -> ty, e -> a where
+  _ExpectedTyRecord :: Prism' e (Type ty a)
 
-expectTyRecord :: (MonadError e m, AsExpectedTyRecord e (Type ty a), AsTyRecord ty) => Type ty a -> m [(T.Text, Type ty a)]
+expectTyRecord :: (MonadError e m, AsExpectedTyRecord e ty a, AsTyRecord ty) => Type ty a -> m [(T.Text, Type ty a)]
 expectTyRecord ty =
   case preview _TyRecord ty of
     Just tys -> return tys
@@ -204,7 +211,7 @@ inferTmRecord inferFn tm = do
     tys <- traverse (traverse inferFn) tms
     return $ review _TyRecord tys
 
-inferTmRecordIx :: (MonadError e m, AsExpectedTyRecord e (Type ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmRecordIx :: (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmRecordIx inferFn tm = do
   (tmT, i) <- preview _TmRecordIx tm
   return $ do
@@ -212,7 +219,7 @@ inferTmRecordIx inferFn tm = do
     tys <- expectTyRecord tyT
     lookupRecord tys i
 
-inferRules :: (MonadError e m, AsExpectedTyRecord e (Type ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm) => FragmentInput e s r m ty pt tm a
+inferRules :: (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm) => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput
     []
@@ -222,7 +229,7 @@ inferRules =
     ]
     [] []
 
-type RecordContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyRecord e (Type ty a), AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm)
+type RecordContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm)
 
 recordFragmentLazy :: RecordContext e s r m ty pt tm a
              => FragmentInput e s r m ty pt tm a

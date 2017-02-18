@@ -92,6 +92,15 @@ instance AsTyRecord TypeF where
 instance AsTySTLC TypeF where
   _TySTLCP = _TyLSTLC
 
+instance EqRec TypeF where
+  liftEqRec eR e (TyLInt x) (TyLInt y) = liftEqRec eR e x y
+  liftEqRec eR e (TyLBool x) (TyLBool y) = liftEqRec eR e x y
+  liftEqRec eR e (TyLPair x) (TyLPair y) = liftEqRec eR e x y
+  liftEqRec eR e (TyLTuple x) (TyLTuple y) = liftEqRec eR e x y
+  liftEqRec eR e (TyLRecord x) (TyLRecord y) = liftEqRec eR e x y
+  liftEqRec eR e (TyLSTLC x) (TyLSTLC y) = liftEqRec eR e x y
+  liftEqRec _ _ _ _ = False
+
 instance Bound TypeF where
   TyLInt i >>>= f = TyLInt (i >>>= f)
   TyLBool b >>>= f = TyLBool (b >>>= f)
@@ -215,43 +224,47 @@ instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLSTLC lc) = TmLSTLC <$> bitransverse fT fL lc
   bitransverse fT fL (TmLCase c) = TmLCase <$> bitransverse fT fL c
 
-data Error ty a =
-    EUnexpected (ty a) (ty a)
-  | EExpectedEq (ty a) (ty a)
-  | EExpectedTyPair (ty a)
-  | EExpectedTyTuple (ty a)
+data Error ty pt tm a =
+    EUnexpected (Type ty a) (Type ty a)
+  | EExpectedEq (Type ty a) (Type ty a)
+  | EExpectedTyPair (Type ty a)
+  | EExpectedTyTuple (Type ty a)
   | ETupleOutOfBounds Int Int
-  | EExpectedTyRecord (ty a)
+  | EExpectedTyRecord (Type ty a)
   | ERecordNotFound T.Text
-  | EExpectedTyVariant (ty a)
+  | EExpectedTyVariant (Type ty a)
   | EVariantNotFound T.Text
-  | EExpectedAllEq (N.NonEmpty (ty a))
-  | EExpectedTyArr (ty a)
+  | EExpectedAllEq (N.NonEmpty (Type ty a))
+  | EExpectedTyArr (Type ty a)
   | EUnboundTermVariable a
+  | EExpectedPattern (Ast ty pt tm (AstVar a))
   | EUnknownTypeError
-  deriving (Eq, Ord, Show)
+
+deriving instance (Eq a, EqRec ty, TripleConstraint Eq ty pt tm (AstVar a)) => Eq (Error ty pt tm a)
+deriving instance (Ord a, OrdRec ty, TripleConstraint Ord ty pt tm (AstVar a)) => Ord (Error ty pt tm a)
+deriving instance (Show a, ShowRec ty, TripleConstraint Show ty pt tm (AstVar a)) => Show (Error ty pt tm a)
 
 makePrisms ''Error
 
-instance AsUnexpected (Error ty a) (ty a) where
+instance AsUnexpected (Error ty pt tm a) ty a where
   _Unexpected = _EUnexpected
 
-instance AsExpectedEq (Error ty a) (ty a) where
+instance AsExpectedEq (Error ty pt tm a) ty a where
   _ExpectedEq = _EExpectedEq
 
-instance AsExpectedTyPair (Error ty a) (ty a) where
+instance AsExpectedTyPair (Error ty pt tm a) ty a where
   _ExpectedTyPair = _EExpectedTyPair
 
-instance AsExpectedTyTuple (Error ty a) (ty a) where
+instance AsExpectedTyTuple (Error ty pt tm a) ty a where
   _ExpectedTyTuple = _EExpectedTyTuple
 
-instance AsTupleOutOfBounds (Error ty a) where
+instance AsTupleOutOfBounds (Error ty pt tm a) where
   _TupleOutOfBounds = _ETupleOutOfBounds
 
-instance AsExpectedTyRecord (Error ty a) (ty a) where
+instance AsExpectedTyRecord (Error ty pt tm a) ty a where
   _ExpectedTyRecord = _EExpectedTyRecord
 
-instance AsRecordNotFound (Error ty a) where
+instance AsRecordNotFound (Error ty pt tm a) where
   _RecordNotFound = _ERecordNotFound
 
 -- instance AsExpectedTyVariant (Error ty a) (ty a) where
@@ -260,16 +273,19 @@ instance AsRecordNotFound (Error ty a) where
 -- instance AsVariantNotFound (Error ty a) where
 --  _VariantNotFound = _EVariantNotFound
 
--- instance AsExpectedAllEq (Error ty a) (ty a) where
---  _ExpectedAllEq = _EExpectedAllEq
+instance AsExpectedAllEq (Error ty pt tm a) ty a where
+  _ExpectedAllEq = _EExpectedAllEq
 
-instance AsExpectedTyArr (Error ty a) (ty a) where
+instance AsExpectedTyArr (Error ty pt tm a) ty a where
   _ExpectedTyArr = _EExpectedTyArr
 
-instance AsUnboundTermVariable (Error ty a) a where
+instance AsUnboundTermVariable (Error ty pt tm a) a where
   _UnboundTermVariable = _EUnboundTermVariable
 
-instance AsUnknownTypeError (Error ty a) where
+instance AsExpectedPattern (Error ty pt tm a) ty pt tm a where
+  _ExpectedPattern = _EExpectedPattern
+
+instance AsUnknownTypeError (Error ty pt tm a) where
   _UnknownTypeError = _EUnknownTypeError
 
 type LContext e s r m ty pt tm a =
@@ -305,41 +321,43 @@ runM s r m =
 
 type LTerm = Term TypeF PatternF TermF
 type LType = Type TypeF
-type LPattern = Pattern PatternF
+type LError = Error TypeF PatternF TermF
 
-type Output a = FragmentOutput (Error LType a) Int (TermContext TypeF a a) (M (Error LType a) Int (TermContext TypeF a a)) TypeF PatternF TermF a
+type Output a = FragmentOutput (LError a) Int (TermContext TypeF a a) (M (LError a) Int (TermContext TypeF a a)) TypeF PatternF TermF a
 
-fragmentOutputLazy :: (Ord a, Eq (LType a), ToTmVar a) => Output a
+fragmentOutputLazy :: (Ord a, ToTmVar a) => Output a
 fragmentOutputLazy = prepareFragmentLazy fragmentInputLazy
 
-fragmentOutputStrict :: (Ord a, Eq (LType a), ToTmVar a) => Output a
+fragmentOutputStrict :: (Ord a, ToTmVar a) => Output a
 fragmentOutputStrict = prepareFragmentStrict fragmentInputStrict
 
-runStepLazy :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> Maybe (LTerm a)
-runStepLazy =
-  foStep fragmentOutputLazy
-
-runValueStrict :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> Maybe (LTerm a)
-runValueStrict =
-  foValue fragmentOutputStrict
-
-runStepStrict :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> Maybe (LTerm a)
-runStepStrict =
-  foStep fragmentOutputStrict
-
-runEvalLazy :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> LTerm a
+runEvalLazy :: (Ord a, ToTmVar a) => LTerm a -> LTerm a
 runEvalLazy =
   foEval fragmentOutputLazy
 
-runEvalStrict :: (Ord a, Eq (LType a), ToTmVar a) => LTerm a -> LTerm a
+runEvalStrict :: (Ord a, ToTmVar a) => LTerm a -> LTerm a
 runEvalStrict =
   foEval fragmentOutputStrict
 
-runInfer :: (Ord a, ToTmVar a) => LTerm a -> Either (Error LType a) (LType a)
+runInfer :: (Ord a, ToTmVar a) => LTerm a -> Either (LError a) (LType a)
 runInfer =
   runM 0 emptyTermContext .
   foInfer fragmentOutputLazy
 
-runCheck :: (Ord a, ToTmVar a) => LTerm a -> LType a -> Either (Error LType a) ()
+runCheck :: (Ord a, ToTmVar a) => LTerm a -> LType a -> Either (LError a) ()
 runCheck tm ty =
   runM 0 emptyTermContext $ foCheck fragmentOutputLazy tm ty
+
+-- for debugging
+
+runStepLazy :: (Ord a, ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runStepLazy =
+  foStep fragmentOutputLazy
+
+runValueStrict :: (Ord a, ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runValueStrict =
+  foValue fragmentOutputStrict
+
+runStepStrict :: (Ord a, ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runStepStrict =
+  foStep fragmentOutputStrict

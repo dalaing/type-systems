@@ -56,6 +56,9 @@ deriveEq1 ''TyFPair
 deriveOrd1 ''TyFPair
 deriveShow1 ''TyFPair
 
+instance EqRec TyFPair where
+  liftEqRec eR _ (TyPairF x1 y1) (TyPairF x2 y2) = eR x1 x2 && eR y1 y2
+
 instance Bound TyFPair where
   TyPairF x y >>>= f = TyPairF (x >>= f) (y >>= f)
 
@@ -135,10 +138,10 @@ instance AsTmPair ty pt TmFPair where
 
 -- Errors
 
-class AsExpectedTyPair e ty | e -> ty where
-  _ExpectedTyPair :: Prism' e ty
+class AsExpectedTyPair e ty a | e -> ty, e -> a where
+  _ExpectedTyPair :: Prism' e (Type ty a)
 
-expectTyPair :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty) => Type ty a -> m (Type ty a, Type ty a)
+expectTyPair :: (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty) => Type ty a -> m (Type ty a, Type ty a)
 expectTyPair ty =
   case preview _TyPair ty of
     Just (ty1, ty2) -> return (ty1, ty2)
@@ -232,7 +235,7 @@ inferTmPair inferFn tm = do
     ty2 <- inferFn tm2
     return $ review _TyPair (ty1, ty2)
 
-inferTmFst :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmFst :: (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmFst inferFn tm = do
   tmP <- preview _TmFst tm
   return $ do
@@ -240,7 +243,7 @@ inferTmFst inferFn tm = do
     (ty1, _) <- expectTyPair tyP
     return ty1
 
-inferTmSnd :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmSnd :: (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmSnd inferFn tm = do
   tmP <- preview _TmFst tm
   return $ do
@@ -248,7 +251,7 @@ inferTmSnd inferFn tm = do
     (_, ty2) <- expectTyPair tyP
     return ty2
 
-inferRules :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsTmPair ty pt tm) => FragmentInput e s r m ty pt tm a
+inferRules :: (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty, AsTmPair ty pt tm) => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput
     [] []
@@ -266,21 +269,21 @@ matchPair matchFn p tm = do
   tms2 <- matchFn p2 tm2
   return $ tms1 ++ tms2
 
-checkPair :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsPtPair pt) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkPair :: (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty, AsPtPair pt) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkPair checkFn p ty = do
   (p1, p2) <- preview _PtPair p
   return $ do
     (ty1, ty2) <- expectTyPair ty
     mappend <$> checkFn p1 ty1 <*> checkFn p2 ty2
 
-patternRules :: (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsPtPair pt, AsTmPair ty pt tm) => FragmentInput e s r m ty pt tm a
+patternRules :: (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty, AsPtPair pt, AsTmPair ty pt tm) => FragmentInput e s r m ty pt tm a
 patternRules =
   FragmentInput
     [] [] []
     [ PMatchRecurse matchPair ]
     [ PCheckRecurse checkPair ]
 
-type PairContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyPair e (Type ty a), AsTyPair ty, AsPtPair pt, AsTmPair ty pt tm)
+type PairContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty, AsPtPair pt, AsTmPair ty pt tm)
 
 pairFragmentLazy :: PairContext e s r m ty pt tm a
              => FragmentInput e s r m ty pt tm a

@@ -55,6 +55,9 @@ deriveEq1 ''TyFInt
 deriveOrd1 ''TyFInt
 deriveShow1 ''TyFInt
 
+instance EqRec TyFInt where
+  liftEqRec _ _ TyIntF TyIntF = True
+
 instance Bound TyFInt where
   TyIntF >>>= _ = TyIntF
 
@@ -200,7 +203,7 @@ inferInt tm = do
   _ <- preview _TmInt tm
   return . return . review _TyInt $ ()
 
-inferAdd :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyInt ty, AsTmInt ty pt tm)
+inferAdd :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyInt ty, AsTmInt ty pt tm)
          => (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
@@ -212,7 +215,7 @@ inferAdd inferFn tm = do
     mkCheck inferFn tm2 ty
     return ty
 
-inferMul :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyInt ty, AsTmInt ty pt tm)
+inferMul :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyInt ty, AsTmInt ty pt tm)
          => (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
@@ -236,7 +239,7 @@ matchInt eval p tm = do
   then return []
   else mzero
 
-checkInt :: (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsPtInt pt, AsTyInt ty) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkInt :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsPtInt pt, AsTyInt ty) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkInt p ty = do
   _ <- preview _PtInt p
   return $ do
@@ -244,7 +247,7 @@ checkInt p ty = do
     expect tyI ty
     return []
 
-type IntContext e s r m ty pt tm a = (Eq a, Eq (ty (Type ty) a), MonadError e m, AsUnexpected e (Type ty a), AsTyInt ty, AsPtInt pt, AsTmInt ty pt tm)
+type IntContext e s r m ty pt tm a = (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyInt ty, AsPtInt pt, AsTmInt ty pt tm)
 
 intFragment :: IntContext e s r m ty p tm a
             => FragmentInput e s r m ty p tm a

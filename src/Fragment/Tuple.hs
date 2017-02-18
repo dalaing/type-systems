@@ -60,6 +60,9 @@ deriveEq1 ''TyFTuple
 deriveOrd1 ''TyFTuple
 deriveShow1 ''TyFTuple
 
+instance EqRec TyFTuple where
+  liftEqRec eR _ (TyTupleF xs) (TyTupleF ys) = and $ zipWith eR xs ys
+
 instance Bound TyFTuple where
   TyTupleF tys >>>= f = TyTupleF (fmap (>>= f) tys)
 
@@ -133,10 +136,10 @@ instance AsTmTuple ty pt TmFTuple where
 
 -- Errors
 
-class AsExpectedTyTuple e ty | e -> ty where
-  _ExpectedTyTuple :: Prism' e ty
+class AsExpectedTyTuple e ty a | e -> ty, e -> a where
+  _ExpectedTyTuple :: Prism' e (Type ty a)
 
-expectTyTuple :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTyTuple ty) => Type ty a -> m [Type ty a]
+expectTyTuple :: (MonadError e m, AsExpectedTyTuple e ty a, AsTyTuple ty) => Type ty a -> m [Type ty a]
 expectTyTuple ty =
   case preview _TyTuple ty of
     Just tys -> return tys
@@ -219,7 +222,7 @@ inferTmTuple inferFn tm = do
     tys <- traverse inferFn tms
     return $ review _TyTuple tys
 
-inferTmTupleIx :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmTupleIx :: (MonadError e m, AsExpectedTyTuple e ty a, AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmTupleIx inferFn tm = do
   (tmT, i) <- preview _TmTupleIx tm
   return $ do
@@ -227,7 +230,7 @@ inferTmTupleIx inferFn tm = do
     tys <- expectTyTuple tyT
     lookupTuple tys i
 
-inferRules :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
+inferRules :: (MonadError e m, AsExpectedTyTuple e ty a, AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput
     []
@@ -244,7 +247,7 @@ matchTuple matchFn p tm = do
   tmss <- zipWithM matchFn pts tms
   return $ mconcat tmss
 
-checkTuple :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTyTuple ty, AsPtTuple pt) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkTuple :: (MonadError e m, AsExpectedTyTuple e ty a, AsTyTuple ty, AsPtTuple pt) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkTuple checkFn p ty = do
   pts <- preview _PtTuple p
   return $ do
@@ -252,12 +255,12 @@ checkTuple checkFn p ty = do
     ms <- zipWithM checkFn pts tys
     return $ mconcat ms
 
-patternRules :: (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
+patternRules :: (MonadError e m, AsExpectedTyTuple e ty a, AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
 patternRules =
   FragmentInput
     [] [] [] [ PMatchRecurse matchTuple ] [ PCheckRecurse checkTuple ]
 
-type TupleContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyTuple e (Type ty a), AsTupleOutOfBounds e, AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm)
+type TupleContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyTuple e ty a, AsTupleOutOfBounds e, AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm)
 
 tupleFragmentLazy :: TupleContext e s r m ty pt tm a
              => FragmentInput e s r m ty pt tm a

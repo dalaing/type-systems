@@ -19,6 +19,7 @@ module Fragment.Case (
     Alt(..)
   , TmFCase(..)
   , AsTmCase(..)
+  , AsExpectedPattern(..)
   , CaseContext
   , caseFragmentLazy
   , caseFragmentStrict
@@ -29,12 +30,13 @@ module Fragment.Case (
 import Data.List (elemIndex)
 import Data.Foldable (toList)
 
-import Control.Monad.Error (MonadError)
+import Control.Monad.Except (MonadError)
 
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as N
 
 import Control.Lens
+import Control.Monad.Error.Lens
 
 import Bound
 import Data.Functor.Classes
@@ -106,6 +108,15 @@ instance AsTmCase ty pt TmFCase where
 
 -- Errors
 
+class AsExpectedPattern e ty pt tm a | e -> ty, e -> pt, e -> tm, e -> a where
+  _ExpectedPattern :: Prism' e (Ast ty pt tm (AstVar a))
+
+expectPattern :: (MonadError e m, AsExpectedPattern e ty pt tm a, TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt) => Ast ty pt tm (AstVar a) -> m (Pattern pt a)
+expectPattern ast =
+  case preview _Pattern ast of
+    Just p -> return p
+    _ -> throwing _ExpectedPattern ast
+
 -- Rules
 
 
@@ -155,33 +166,14 @@ evalRulesStrict =
     [EvalStep stepCaseStepStrict, EvalValuePMatch stepCaseValueStrict]
     [] [] []
 
-{-
-dodgyCheck :: (tm T.Text -> m (ty T.Text)) -> (p T.Text -> ty T.Text -> m [ty T.Text]) -> TmFCase p tm T.Text -> m (ty T.Text)
-dodgyCheck inferFn checkFn (TmCaseF tm alts) =
-  -- need to check there are no duplicate ptvars per pattern
-  -- should also warn if there are unused ptvars per pattern
-  -- later: would be good to check for incomplete / unreachable / redundant patterns
-  let
-    go ty (Alt p s) = do
-      tys <- checkFn p ty
-      -- TODO generate fresh vars, add tys to context with those vars,
-      -- add vars to s, and infer
-      infer _
-  in
-    do
-      ty <- inferFn tm
-      tys <- mapM (go ty) (N.toList alts)
-      expectAllEq tys
--}
+type CheckConstraint e s r m ty pt tm a = (Eq a, EqRec ty, MonadError e m, AsExpectedPattern e ty pt tm a, AsExpectedAllEq e ty a, TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt, AsTmCase ty pt tm)
 
 {-
-inferCase :: AsTmCase ty pt tm => (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferCase :: (Eq a, EqRec ty, CheckConstraint e s r m ty pt tm a) => (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferCase inferFn checkFn tm = do
   (tmC, alts) <- preview _TmCase tm
   return $ do
     let go ty (Alt p s) = do
-          -- let p' <- preview _Pattern p
-          -- if can't convert p to a pattern, explode
           p' <- expectPattern p
           -- check that there are no duplicates in the pattern variables
           -- warn if there are pattern variables that are not used in s
@@ -193,13 +185,13 @@ inferCase inferFn checkFn tm = do
     expectAllEq tys
 -}
 
-inferRules :: AsTmCase ty pt tm => FragmentInput e s r m ty pt tm a
+inferRules :: CheckConstraint e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput [] []
     [] -- [InferPCheck inferCase]
     [] []
 
-type CaseContext e s r m ty pt tm a = (Eq a, MonadError e m, AsTmCase ty pt tm, MatchConstraint ty pt tm)
+type CaseContext e s r m ty pt tm a = (Eq a, MonadError e m, AsTmCase ty pt tm, MatchConstraint ty pt tm, CheckConstraint e s r m ty pt tm a)
 
 caseFragmentLazy :: CaseContext e s r m ty pt tm a
                  => FragmentInput e s r m ty pt tm a

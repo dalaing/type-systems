@@ -68,6 +68,9 @@ class AsTySTLC ty where
 instance AsTySTLC TyFSTLC where
   _TySTLCP = id
 
+instance EqRec TyFSTLC where
+  liftEqRec eR _ (TyArrF x1 y1) (TyArrF x2 y2) = eR x1 x2 && eR y1 y2
+
 instance Bound TyFSTLC where
   TyArrF x y >>>= f = TyArrF (x >>= f) (y >>= f)
 
@@ -115,10 +118,10 @@ instance Bitransversable (TmFSTLC ty pt) where
 
 -- Errors
 
-class AsExpectedTyArr e ty | e -> ty where
-  _ExpectedTyArr :: Prism' e ty
+class AsExpectedTyArr e ty a | e -> ty, e -> a where
+  _ExpectedTyArr :: Prism' e (Type ty a)
 
-expectTyArr :: (MonadError e m, AsExpectedTyArr e (Type ty a), AsTySTLC ty) => Type ty a -> m (Type ty a, Type ty a)
+expectTyArr :: (MonadError e m, AsExpectedTyArr e ty a, AsTySTLC ty) => Type ty a -> m (Type ty a, Type ty a)
 expectTyArr ty =
   case preview _TyArr ty of
     Just (tyArg, tyRet) -> return (tyArg, tyRet)
@@ -152,7 +155,7 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq (Type ty a), MonadError e m, AsTySTLC ty, AsTmSTLC ty pt tm, AsExpectedTyArr e (Type ty a), AsExpectedEq e (Type ty a)) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmApp :: (Eq a, EqRec ty, MonadError e m, AsTySTLC ty, AsTmSTLC ty pt tm, AsExpectedTyArr e ty a, AsExpectedEq e ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmApp inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
@@ -162,7 +165,7 @@ inferTmApp inferFn tm = do
     expectEq tyArg tyX
     return tyRet
 
-type STLCContext e s r m ty pt tm a = (Eq (Type ty a), Ord a, Bound ty, Bound pt, Bound (tm ty pt), MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e (Type ty a), AsExpectedTyArr e (Type ty a), AsTySTLC ty, AsTmSTLC ty pt tm)
+type STLCContext e s r m ty pt tm a = (Ord a, EqRec ty, Bound ty, Bound pt, Bound (tm ty pt), MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsTySTLC ty, AsTmSTLC ty pt tm)
 
 stlcFragmentLazy :: STLCContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 stlcFragmentLazy =

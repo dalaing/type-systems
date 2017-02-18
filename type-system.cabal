@@ -27,6 +27,7 @@ library
                      , Typed.SystemF.Check.Run
                      , Fragment
                      , Fragment.Ast
+                     -- , Fragment.Ast2
                      , Fragment.Var
                      , Fragment.Case
                      , Fragment.Int

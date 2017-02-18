@@ -43,6 +43,7 @@ module Fragment.Ast (
 
 import Control.Monad (ap)
 import GHC.Exts (Constraint)
+import Data.Traversable (fmapDefault, foldMapDefault)
 
 import Control.Error
 
@@ -150,61 +151,109 @@ astToType'' _ = Nothing
 _Type :: (Traversable (ty (Type ty)), TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Prism' (Ast ty pt tm (AstVar a)) (Type ty a)
 _Type = prism typeToAst (\x -> note x . astToType $ x)
 
-deriving instance (Eq a, Eq (ty (Type ty) a)) => Eq (Type ty a)
-deriving instance (Ord a, Ord (ty (Type ty) a)) => Ord (Type ty a)
-deriving instance (Show a, Show (ty (Type ty) a)) => Show (Type ty a)
+instance Bitransversable ty => Functor (Type ty) where
+  fmap = fmapDefault
 
-instance Eq1 (ty (Type ty)) => Eq1 (Type ty) where
-  liftEq = $(makeLiftEq ''Type)
+instance Bitransversable ty => Foldable (Type ty) where
+  foldMap = foldMapDefault
 
-instance Ord1 (ty (Type ty)) => Ord1 (Type ty) where
-  liftCompare = $(makeLiftCompare ''Type)
+instance Bitransversable ty => Traversable (Type ty) where
+  traverse f (TyVar x) = TyVar <$> f x
+  traverse f (TyTree x) = TyTree <$> bitransverse traverse f x
 
-instance Show1 (ty (Type ty)) => Show1 (Type ty) where
-  liftShowsPrec = $(makeLiftShowsPrec ''Type)
+instance (Eq a, EqRec ty) => Eq (Type ty a) where
+  TyVar x == TyVar y = (==) x y
+  TyTree x == TyTree y = eqRec x y
+  _ == _ = False
 
-deriving instance (Functor (ty (Type ty))) => Functor (Type ty)
-deriving instance (Foldable (ty (Type ty))) => Foldable (Type ty)
-deriving instance (Traversable (ty (Type ty))) => Traversable (Type ty)
+instance EqRec ty => Eq1 (Type ty) where
+  liftEq e (TyVar x) (TyVar y) = e x y
+  liftEq e (TyTree x) (TyTree y) = liftEqRec (liftEq e) e x y
+  liftEq _ _ _ = False
 
-instance (Functor (ty (Type ty)), Bound ty) => Applicative (Type ty) where
+instance (Ord a, OrdRec ty) => Ord (Type ty a) where
+  compare (TyVar x) (TyVar y) = compare x y
+  compare (TyTree x) (TyTree y) = compareRec x y
+  compare (TyVar _) (TyTree _) = LT
+  compare (TyTree _) (TyVar _) = GT
+
+instance OrdRec ty => Ord1 (Type ty) where
+  liftCompare c (TyVar x) (TyVar y) = c x y
+  liftCompare c (TyTree x) (TyTree y) = liftCompareRec (liftCompare c) c x y
+  liftCompare _ (TyVar _) (TyTree _) = LT
+  liftCompare _ (TyTree _) (TyVar _) = GT
+
+instance (Show a, ShowRec ty) => Show (Type ty a) where
+  showsPrec n (TyVar x) = showsUnaryWith showsPrec "TyVar" n x
+  showsPrec n (TyTree x) = showsUnaryWith showsPrecRec "TyTree" n x
+
+instance ShowRec ty => Show1 (Type ty) where
+  liftShowsPrec s _ n (TyVar x) = s n x
+  liftShowsPrec s sl n (TyTree x) = liftShowsPrecRec (liftShowsPrec s sl) (liftShowList s sl) s sl n x
+
+instance (Bound ty, Bitransversable ty) => Applicative (Type ty) where
   pure = return
   (<*>) = ap
 
-instance (Functor (ty (Type ty)), Bound ty) => Monad (Type ty) where
+instance (Bound ty, Bitransversable ty) => Monad (Type ty) where
   return = TyVar
+
   TyVar x >>= f = f x
-  TyTree x >>= f = TyTree (x >>>= f)
+  TyTree ty >>= f = TyTree (ty >>>= f)
 
 data Pattern pt a = PtVar a | PtTree (pt (Pattern pt) a)
 
 makePrisms ''Pattern
 
-deriving instance (Eq a, Eq (pt (Pattern pt) a)) => Eq (Pattern pt a)
-deriving instance (Ord a, Ord (pt (Pattern pt) a)) => Ord (Pattern pt a)
-deriving instance (Show a, Show (pt (Pattern pt) a)) => Show (Pattern pt a)
+instance Bitransversable pt => Functor (Pattern pt) where
+  fmap = fmapDefault
 
-instance Eq1 (pt (Pattern pt)) => Eq1 (Pattern pt) where
-  liftEq = $(makeLiftEq ''Pattern)
+instance Bitransversable pt => Foldable (Pattern pt) where
+  foldMap = foldMapDefault
 
-instance Ord1 (pt (Pattern pt)) => Ord1 (Pattern pt) where
-  liftCompare = $(makeLiftCompare ''Pattern)
+instance Bitransversable pt => Traversable (Pattern pt) where
+  traverse f (PtVar x) = PtVar <$> f x
+  traverse f (PtTree x) = PtTree <$> bitransverse traverse f x
 
-instance Show1 (pt (Pattern pt)) => Show1 (Pattern pt) where
-  liftShowsPrec = $(makeLiftShowsPrec ''Pattern)
+instance (Eq a, EqRec pt) => Eq (Pattern pt a) where
+  PtVar x == PtVar y = (==) x y
+  PtTree x == PtTree y = eqRec x y
+  _ == _ = False
 
-deriving instance (Functor (pt (Pattern pt))) => Functor (Pattern pt)
-deriving instance (Foldable (pt (Pattern pt))) => Foldable (Pattern pt)
-deriving instance (Traversable (pt (Pattern pt))) => Traversable (Pattern pt)
+instance EqRec pt => Eq1 (Pattern pt) where
+  liftEq e (PtVar x) (PtVar y) = e x y
+  liftEq e (PtTree x) (PtTree y) = liftEqRec (liftEq e) e x y
+  liftEq _ _ _ = False
 
-instance (Functor (pt (Pattern pt)), Bound pt) => Applicative (Pattern pt) where
+instance (Ord a, OrdRec pt) => Ord (Pattern pt a) where
+  compare (PtVar x) (PtVar y) = compare x y
+  compare (PtTree x) (PtTree y) = compareRec x y
+  compare (PtVar _) (PtTree _) = LT
+  compare (PtTree _) (PtVar _) = GT
+
+instance OrdRec pt => Ord1 (Pattern pt) where
+  liftCompare c (PtVar x) (PtVar y) = c x y
+  liftCompare c (PtTree x) (PtTree y) = liftCompareRec (liftCompare c) c x y
+  liftCompare _ (PtVar _) (PtTree _) = LT
+  liftCompare _ (PtTree _) (PtVar _) = GT
+
+instance (Show a, ShowRec pt) => Show (Pattern pt a) where
+  showsPrec n (PtVar x) = showsUnaryWith showsPrec "PtVar" n x
+  showsPrec n (PtTree x) = showsUnaryWith showsPrecRec "PtTree" n x
+
+instance ShowRec pt => Show1 (Pattern pt) where
+  liftShowsPrec s _ n (PtVar x) = s n x
+  liftShowsPrec s sl n (PtTree x) = liftShowsPrecRec (liftShowsPrec s sl) (liftShowList s sl) s sl n x
+
+instance (Bound pt, Bitransversable pt) => Applicative (Pattern pt) where
   pure = return
   (<*>) = ap
 
-instance (Functor (pt (Pattern pt)), Bound pt) => Monad (Pattern pt) where
+instance (Bound pt, Bitransversable pt) => Monad (Pattern pt) where
   return = PtVar
+
   PtVar x >>= f = f x
-  PtTree x >>= f = PtTree (x >>>= f)
+  PtTree pt >>= f = PtTree (pt >>>= f)
 
 patternToAst :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Ast ty pt tm (AstVar a)
 patternToAst = runIdentity . patternToAst' (Identity . APtVar)
