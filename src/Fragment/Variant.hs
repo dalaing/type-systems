@@ -12,27 +12,32 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Fragment.Variant (
     TyFVariant(..)
   , AsTyVariant(..)
+  , PtFVariant(..)
+  , AsPtVariant(..)
   , TmFVariant(..)
   , AsTmVariant(..)
   , AsExpectedTyVariant(..)
   , AsVariantNotFound(..)
-  , AsExpectedAllEq(..)
   , VariantContext
-  , variantFragment
+  , variantFragmentLazy
+  , variantFragmentStrict
   , tyVariant
   , tmVariant
-  , tmCase
   ) where
 
 -- TODO this should be split into lazy and strict versions
 -- - the strict version should make sure the term in the case is a value before proceeding
 -- - the lazy version will just match the tag and substitute the unevaluated term
+
+import Text.Show
 
 import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.State (MonadState)
@@ -50,7 +55,9 @@ import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
+import Fragment.Ast
 import Fragment.Var
+import Util
 import Error
 
 data TyFVariant f a =
@@ -63,62 +70,118 @@ deriveEq1 ''NonEmpty
 deriveOrd1 ''NonEmpty
 deriveShow1 ''NonEmpty
 
-instance Eq1 f => Eq1 (TyFVariant f) where
-  liftEq = $(makeLiftEq ''TyFVariant)
+deriveEq1 ''TyFVariant
+deriveOrd1 ''TyFVariant
+deriveShow1 ''TyFVariant
 
-instance Ord1 f => Ord1 (TyFVariant f) where
-  liftCompare = $(makeLiftCompare ''TyFVariant)
+instance EqRec TyFVariant where
+  liftEqRec eR _ (TyVariantF vs1) (TyVariantF vs2) =
+    let
+      f (l1, v1) (l2, v2) = l1 == l2 && eR v1 v2
+    in
+      and $ N.zipWith f vs1 vs2
 
-instance Show1 f => Show1 (TyFVariant f) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TyFVariant)
+instance OrdRec TyFVariant where
+  liftCompareRec cR c (TyVariantF vs1) (TyVariantF vs2) =
+    let
+      f [] [] = EQ
+      f [] (_ : _) = LT
+      f (_ : _) [] = GT
+      f ((lx, x): xs) ((ly, y): ys) =
+        case compare lx ly of
+          EQ -> case cR x y of
+            EQ -> f xs ys
+            z -> z
+          z -> z
+    in
+      f (N.toList vs1) (N.toList vs2)
+
+instance ShowRec TyFVariant where
+  liftShowsPrecRec sR _ _ _ n (TyVariantF xs) =
+    let
+      g n (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
+                 sR n x .
+                 showString ")"
+      f n ps = showListWith (g 0) ps
+    in
+      showsUnaryWith f "TyVariantF" n (N.toList xs)
 
 instance Bound TyFVariant where
   TyVariantF tys >>>= f = TyVariantF (fmap (fmap (>>= f)) tys)
 
+instance Bitransversable TyFVariant where
+  bitransverse fT fL (TyVariantF ps) = TyVariantF <$> traverse (traverse (fT fL)) ps
+
 class AsTyVariant ty where
-  _TyVariantP :: Prism' (ty a) (TyFVariant ty a)
+  _TyVariantP :: Prism' (ty k a) (TyFVariant k a)
 
-  _TyVariant :: Prism' (ty a) (N.NonEmpty (T.Text, ty a))
-  _TyVariant = _TyVariantP . _TyVariantF
+  _TyVariant :: Prism' (Type ty a) (N.NonEmpty (T.Text, Type ty a))
+  _TyVariant = _TyTree . _TyVariantP . _TyVariantF
 
-instance AsTyVariant f => AsTyVariant (TyFVariant f) where
-  _TyVariantP = id . _TyVariantP
+instance AsTyVariant TyFVariant where
+  _TyVariantP = id
 
-data TmFVariant ty tyV tm tmV =
-    TmVariantF T.Text (tm tmV) (ty tyV)
-  | TmCaseF (tm tmV) (Scope () tm tmV)
+data PtFVariant f a =
+  PtVariantF T.Text (f a)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''PtFVariant
+
+deriveEq1 ''PtFVariant
+deriveOrd1 ''PtFVariant
+deriveShow1 ''PtFVariant
+
+instance Bound PtFVariant where
+  PtVariantF l p >>>= f = PtVariantF l (p >>= f)
+
+instance Bitransversable PtFVariant where
+  bitransverse fT fL (PtVariantF l pt) = PtVariantF l <$> fT fL pt
+
+class AsPtVariant pt where
+  _PtVariantP :: Prism' (pt k a) (PtFVariant k a)
+
+  _PtVariant :: Prism' (Pattern pt a) (T.Text, Pattern pt a)
+  _PtVariant = _PtTree . _PtVariantP . _PtVariantF
+
+instance AsPtVariant PtFVariant where
+  _PtVariantP = id
+
+data TmFVariant (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+    TmVariantF T.Text (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TmFVariant
 
-instance (Eq (ty tyV), Eq1 tm, Monad tm) => Eq1 (TmFVariant ty tyV tm) where
+instance (EqRec ty, Eq1 tm, Monad tm) => Eq1 (TmFVariant ty pt tm) where
   liftEq = $(makeLiftEq ''TmFVariant)
 
-instance (Ord (ty tyV), Ord1 tm, Monad tm) => Ord1 (TmFVariant ty tyV tm) where
+instance (OrdRec ty, Ord1 tm, Monad tm) => Ord1 (TmFVariant ty pt tm) where
   liftCompare = $(makeLiftCompare ''TmFVariant)
 
-instance (Show (ty tyV), Show1 tm) => Show1 (TmFVariant ty tyV tm) where
+instance (ShowRec ty, Show1 tm) => Show1 (TmFVariant ty pt tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFVariant)
 
-instance Bound (TmFVariant ty tyV) where
-  TmVariantF t tm ty >>>= f = TmVariantF t (tm >>= f) ty
-  TmCaseF tm s >>>= f = TmCaseF (tm >>= f) (s >>>= f)
+instance Bound (TmFVariant ty pt) where
+  TmVariantF t tm ty >>>= f = TmVariantF t (tm >>= f) (ty >>= f)
 
-class AsTmVariant ty tm | tm -> ty where
-  _TmVariantP :: Prism' (tm a) (TmFVariant ty a tm a)
+instance Bitransversable (TmFVariant ty pt) where
+  bitransverse fT fL (TmVariantF l tm ty) = TmVariantF <$> pure l <*> fT fL tm <*> fT fL ty
 
-  _TmVariant :: Prism' (tm a) (T.Text, tm a, ty a)
-  _TmVariant = _TmVariantP . _TmVariantF
+class (TripleConstraint1 Traversable ty pt tm, Bitransversable ty, Traversable (ty (Type ty))) => AsTmVariant ty pt tm where
+  _TmVariantP :: Prism' (tm ty pt k a) (TmFVariant ty pt k a)
 
-  _TmCase :: Prism' (tm a) (tm a, Scope () tm a)
-  _TmCase = _TmVariantP . _TmCaseF
+  _TmVariant :: Prism' (Term ty pt tm a) (T.Text, Term ty pt tm a, Type ty a)
+  _TmVariant = _Wrapped . _ATerm . _TmVariantP . _TmVariantF . mkTriple id _Unwrapped _Type
+
+instance (TripleConstraint1 Traversable ty pt TmFVariant, Bitransversable ty, Traversable (ty (Type ty))) => AsTmVariant ty pt TmFVariant where
+  _TmVariantP = id
 
 -- Errors
 
-class AsExpectedTyVariant e ty | e -> ty where
-  _ExpectedTyVariant :: Prism' e ty
+class AsExpectedTyVariant e ty a | e -> ty, e -> a where
+  _ExpectedTyVariant :: Prism' e (Type ty a)
 
-expectTyVariant :: (MonadError e m, AsExpectedTyVariant e (ty a), AsTyVariant ty) => ty a -> m (N.NonEmpty (T.Text, ty a))
+expectTyVariant :: (MonadError e m, AsExpectedTyVariant e ty a, AsTyVariant ty) => Type ty a -> m (N.NonEmpty (T.Text, Type ty a))
 expectTyVariant ty =
   case preview _TyVariant ty of
     Just tys -> return tys
@@ -133,36 +196,21 @@ lookupVariant ts t =
     Just x -> return x
     Nothing -> throwing _VariantNotFound t
 
-class AsExpectedAllEq e ty | e -> ty where
-  _ExpectedAllEq :: Prism' e (N.NonEmpty ty)
-
-expectAllEq :: (Eq (ty a), MonadError e m, AsExpectedAllEq e (ty a)) => N.NonEmpty (ty a) -> m (ty a)
-expectAllEq (ty N.:| tys)
-  | all (== ty) tys = return ty
-  | otherwise = throwing _ExpectedAllEq (ty N.:| tys)
-
 -- Rules
 
-stepCaseVariant :: (Monad tm, AsTmVariant ty tm) => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
-stepCaseVariant valueFn tm = do
-  (tmE, s) <- preview _TmCase tm
-  (_, tmV, _) <- preview _TmVariant tmE
-  v <- valueFn tmV
-  return $ instantiate1 v s
+valueVariant :: (AsTmVariant ty pt tm) => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
+valueVariant valueFn tm = do
+  (l, tmV, ty) <- preview _TmVariant tm
+  tm' <- valueFn tmV
+  return $ review _TmVariant (l, tm', ty)
 
-stepCase :: (AsTmVariant ty tm) => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
-stepCase stepFn tm = do
-  (tmE, s) <- preview _TmCase tm
-  tmE' <- stepFn tmE
-  return $ review _TmCase (tmE', s)
-
-stepVariant :: (AsTmVariant ty tm) => (tm a -> Maybe (tm a)) -> tm a -> Maybe (tm a)
+stepVariant :: (AsTmVariant ty pt tm) => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepVariant stepFn tm = do
   (l, tmV, ty) <- preview _TmVariant tm
   tm' <- stepFn tmV
   return $ review _TmVariant (l, tm', ty)
 
-inferTmVariant :: (Eq (ty a), MonadError e m, AsExpectedTyVariant e (ty a), AsVariantNotFound e, AsExpectedEq e (ty a), AsTyVariant ty, AsTmVariant ty tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmVariant :: (Eq a, EqRec ty, MonadError e m, AsExpectedTyVariant e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsTyVariant ty, AsTmVariant ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmVariant inferFn tm = do
   (l, tmV, ty) <- preview _TmVariant tm
   return $ do
@@ -172,13 +220,14 @@ inferTmVariant inferFn tm = do
     expectEq tyL tyV
     return ty
 
-inferTmCaseIx :: (Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, AsTmVar tm) => (tm a -> m (ty a)) -> Scope () tm a -> ty a -> m (ty a)
+{-
+inferTmCaseIx :: (Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a) => (Term ty pt tm a -> m (Type ty a)) -> Scope () (Ast ty pt tm) (AstVar a) -> Type ty a -> m (Type ty a)
 inferTmCaseIx inferFn s ty = do
   v <- freshTmVar
   let tmV = instantiate1 (review _TmVar v) s
   local (termContext %~ insertTerm v ty) $ inferFn tmV
 
-inferTmCase :: (Ord a, Eq (ty a), Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e (ty a), AsExpectedAllEq e (ty a), AsTyVariant ty, AsTmVar tm, AsTmVariant ty tm) => (tm a -> m (ty a)) -> tm a -> Maybe (m (ty a))
+inferTmCase :: (Ord a, EqRec ty, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e ty a, AsExpectedAllEq e ty a, AsTyVariant ty, AsTmVariant ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmCase inferFn tm = do
   (tmE, s) <- preview _TmCase tm
   return $ do
@@ -186,29 +235,29 @@ inferTmCase inferFn tm = do
     vTys <- expectTyVariant tyE
     branchTys <- traverse (inferTmCaseIx inferFn s . snd) vTys
     expectAllEq branchTys
+-}
 
-type VariantContext e s r m ty (p :: * -> *) tm a = (Ord a, Eq (ty a), Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e (ty a), AsExpectedAllEq e (ty a), AsVariantNotFound e, AsExpectedEq e (ty a), AsTyVariant ty, AsTmVar tm, AsTmVariant ty tm)
+type VariantContext e s r m ty pt tm a = (Ord a, EqRec ty, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e ty a, AsExpectedAllEq e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsTyVariant ty, AsTmVariant ty pt tm)
 
-variantFragment :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
-variantFragment =
+variantFragmentStrict :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+variantFragmentStrict =
   FragmentInput
-    []
-    [ EvalValue stepCaseVariant
-    , EvalStep stepCase
-    , EvalStep stepVariant
-    ]
-    [ InferRecurse inferTmVariant
-    , InferRecurse inferTmCase
-    ]
+    [ ValueRecurse valueVariant ]
+    [ EvalStep stepVariant ]
+    [ InferRecurse inferTmVariant ]
+    [] []
+
+variantFragmentLazy :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+variantFragmentLazy =
+  FragmentInput
+    [] []
+    [ InferRecurse inferTmVariant ]
     [] []
 
 -- Helpers
 
-tyVariant :: AsTyVariant ty => N.NonEmpty (T.Text, ty a) -> ty a
+tyVariant :: AsTyVariant ty => N.NonEmpty (T.Text, Type ty a) -> Type ty a
 tyVariant = review _TyVariant
 
-tmVariant :: AsTmVariant ty tm => T.Text -> tm a -> ty a -> tm a
+tmVariant :: AsTmVariant ty pt tm => T.Text -> Term ty pt tm a -> Type ty a -> Term ty pt tm a
 tmVariant l tm ty = review _TmVariant (l, tm, ty)
-
-tmCase :: AsTmVariant ty tm => tm a -> Scope () tm a -> tm a
-tmCase = curry $ review _TmCase

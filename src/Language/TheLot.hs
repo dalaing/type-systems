@@ -51,7 +51,7 @@ import Fragment.Bool
 import Fragment.Pair
 import Fragment.Tuple
 import Fragment.Record
--- import Fragment.Variant
+import Fragment.Variant
 import Fragment.STLC
 import Fragment.Case
 
@@ -61,8 +61,8 @@ data TypeF f a =
   | TyLPair (TyFPair f a)
   | TyLTuple (TyFTuple f a)
   | TyLRecord (TyFRecord f a)
---  | TyLVariant (TyFVariant Type a)
- | TyLSTLC (TyFSTLC f a)
+  | TyLVariant (TyFVariant f a)
+  | TyLSTLC (TyFSTLC f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 deriveEq1 ''TypeF
@@ -86,8 +86,8 @@ instance AsTyTuple TypeF where
 instance AsTyRecord TypeF where
   _TyRecordP = _TyLRecord
 
--- instance AsTyVariant Type where
---  _TyVariantP = _TyLVariant
+instance AsTyVariant TypeF where
+  _TyVariantP = _TyLVariant
 
 instance AsTySTLC TypeF where
   _TySTLCP = _TyLSTLC
@@ -98,6 +98,7 @@ instance EqRec TypeF where
   liftEqRec eR e (TyLPair x) (TyLPair y) = liftEqRec eR e x y
   liftEqRec eR e (TyLTuple x) (TyLTuple y) = liftEqRec eR e x y
   liftEqRec eR e (TyLRecord x) (TyLRecord y) = liftEqRec eR e x y
+  liftEqRec eR e (TyLVariant x) (TyLVariant y) = liftEqRec eR e x y
   liftEqRec eR e (TyLSTLC x) (TyLSTLC y) = liftEqRec eR e x y
   liftEqRec _ _ _ _ = False
 
@@ -117,6 +118,9 @@ instance OrdRec TypeF where
   liftCompareRec cR c (TyLRecord x) (TyLRecord y) = liftCompareRec cR c x y
   liftCompareRec _ _  (TyLRecord _) _ = LT
   liftCompareRec _ _ _ (TyLRecord _) = GT
+  liftCompareRec cR c (TyLVariant x) (TyLVariant y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (TyLVariant _) _ = LT
+  liftCompareRec _ _ _ (TyLVariant _) = GT
   liftCompareRec cR c (TyLSTLC x) (TyLSTLC y) = liftCompareRec cR c x y
   liftCompareRec _ _  (TyLSTLC _) _ = LT
   liftCompareRec _ _ _ (TyLSTLC _) = GT
@@ -127,6 +131,7 @@ instance ShowRec TypeF where
   liftShowsPrecRec sR slR s sl n (TyLPair x) = liftShowsPrecRec sR slR s sl n x
   liftShowsPrecRec sR slR s sl n (TyLTuple x) = liftShowsPrecRec sR slR s sl n x
   liftShowsPrecRec sR slR s sl n (TyLRecord x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TyLVariant x) = liftShowsPrecRec sR slR s sl n x
   liftShowsPrecRec sR slR s sl n (TyLSTLC x) = liftShowsPrecRec sR slR s sl n x
 
 instance Bound TypeF where
@@ -135,6 +140,7 @@ instance Bound TypeF where
   TyLPair p >>>= f = TyLPair (p >>>= f)
   TyLTuple t >>>= f = TyLTuple (t >>>= f)
   TyLRecord r >>>= f = TyLRecord (r >>>= f)
+  TyLVariant v >>>= f = TyLVariant (v >>>= f)
   TyLSTLC lc >>>= f = TyLSTLC (lc >>>= f)
 
 instance Bitransversable TypeF where
@@ -143,6 +149,7 @@ instance Bitransversable TypeF where
   bitransverse fT fL (TyLPair p) = TyLPair <$> bitransverse fT fL p
   bitransverse fT fL (TyLTuple t) = TyLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TyLRecord r) = TyLRecord <$> bitransverse fT fL r
+  bitransverse fT fL (TyLVariant v) = TyLVariant <$> bitransverse fT fL v
   bitransverse fT fL (TyLSTLC lc) = TyLSTLC <$> bitransverse fT fL lc
 
 data PatternF f a =
@@ -194,20 +201,21 @@ data TermF ty pt f a =
   | TmLPair (TmFPair ty pt f a)
   | TmLTuple (TmFTuple ty pt f a)
   | TmLRecord (TmFRecord ty pt f a)
---  | TmLVariant (TmFVariant Type Void Term a)
+  | TmLVariant (TmFVariant ty pt f a)
   | TmLSTLC (TmFSTLC ty pt f a)
   | TmLCase (TmFCase ty pt f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TermF
 
-instance (Eq1 f, Monad f) => Eq1 (TermF ty pt f) where
+instance (Eq1 f, EqRec ty, Monad f) => Eq1 (TermF ty pt f) where
   liftEq = $(makeLiftEq ''TermF)
 
-instance (Ord1 f, Monad f) => Ord1 (TermF ty pt f) where
+instance (Ord1 f, OrdRec ty, Monad f) => Ord1 (TermF ty pt f) where
   liftCompare = $(makeLiftCompare ''TermF)
 
-deriveShow1 ''TermF
+instance (Show1 f, ShowRec ty) => Show1 (TermF ty pt f) where
+  liftShowsPrec = $(makeLiftShowsPrec ''TermF)
 
 instance AsTmInt ty pt TermF where
   _TmIntP = _TmLInt
@@ -224,8 +232,8 @@ instance AsTmTuple ty pt TermF where
 instance AsTmRecord ty pt TermF where
   _TmRecordP = _TmLRecord
 
--- instance AsTmVariant Type Term where
---  _TmVariantP = _TmLVariant
+instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmVariant ty pt TermF where
+  _TmVariantP = _TmLVariant
 
 instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSTLC ty pt TermF where
   _TmSTLCP = _TmLSTLC
@@ -239,7 +247,7 @@ instance Bound (TermF ty pt) where
   TmLPair p >>>= f = TmLPair (p >>>= f)
   TmLTuple t >>>= f = TmLTuple (t >>>= f)
   TmLRecord r >>>= f = TmLRecord (r >>>= f)
---  TmLVariant v >>= f = TmLVariant (v >>>= f)
+  TmLVariant v >>>= f = TmLVariant (v >>>= f)
   TmLSTLC lc >>>= f = TmLSTLC (lc >>>= f)
   TmLCase c >>>= f = TmLCase (c >>>= f)
 
@@ -249,6 +257,7 @@ instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLPair p) = TmLPair <$> bitransverse fT fL p
   bitransverse fT fL (TmLTuple t) = TmLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TmLRecord r) = TmLRecord <$> bitransverse fT fL r
+  bitransverse fT fL (TmLVariant v) = TmLVariant <$> bitransverse fT fL v
   bitransverse fT fL (TmLSTLC lc) = TmLSTLC <$> bitransverse fT fL lc
   bitransverse fT fL (TmLCase c) = TmLCase <$> bitransverse fT fL c
 
@@ -297,11 +306,11 @@ instance AsExpectedTyRecord (Error ty pt tm a) ty a where
 instance AsRecordNotFound (Error ty pt tm a) where
   _RecordNotFound = _ERecordNotFound
 
--- instance AsExpectedTyVariant (Error ty a) (ty a) where
---  _ExpectedTyVariant = _EExpectedTyVariant
+instance AsExpectedTyVariant (Error ty pt tm a) ty a where
+  _ExpectedTyVariant = _EExpectedTyVariant
 
--- instance AsVariantNotFound (Error ty a) where
---  _VariantNotFound = _EVariantNotFound
+instance AsVariantNotFound (Error ty pt tm a) where
+  _VariantNotFound = _EVariantNotFound
 
 instance AsExpectedAllEq (Error ty pt tm a) ty a where
   _ExpectedAllEq = _EExpectedAllEq
@@ -332,6 +341,7 @@ type LContext e s r m ty pt tm a =
   , PairContext e s r m ty pt tm a
   , TupleContext e s r m ty pt tm a
   , RecordContext e s r m ty pt tm a
+  , VariantContext e s r m ty pt tm a
   , STLCContext e s r m ty pt tm a
   , CaseContext e s r m ty pt tm a
   , AsUnknownTypeError e
