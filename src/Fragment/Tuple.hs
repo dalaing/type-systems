@@ -44,6 +44,7 @@ import Control.Lens
 import Control.Monad.Error.Lens (throwing)
 
 import Bound
+import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
@@ -62,6 +63,19 @@ deriveShow1 ''TyFTuple
 
 instance EqRec TyFTuple where
   liftEqRec eR _ (TyTupleF xs) (TyTupleF ys) = and $ zipWith eR xs ys
+
+instance OrdRec TyFTuple where
+  liftCompareRec _ _ (TyTupleF []) (TyTupleF []) = EQ
+  liftCompareRec _ _ (TyTupleF []) (TyTupleF (_ : _)) = LT
+  liftCompareRec _ _ (TyTupleF (_ : _)) (TyTupleF []) = GT
+  liftCompareRec cR c (TyTupleF (x : xs)) (TyTupleF (y : ys)) =
+    case cR x y of
+      EQ -> liftCompareRec cR c (TyTupleF xs) (TyTupleF ys)
+      z -> z
+
+instance ShowRec TyFTuple where
+  liftShowsPrecRec _ slR _ _ n (TyTupleF xs) =
+    showsUnaryWith (const slR) "TyTypleF" n xs
 
 instance Bound TyFTuple where
   TyTupleF tys >>>= f = TyTupleF (fmap (>>= f) tys)

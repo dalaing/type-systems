@@ -58,6 +58,12 @@ deriveShow1 ''TyFInt
 instance EqRec TyFInt where
   liftEqRec _ _ TyIntF TyIntF = True
 
+instance OrdRec TyFInt where
+  liftCompareRec _ _ TyIntF TyIntF = EQ
+
+instance ShowRec TyFInt where
+  liftShowsPrecRec _ _ _ _ n TyIntF = showsPrec n TyIntF
+
 instance Bound TyFInt where
   TyIntF >>>= _ = TyIntF
 

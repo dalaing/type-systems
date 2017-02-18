@@ -101,6 +101,34 @@ instance EqRec TypeF where
   liftEqRec eR e (TyLSTLC x) (TyLSTLC y) = liftEqRec eR e x y
   liftEqRec _ _ _ _ = False
 
+instance OrdRec TypeF where
+  liftCompareRec cR c (TyLInt x) (TyLInt y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TyLInt _) _ = LT
+  liftCompareRec _ _ _ (TyLInt _) = GT
+  liftCompareRec cR c (TyLBool x) (TyLBool y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TyLBool _) _ = LT
+  liftCompareRec _ _ _ (TyLBool _) = GT
+  liftCompareRec cR c (TyLPair x) (TyLPair y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TyLPair _) _ = LT
+  liftCompareRec _ _ _ (TyLPair _) = GT
+  liftCompareRec cR c (TyLTuple x) (TyLTuple y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TyLTuple _) _ = LT
+  liftCompareRec _ _ _ (TyLTuple _) = GT
+  liftCompareRec cR c (TyLRecord x) (TyLRecord y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (TyLRecord _) _ = LT
+  liftCompareRec _ _ _ (TyLRecord _) = GT
+  liftCompareRec cR c (TyLSTLC x) (TyLSTLC y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (TyLSTLC _) _ = LT
+  liftCompareRec _ _ _ (TyLSTLC _) = GT
+
+instance ShowRec TypeF where
+  liftShowsPrecRec sR slR s sl n (TyLInt x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TyLBool x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TyLPair x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TyLTuple x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TyLRecord x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TyLSTLC x) = liftShowsPrecRec sR slR s sl n x
+
 instance Bound TypeF where
   TyLInt i >>>= f = TyLInt (i >>>= f)
   TyLBool b >>>= f = TyLBool (b >>>= f)
@@ -238,6 +266,8 @@ data Error ty pt tm a =
   | EExpectedTyArr (Type ty a)
   | EUnboundTermVariable a
   | EExpectedPattern (Ast ty pt tm (AstVar a))
+  | EDuplicatedPatternVariables (N.NonEmpty a)
+  | EUnusedPatternVariables (N.NonEmpty a)
   | EUnknownTypeError
 
 deriving instance (Eq a, EqRec ty, TripleConstraint Eq ty pt tm (AstVar a)) => Eq (Error ty pt tm a)
@@ -284,6 +314,12 @@ instance AsUnboundTermVariable (Error ty pt tm a) a where
 
 instance AsExpectedPattern (Error ty pt tm a) ty pt tm a where
   _ExpectedPattern = _EExpectedPattern
+
+instance AsDuplicatedPatternVariables (Error ty pt tm a) a where
+  _DuplicatedPatternVariables = _EDuplicatedPatternVariables
+
+instance AsUnusedPatternVariables (Error ty pt tm a) a where
+  _UnusedPatternVariables = _EUnusedPatternVariables
 
 instance AsUnknownTypeError (Error ty pt tm a) where
   _UnknownTypeError = _EUnknownTypeError

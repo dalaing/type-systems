@@ -20,6 +20,8 @@ module Fragment.Case (
   , TmFCase(..)
   , AsTmCase(..)
   , AsExpectedPattern(..)
+  , AsDuplicatedPatternVariables(..)
+  , AsUnusedPatternVariables(..)
   , CaseContext
   , caseFragmentLazy
   , caseFragmentStrict
@@ -27,10 +29,13 @@ module Fragment.Case (
   , tmCase
   ) where
 
-import Data.List (elemIndex)
+import Data.List (elemIndex, sort, group, (\\))
 import Data.Foldable (toList)
+import Control.Monad (replicateM)
 
 import Control.Monad.Except (MonadError)
+import Control.Monad.Reader (MonadReader, local)
+import Control.Monad.State (MonadState)
 
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as N
@@ -39,11 +44,13 @@ import Control.Lens
 import Control.Monad.Error.Lens
 
 import Bound
+import Bound.Scope
 import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
 import Fragment.Ast
+import Fragment.Var
 import Error
 import Util
 
@@ -117,6 +124,36 @@ expectPattern ast =
     Just p -> return p
     _ -> throwing _ExpectedPattern ast
 
+class AsDuplicatedPatternVariables e a | e -> a where
+  _DuplicatedPatternVariables :: Prism' e (N.NonEmpty a)
+
+checkForDuplicatedPatternVariables :: (Ord a, MonadError e m, AsDuplicatedPatternVariables e a) => [a] -> m ()
+checkForDuplicatedPatternVariables xs =
+  let
+    dups = map head .
+           filter ((> 1) . length) .
+           group .
+           sort $
+           xs
+  in
+    case N.nonEmpty dups of
+      Nothing -> return ()
+      Just ns -> throwing _DuplicatedPatternVariables ns
+
+class AsUnusedPatternVariables e a | e -> a where
+  _UnusedPatternVariables :: Prism' e (N.NonEmpty a)
+
+checkForUnusedPatternVariables :: (MonadError e m, AsUnusedPatternVariables e a) => [a] -> [Int] -> m ()
+checkForUnusedPatternVariables vs is =
+  let
+    n = length vs
+    unusedI = [0..(n - 1)] \\ is
+    unusedV = map (vs !!) unusedI
+  in
+    case N.nonEmpty unusedV of
+      Nothing -> return ()
+      Just ns -> throwing _UnusedPatternVariables ns
+
 -- Rules
 
 
@@ -166,29 +203,36 @@ evalRulesStrict =
     [EvalStep stepCaseStepStrict, EvalValuePMatch stepCaseValueStrict]
     [] [] []
 
-type CheckConstraint e s r m ty pt tm a = (Eq a, EqRec ty, MonadError e m, AsExpectedPattern e ty pt tm a, AsExpectedAllEq e ty a, TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt, AsTmCase ty pt tm)
+type CheckConstraint e s r m ty pt tm a = (Ord a, EqRec ty, MonadError e m, AsExpectedPattern e ty pt tm a, AsExpectedAllEq e ty a, AsDuplicatedPatternVariables e a, AsUnusedPatternVariables e a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, Bound ty, Bound pt, Bound (tm ty pt), TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt, AsTmCase ty pt tm)
 
-{-
-inferCase :: (Eq a, EqRec ty, CheckConstraint e s r m ty pt tm a) => (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferCase :: CheckConstraint e s r m ty pt tm a => (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferCase inferFn checkFn tm = do
   (tmC, alts) <- preview _TmCase tm
   return $ do
     let go ty (Alt p s) = do
           p' <- expectPattern p
-          -- check that there are no duplicates in the pattern variables
-          -- warn if there are pattern variables that are not used in s
+
+          let vp = toList p'
+          checkForDuplicatedPatternVariables vp
+          -- TODO possibly turn this into a warning
+          checkForUnusedPatternVariables vp (bindings s)
+
+          vs <- replicateM (length p') freshTmVar
           tys <- checkFn p' ty
-          -- generate fresh vars, add the tys to the context with those vars, instantiate s with those vars and infer
-          return undefined
+          let setup = foldr (.) id (zipWith insertTerm vs tys)
+
+          let tm' = review _Wrapped .
+                    instantiate (review (_Unwrapped . _TmVar) . (vs !!)) $
+                    s
+          local (termContext %~ setup) $ inferFn tm'
     tyC <- inferFn tmC
     tys <- mapM (go tyC) alts
     expectAllEq tys
--}
 
 inferRules :: CheckConstraint e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput [] []
-    [] -- [InferPCheck inferCase]
+    [InferPCheck inferCase]
     [] []
 
 type CaseContext e s r m ty pt tm a = (Eq a, MonadError e m, AsTmCase ty pt tm, MatchConstraint ty pt tm, CheckConstraint e s r m ty pt tm a)

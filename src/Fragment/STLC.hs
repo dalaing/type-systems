@@ -71,6 +71,16 @@ instance AsTySTLC TyFSTLC where
 instance EqRec TyFSTLC where
   liftEqRec eR _ (TyArrF x1 y1) (TyArrF x2 y2) = eR x1 x2 && eR y1 y2
 
+instance OrdRec TyFSTLC where
+  liftCompareRec cR _ (TyArrF x1 y1) (TyArrF x2 y2) =
+    case cR x1 x2 of
+      EQ -> cR y1 y2
+      x -> x
+
+instance ShowRec TyFSTLC where
+  liftShowsPrecRec sR _ _ _ n (TyArrF x y) =
+    showsBinaryWith sR sR "TyArrF" n x y
+
 instance Bound TyFSTLC where
   TyArrF x y >>>= f = TyArrF (x >>= f) (y >>= f)
 

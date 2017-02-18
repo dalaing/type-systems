@@ -42,6 +42,7 @@ module Fragment.Record (
 
 import Data.List (splitAt)
 import Data.Foldable (asum)
+import Text.Show
 
 import Control.Monad.Except (MonadError)
 
@@ -51,11 +52,37 @@ import Control.Lens
 import Control.Monad.Error.Lens (throwing)
 
 import Bound
+import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
 import Fragment.Ast
 import Util
+
+{-
+data Field f a =
+  Field T.Text (f a)
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''Field
+
+deriveEq1 ''Field
+deriveOrd1 ''Field
+deriveShow1 ''Field
+
+instance EqRec Field where
+  liftEqRec eR _ (Field l1 x1) (Field l2 x2) =
+    l1 == l2 && eR x1 x2
+
+instance OrdRec Field where
+  liftCompareRec cR c (Field l1 x1) (Field l2 x2) =
+    case compare l1 l2 of
+      EQ -> liftCompareRec cR c x1 x2
+      z -> z
+
+instance ShowRec Field where
+  liftShowsPrecRec sR slR s sl n (Field l x) = _
+-}
 
 data TyFRecord f a =
   TyRecordF [(T.Text, f a)]
@@ -73,6 +100,27 @@ instance EqRec TyFRecord where
       f (l1, x1) (l2, x2) = l1 == l2 && eR x1 x2
     in
       and $ zipWith f xs ys
+
+instance OrdRec TyFRecord where
+  liftCompareRec _ _ (TyRecordF []) (TyRecordF []) = EQ
+  liftCompareRec _ _ (TyRecordF []) (TyRecordF (_ : _)) = LT
+  liftCompareRec _ _ (TyRecordF (_ : _)) (TyRecordF []) = GT
+  liftCompareRec cR c (TyRecordF ((lx, x) : xs)) (TyRecordF ((ly, y) : ys)) =
+    case compare lx ly of
+      EQ -> case cR x y of
+        EQ -> liftCompareRec cR c (TyRecordF xs) (TyRecordF ys)
+        z -> z
+      z -> z
+
+instance ShowRec TyFRecord where
+  liftShowsPrecRec sR _ _ _ n (TyRecordF xs) =
+    let
+      g n (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
+                 sR n x .
+                 showString ")"
+      f n ps = showListWith (g 0) ps
+    in
+      showsUnaryWith f "TyRecordF" n xs
 
 instance Bound TyFRecord where
   TyRecordF tys >>>= f = TyRecordF (fmap (fmap (>>= f)) tys)

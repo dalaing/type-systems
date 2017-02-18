@@ -58,6 +58,12 @@ deriveShow1 ''TyFBool
 instance EqRec TyFBool where
   liftEqRec _ _ TyBoolF TyBoolF = True
 
+instance OrdRec TyFBool where
+  liftCompareRec _ _ TyBoolF TyBoolF = EQ
+
+instance ShowRec TyFBool where
+  liftShowsPrecRec _ _ _ _ n TyBoolF = showsPrec n TyBoolF
+
 instance Bound TyFBool where
   TyBoolF >>>= _ = TyBoolF
 
