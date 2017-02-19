@@ -19,8 +19,8 @@ Portability : non-portable
 module Fragment.Record (
     TyFRecord(..)
   , AsTyRecord(..)
---  , PtFRecord(..)
---  , AsPtRecord(..)
+  , PtFRecord(..)
+  , AsPtRecord(..)
   , TmFRecord(..)
   , AsTmRecord(..)
   , AsExpectedTyRecord(..)
@@ -29,16 +29,10 @@ module Fragment.Record (
   , recordFragmentLazy
   , recordFragmentStrict
   , tyRecord
---  , ptRecord
+  , ptRecord
   , tmRecord
   , tmRecordIx
   ) where
-
--- TODO
--- - would be good to add in-order record creation that doesn't mention the field names
--- - would also be good to have positional access to the fields
--- - the named creation should be able to shuffle the labels around, as long as everything is covered and there are no duplicates
--- - the patterns should be similar: named access in arbitrary order, or in-order anonymous access
 
 import Data.List (splitAt)
 import Data.Foldable (asum)
@@ -58,31 +52,6 @@ import Data.Deriving
 import Fragment
 import Fragment.Ast
 import Util
-
-{-
-data Field f a =
-  Field T.Text (f a)
-  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
-
-makePrisms ''Field
-
-deriveEq1 ''Field
-deriveOrd1 ''Field
-deriveShow1 ''Field
-
-instance EqRec Field where
-  liftEqRec eR _ (Field l1 x1) (Field l2 x2) =
-    l1 == l2 && eR x1 x2
-
-instance OrdRec Field where
-  liftCompareRec cR c (Field l1 x1) (Field l2 x2) =
-    case compare l1 l2 of
-      EQ -> liftCompareRec cR c x1 x2
-      z -> z
-
-instance ShowRec Field where
-  liftShowsPrecRec sR slR s sl n (Field l x) = _
--}
 
 data TyFRecord f a =
   TyRecordF [(T.Text, f a)]
@@ -115,10 +84,10 @@ instance OrdRec TyFRecord where
 instance ShowRec TyFRecord where
   liftShowsPrecRec sR _ _ _ n (TyRecordF xs) =
     let
-      g n (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
-                 sR n x .
+      g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
+                 sR m x .
                  showString ")"
-      f n ps = showListWith (g 0) ps
+      f _ ps = showListWith (g 0) ps
     in
       showsUnaryWith f "TyRecordF" n xs
 
@@ -137,11 +106,30 @@ class AsTyRecord ty where
 instance AsTyRecord TyFRecord where
   _TyRecordP = id
 
+data PtFRecord pt a =
+    PtRecordF [(T.Text, pt a)]
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
--- TODO patterns by position, patterns by label
+makePrisms ''PtFRecord
 
--- TODO look at creation without labels (we can get them from the types)
--- TODO if we do that, add position based access as well
+deriveEq1 ''PtFRecord
+deriveOrd1 ''PtFRecord
+deriveShow1 ''PtFRecord
+
+instance Bound PtFRecord where
+  PtRecordF pts >>>= f = PtRecordF (fmap (fmap (>>= f)) pts)
+
+instance Bitransversable PtFRecord where
+  bitransverse fT fL (PtRecordF rs) = PtRecordF <$> traverse (traverse (fT fL)) rs
+
+class AsPtRecord pt where
+  _PtRecordP :: Prism' (pt k a) (PtFRecord k a)
+
+  _PtRecord :: Prism' (Pattern pt a) [(T.Text, Pattern pt a)]
+  _PtRecord = _PtTree . _PtRecordP . _PtRecordF
+
+instance AsPtRecord PtFRecord where
+  _PtRecordP = id
 
 data TmFRecord (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmRecordF [(T.Text, f a)]
@@ -267,35 +255,56 @@ inferTmRecordIx inferFn tm = do
     tys <- expectTyRecord tyT
     lookupRecord tys i
 
-inferRules :: (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm) => FragmentInput e s r m ty pt tm a
-inferRules =
+matchRecord :: (AsPtRecord pt, AsTmRecord ty pt tm) => (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+matchRecord matchFn p tm = do
+  ps <- preview _PtRecord p
+  ltms <- preview _TmRecord tm
+  let f (l, lp) = do
+        tmp <- lookup l ltms
+        matchFn lp tmp
+  fmap mconcat . traverse f $ ps
+
+checkRecord :: (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsPtRecord pt, AsTyRecord ty) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkRecord checkFn p ty = do
+  ps <- preview _PtRecord p
+  return $ do
+    -- check for duplicate labels in ps
+    ltys <- expectTyRecord ty
+    let f (l, lp) = do
+          typ <- lookupRecord ltys l
+          checkFn lp typ
+    fmap mconcat . traverse f $ ps
+
+type RecordContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsTyRecord ty, AsPtRecord pt, AsTmRecord ty pt tm)
+
+baseRules :: RecordContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
+baseRules =
   FragmentInput
     []
     []
     [ InferRecurse inferTmRecord
     , InferRecurse inferTmRecordIx
     ]
-    [] []
-
-type RecordContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm)
+    [ PMatchRecurse matchRecord ]
+    [ PCheckRecurse checkRecord ]
 
 recordFragmentLazy :: RecordContext e s r m ty pt tm a
              => FragmentInput e s r m ty pt tm a
 recordFragmentLazy =
-  mappend evalRulesLazy inferRules
+  mappend evalRulesLazy baseRules
 
 recordFragmentStrict :: RecordContext e s r m ty pt tm a
              => FragmentInput e s r m ty pt tm a
 recordFragmentStrict =
-  mappend evalRulesStrict inferRules
+  mappend evalRulesStrict baseRules
 
 -- Helpers
 
 tyRecord :: AsTyRecord ty => [(T.Text, Type ty a)] -> Type ty a
 tyRecord = review _TyRecord
 
--- ptRecord :: AsPtRecord pt => [pt a] -> pt a
--- ptRecord = review _PtRecord
+ptRecord :: AsPtRecord pt => [(T.Text, Pattern pt a)] -> Pattern pt a
+ptRecord = review _PtRecord
 
 tmRecord :: AsTmRecord ty pt tm => [(T.Text, Term ty pt tm a)] -> Term ty pt tm a
 tmRecord = review _TmRecord

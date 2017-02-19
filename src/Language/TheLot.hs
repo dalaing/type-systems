@@ -158,6 +158,7 @@ data PatternF f a =
   | PtLBool (PtFBool f a)
   | PtLPair (PtFPair f a)
   | PtLTuple (PtFTuple f a)
+  | PtLRecord (PtFRecord f a)
   | PtLVariant (PtFVariant f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -182,6 +183,9 @@ instance AsPtPair PatternF where
 instance AsPtTuple PatternF where
   _PtTupleP = _PtLTuple
 
+instance AsPtRecord PatternF where
+  _PtRecordP = _PtLRecord
+
 instance AsPtVariant PatternF where
   _PtVariantP = _PtLVariant
 
@@ -191,6 +195,7 @@ instance Bound PatternF where
   PtLBool b >>>= f = PtLBool (b >>>= f)
   PtLPair p >>>= f = PtLPair (p >>>= f)
   PtLTuple t >>>= f = PtLTuple (t >>>= f)
+  PtLRecord r >>>= f = PtLRecord (r >>>= f)
   PtLVariant v >>>= f = PtLVariant (v >>>= f)
 
 instance Bitransversable PatternF where
@@ -199,6 +204,7 @@ instance Bitransversable PatternF where
   bitransverse fT fL (PtLBool b) = PtLBool <$> bitransverse fT fL b
   bitransverse fT fL (PtLPair p) = PtLPair <$> bitransverse fT fL p
   bitransverse fT fL (PtLTuple t) = PtLTuple <$> bitransverse fT fL t
+  bitransverse fT fL (PtLRecord r) = PtLRecord <$> bitransverse fT fL r
   bitransverse fT fL (PtLVariant v) = PtLVariant <$> bitransverse fT fL v
 
 data TermF ty pt f a =
