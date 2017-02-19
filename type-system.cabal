@@ -13,17 +13,7 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-exposed-modules:       Typed.STLC.Type
-                     , Typed.SystemF.Internal
-                     , Typed.SystemF.Type.Class
-                     , Typed.SystemF.Type
-                     , Typed.SystemF.Term.Class
-                     , Typed.SystemF.Term
-                     , Typed.SystemF.Eval
-                     , Typed.SystemF.Check
-                     , Typed.SystemF.Check.Classes
-                     , Typed.SystemF.Check.Run
-                     , Fragment
+  exposed-modules:     Fragment
                      , Fragment.Ast
                      -- , Fragment.Ast2
                      , Fragment.Var
@@ -35,7 +25,7 @@ exposed-modules:       Typed.STLC.Type
                      , Fragment.Record
                      , Fragment.Variant
                      , Fragment.STLC
-                     --, Fragment.SystemF
+                     , Fragment.SystemF
                      , Error
                      , Util
                      , Language.TheLot

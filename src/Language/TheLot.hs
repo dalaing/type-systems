@@ -52,7 +52,8 @@ import Fragment.Pair
 import Fragment.Tuple
 import Fragment.Record
 import Fragment.Variant
-import Fragment.STLC
+-- import Fragment.STLC
+import Fragment.SystemF
 import Fragment.Case
 
 data TypeF f a =
@@ -62,14 +63,20 @@ data TypeF f a =
   | TyLTuple (TyFTuple f a)
   | TyLRecord (TyFRecord f a)
   | TyLVariant (TyFVariant f a)
-  | TyLSTLC (TyFSTLC f a)
+  -- | TyLSTLC (TyFSTLC f a)
+  | TyLSystemF (TyFSystemF f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-deriveEq1 ''TypeF
-deriveOrd1 ''TypeF
-deriveShow1 ''TypeF
-
 makePrisms ''TypeF
+
+instance (Eq1 f, Monad f) => Eq1 (TypeF f) where
+  liftEq = $(makeLiftEq ''TypeF)
+
+instance (Ord1 f, Monad f) => Ord1 (TypeF f) where
+  liftCompare = $(makeLiftCompare ''TypeF)
+
+instance (Show1 f) => Show1 (TypeF f) where
+  liftShowsPrec = $(makeLiftShowsPrec ''TypeF)
 
 instance AsTyInt TypeF where
   _TyIntP = _TyLInt
@@ -89,8 +96,11 @@ instance AsTyRecord TypeF where
 instance AsTyVariant TypeF where
   _TyVariantP = _TyLVariant
 
-instance AsTySTLC TypeF where
-  _TySTLCP = _TyLSTLC
+-- instance AsTySTLC TypeF where
+--  _TySTLCP = _TyLSTLC
+
+instance AsTySystemF TypeF where
+  _TySystemFP = _TyLSystemF
 
 instance EqRec TypeF where
   liftEqRec eR e (TyLInt x) (TyLInt y) = liftEqRec eR e x y
@@ -99,7 +109,8 @@ instance EqRec TypeF where
   liftEqRec eR e (TyLTuple x) (TyLTuple y) = liftEqRec eR e x y
   liftEqRec eR e (TyLRecord x) (TyLRecord y) = liftEqRec eR e x y
   liftEqRec eR e (TyLVariant x) (TyLVariant y) = liftEqRec eR e x y
-  liftEqRec eR e (TyLSTLC x) (TyLSTLC y) = liftEqRec eR e x y
+  -- liftEqRec eR e (TyLSTLC x) (TyLSTLC y) = liftEqRec eR e x y
+  liftEqRec eR e (TyLSystemF x) (TyLSystemF y) = liftEqRec eR e x y
   liftEqRec _ _ _ _ = False
 
 instance OrdRec TypeF where
@@ -121,9 +132,12 @@ instance OrdRec TypeF where
   liftCompareRec cR c (TyLVariant x) (TyLVariant y) = liftCompareRec cR c x y
   liftCompareRec _ _  (TyLVariant _) _ = LT
   liftCompareRec _ _ _ (TyLVariant _) = GT
-  liftCompareRec cR c (TyLSTLC x) (TyLSTLC y) = liftCompareRec cR c x y
-  liftCompareRec _ _  (TyLSTLC _) _ = LT
-  liftCompareRec _ _ _ (TyLSTLC _) = GT
+  -- liftCompareRec cR c (TyLSTLC x) (TyLSTLC y) = liftCompareRec cR c x y
+  -- liftCompareRec _ _  (TyLSTLC _) _ = LT
+  -- liftCompareRec _ _ _ (TyLSTLC _) = GT
+  liftCompareRec cR c (TyLSystemF x) (TyLSystemF y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (TyLSystemF _) _ = LT
+  liftCompareRec _ _ _ (TyLSystemF _) = GT
 
 instance ShowRec TypeF where
   liftShowsPrecRec sR slR s sl n (TyLInt x) = liftShowsPrecRec sR slR s sl n x
@@ -132,7 +146,8 @@ instance ShowRec TypeF where
   liftShowsPrecRec sR slR s sl n (TyLTuple x) = liftShowsPrecRec sR slR s sl n x
   liftShowsPrecRec sR slR s sl n (TyLRecord x) = liftShowsPrecRec sR slR s sl n x
   liftShowsPrecRec sR slR s sl n (TyLVariant x) = liftShowsPrecRec sR slR s sl n x
-  liftShowsPrecRec sR slR s sl n (TyLSTLC x) = liftShowsPrecRec sR slR s sl n x
+  -- liftShowsPrecRec sR slR s sl n (TyLSTLC x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TyLSystemF x) = liftShowsPrecRec sR slR s sl n x
 
 instance Bound TypeF where
   TyLInt i >>>= f = TyLInt (i >>>= f)
@@ -141,7 +156,8 @@ instance Bound TypeF where
   TyLTuple t >>>= f = TyLTuple (t >>>= f)
   TyLRecord r >>>= f = TyLRecord (r >>>= f)
   TyLVariant v >>>= f = TyLVariant (v >>>= f)
-  TyLSTLC lc >>>= f = TyLSTLC (lc >>>= f)
+  -- TyLSTLC lc >>>= f = TyLSTLC (lc >>>= f)
+  TyLSystemF sf >>>= f = TyLSystemF (sf >>>= f)
 
 instance Bitransversable TypeF where
   bitransverse fT fL (TyLInt i) = TyLInt <$> bitransverse fT fL i
@@ -150,7 +166,8 @@ instance Bitransversable TypeF where
   bitransverse fT fL (TyLTuple t) = TyLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TyLRecord r) = TyLRecord <$> bitransverse fT fL r
   bitransverse fT fL (TyLVariant v) = TyLVariant <$> bitransverse fT fL v
-  bitransverse fT fL (TyLSTLC lc) = TyLSTLC <$> bitransverse fT fL lc
+  -- bitransverse fT fL (TyLSTLC lc) = TyLSTLC <$> bitransverse fT fL lc
+  bitransverse fT fL (TyLSystemF sf) = TyLSystemF <$> bitransverse fT fL sf
 
 data PatternF f a =
     PtLWild (PtFWild f a)
@@ -214,8 +231,9 @@ data TermF ty pt f a =
   | TmLTuple (TmFTuple ty pt f a)
   | TmLRecord (TmFRecord ty pt f a)
   | TmLVariant (TmFVariant ty pt f a)
-  | TmLSTLC (TmFSTLC ty pt f a)
   | TmLCase (TmFCase ty pt f a)
+  -- | TmLSTLC (TmFSTLC ty pt f a)
+  | TmLSystemF (TmFSystemF ty pt f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TermF
@@ -247,11 +265,14 @@ instance AsTmRecord ty pt TermF where
 instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmVariant ty pt TermF where
   _TmVariantP = _TmLVariant
 
-instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSTLC ty pt TermF where
-  _TmSTLCP = _TmLSTLC
-
 instance AsTmCase ty pt TermF where
   _TmCaseP = _TmLCase
+
+--instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSTLC ty pt TermF where
+--  _TmSTLCP = _TmLSTLC
+
+instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSystemF ty pt TermF where
+  _TmSystemFP = _TmLSystemF
 
 instance Bound (TermF ty pt) where
   TmLInt i >>>= f = TmLInt (i >>>= f)
@@ -260,8 +281,9 @@ instance Bound (TermF ty pt) where
   TmLTuple t >>>= f = TmLTuple (t >>>= f)
   TmLRecord r >>>= f = TmLRecord (r >>>= f)
   TmLVariant v >>>= f = TmLVariant (v >>>= f)
-  TmLSTLC lc >>>= f = TmLSTLC (lc >>>= f)
   TmLCase c >>>= f = TmLCase (c >>>= f)
+  -- TmLSTLC lc >>>= f = TmLSTLC (lc >>>= f)
+  TmLSystemF sf >>>= f = TmLSystemF (sf >>>= f)
 
 instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLInt i) = TmLInt <$> bitransverse fT fL i
@@ -270,8 +292,9 @@ instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLTuple t) = TmLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TmLRecord r) = TmLRecord <$> bitransverse fT fL r
   bitransverse fT fL (TmLVariant v) = TmLVariant <$> bitransverse fT fL v
-  bitransverse fT fL (TmLSTLC lc) = TmLSTLC <$> bitransverse fT fL lc
   bitransverse fT fL (TmLCase c) = TmLCase <$> bitransverse fT fL c
+  -- bitransverse fT fL (TmLSTLC lc) = TmLSTLC <$> bitransverse fT fL lc
+  bitransverse fT fL (TmLSystemF sf) = TmLSystemF <$> bitransverse fT fL sf
 
 data Error ty pt tm a =
     EUnexpected (Type ty a) (Type ty a)
@@ -285,6 +308,7 @@ data Error ty pt tm a =
   | EVariantNotFound T.Text
   | EExpectedAllEq (N.NonEmpty (Type ty a))
   | EExpectedTyArr (Type ty a)
+  | EExpectedTyAll (Type ty a)
   | EUnboundTermVariable a
   | EExpectedPattern (Ast ty pt tm (AstVar a))
   | EDuplicatedPatternVariables (N.NonEmpty a)
@@ -330,6 +354,9 @@ instance AsExpectedAllEq (Error ty pt tm a) ty a where
 instance AsExpectedTyArr (Error ty pt tm a) ty a where
   _ExpectedTyArr = _EExpectedTyArr
 
+instance AsExpectedTyAll (Error ty pt tm a) ty a where
+  _ExpectedTyAll = _EExpectedTyAll
+
 instance AsUnboundTermVariable (Error ty pt tm a) a where
   _UnboundTermVariable = _EUnboundTermVariable
 
@@ -354,8 +381,9 @@ type LContext e s r m ty pt tm a =
   , TupleContext e s r m ty pt tm a
   , RecordContext e s r m ty pt tm a
   , VariantContext e s r m ty pt tm a
-  , STLCContext e s r m ty pt tm a
   , CaseContext e s r m ty pt tm a
+  -- , STLCContext e s r m ty pt tm a
+  , SystemFContext e s r m ty pt tm a
   , AsUnknownTypeError e
   )
 
@@ -363,10 +391,30 @@ fragmentInputBase :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt 
 fragmentInputBase = mconcat [ptVarFragment, tmVarFragment, intFragment, boolFragment]
 
 fragmentInputLazy :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy, stlcFragmentLazy, caseFragmentLazy, variantFragmentLazy]
+fragmentInputLazy =
+  mconcat
+    [ fragmentInputBase
+    , pairFragmentLazy
+    , tupleFragmentLazy
+    , recordFragmentLazy
+    , variantFragmentLazy
+    , caseFragmentLazy
+    -- , stlcFragmentLazy
+    , systemFFragmentLazy
+    ]
 
 fragmentInputStrict :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict, stlcFragmentStrict, caseFragmentStrict, variantFragmentStrict]
+fragmentInputStrict =
+  mconcat
+    [ fragmentInputBase
+    , pairFragmentStrict
+    , tupleFragmentStrict
+    , recordFragmentStrict
+    , variantFragmentStrict
+    , caseFragmentStrict
+    -- , stlcFragmentStrict
+    , systemFFragmentStrict
+    ]
 
 type M e s r = StateT s (ReaderT r (Except e))
 
@@ -381,41 +429,43 @@ type LTerm = Term TypeF PatternF TermF
 type LType = Type TypeF
 type LError = Error TypeF PatternF TermF
 
+-- TODO could use different supplies for the variables
+
 type Output a = FragmentOutput (LError a) Int (TermContext TypeF a a) (M (LError a) Int (TermContext TypeF a a)) TypeF PatternF TermF a
 
-fragmentOutputLazy :: (Ord a, ToTmVar a) => Output a
+fragmentOutputLazy :: (Ord a, ToTmVar a, ToTyVar a) => Output a
 fragmentOutputLazy = prepareFragmentLazy fragmentInputLazy
 
-fragmentOutputStrict :: (Ord a, ToTmVar a) => Output a
+fragmentOutputStrict :: (Ord a, ToTmVar a, ToTyVar a) => Output a
 fragmentOutputStrict = prepareFragmentStrict fragmentInputStrict
 
-runEvalLazy :: (Ord a, ToTmVar a) => LTerm a -> LTerm a
+runEvalLazy :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> LTerm a
 runEvalLazy =
   foEval fragmentOutputLazy
 
-runEvalStrict :: (Ord a, ToTmVar a) => LTerm a -> LTerm a
+runEvalStrict :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> LTerm a
 runEvalStrict =
   foEval fragmentOutputStrict
 
-runInfer :: (Ord a, ToTmVar a) => LTerm a -> Either (LError a) (LType a)
+runInfer :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Either (LError a) (LType a)
 runInfer =
   runM 0 emptyTermContext .
   foInfer fragmentOutputLazy
 
-runCheck :: (Ord a, ToTmVar a) => LTerm a -> LType a -> Either (LError a) ()
+runCheck :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> LType a -> Either (LError a) ()
 runCheck tm ty =
   runM 0 emptyTermContext $ foCheck fragmentOutputLazy tm ty
 
 -- for debugging
 
-runStepLazy :: (Ord a, ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runStepLazy :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Maybe (LTerm a)
 runStepLazy =
   foStep fragmentOutputLazy
 
-runValueStrict :: (Ord a, ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runValueStrict :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Maybe (LTerm a)
 runValueStrict =
   foValue fragmentOutputStrict
 
-runStepStrict :: (Ord a, ToTmVar a) => LTerm a -> Maybe (LTerm a)
+runStepStrict :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Maybe (LTerm a)
 runStepStrict =
   foStep fragmentOutputStrict

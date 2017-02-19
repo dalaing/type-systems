@@ -37,22 +37,35 @@ instance Bitransversable (Scope b) where
   bitransverse = bitransverseScope
 
 class EqRec f where
-  liftEqRec :: (g a -> g b -> Bool) -> (a -> b -> Bool) -> f g a -> f g b -> Bool
+  liftEqRec :: Eq1 g => (g a -> g b -> Bool) -> (a -> b -> Bool) -> f g a -> f g b -> Bool
+
+instance Eq b => EqRec (Scope b) where
+  liftEqRec eR _ (Scope s1) (Scope s2) = liftEq (liftEq eR) s1 s2
 
 eqRec :: (Eq a, Eq1 g, EqRec f) => f g a -> f g a -> Bool
 eqRec = liftEqRec eq1 (==)
 
 class EqRec f => OrdRec f where
-  liftCompareRec :: (g a -> g b -> Ordering) -> (a -> b -> Ordering) -> f g a -> f g b -> Ordering
+  liftCompareRec :: Ord1 g => (g a -> g b -> Ordering) -> (a -> b -> Ordering) -> f g a -> f g b -> Ordering
+
+instance Ord b => OrdRec (Scope b) where
+  liftCompareRec cR _ (Scope s1) (Scope s2) = liftCompare (liftCompare cR) s1 s2
 
 compareRec :: (Ord a, Ord1 g, OrdRec f) => f g a -> f g a -> Ordering
 compareRec = liftCompareRec compare1 compare
 
 class ShowRec f where
-  liftShowsPrecRec :: (Int -> g a -> ShowS) -> ([g a] -> ShowS) -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f g a -> ShowS
+  liftShowsPrecRec :: Show1 g => (Int -> g a -> ShowS) -> ([g a] -> ShowS) -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f g a -> ShowS
 
-  liftShowListRec :: (Int -> g a -> ShowS) -> ([g a] -> ShowS) -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> [f g a] -> ShowS
+  liftShowListRec :: Show1 g => (Int -> g a -> ShowS) -> ([g a] -> ShowS) -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> [f g a] -> ShowS
   liftShowListRec sR slR s sl = showListWith (liftShowsPrecRec sR slR s sl 0)
+
+instance Show b => ShowRec (Scope b) where
+  liftShowsPrecRec sR slR _ _ n (Scope s) =
+    let
+      f m = liftShowsPrec sR slR m
+    in
+      liftShowsPrec f (showListWith (f n)) n s
 
 showsPrecRec :: (Show a, Show1 g, ShowRec f) => Int -> f g a -> ShowS
 showsPrecRec = liftShowsPrecRec showsPrec1 (liftShowList showsPrec showList) showsPrec showList

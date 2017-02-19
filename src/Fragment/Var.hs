@@ -23,6 +23,9 @@ module Fragment.Var (
   , HasTmVarSupply(..)
   , ToTmVar(..)
   , freshTmVar
+  , HasTyVarSupply(..)
+  , ToTyVar(..)
+  , freshTyVar
   , TermContext(..)
   , emptyTermContext
   , HasTermContext(..)
@@ -135,6 +138,24 @@ freshTmVar = do
   x <- use tmVarSupply
   tmVarSupply %= succ
   return $ toTmVar x
+
+class HasTyVarSupply s where
+  tyVarSupply :: Lens' s Int
+
+instance HasTyVarSupply Int where
+  tyVarSupply = id
+
+class ToTyVar a where
+  toTyVar :: Int -> a
+
+instance ToTyVar T.Text where
+  toTyVar x = T.append "X" (T.pack . show $ x)
+
+freshTyVar :: (MonadState s m, HasTyVarSupply s, ToTyVar a) => m a
+freshTyVar = do
+  x <- use tyVarSupply
+  tyVarSupply %= succ
+  return $ toTyVar x
 
 -- Context
 
