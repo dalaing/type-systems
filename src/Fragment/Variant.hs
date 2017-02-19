@@ -235,7 +235,7 @@ checkVariant checkFn p ty = do
   (lV, pV) <- preview _PtVariant p
   return $ do
     vs <- expectTyVariant ty
-    tyV <-lookupVariant vs lV
+    tyV <- lookupVariant vs lV
     checkFn pV tyV
 
 type VariantContext e s r m ty pt tm a = (Ord a, EqRec ty, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e ty a, AsExpectedAllEq e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsTyVariant ty, AsPtVariant pt, AsTmVariant ty pt tm)
