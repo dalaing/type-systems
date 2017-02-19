@@ -158,6 +158,7 @@ data PatternF f a =
   | PtLBool (PtFBool f a)
   | PtLPair (PtFPair f a)
   | PtLTuple (PtFTuple f a)
+  | PtLVariant (PtFVariant f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 deriveEq1 ''PatternF
@@ -181,12 +182,16 @@ instance AsPtPair PatternF where
 instance AsPtTuple PatternF where
   _PtTupleP = _PtLTuple
 
+instance AsPtVariant PatternF where
+  _PtVariantP = _PtLVariant
+
 instance Bound PatternF where
   PtLWild w >>>= f = PtLWild (w >>>= f)
   PtLInt i >>>= f = PtLInt (i >>>= f)
   PtLBool b >>>= f = PtLBool (b >>>= f)
   PtLPair p >>>= f = PtLPair (p >>>= f)
   PtLTuple t >>>= f = PtLTuple (t >>>= f)
+  PtLVariant v >>>= f = PtLVariant (v >>>= f)
 
 instance Bitransversable PatternF where
   bitransverse fT fL (PtLWild w) = PtLWild <$> bitransverse fT fL w
@@ -194,6 +199,7 @@ instance Bitransversable PatternF where
   bitransverse fT fL (PtLBool b) = PtLBool <$> bitransverse fT fL b
   bitransverse fT fL (PtLPair p) = PtLPair <$> bitransverse fT fL p
   bitransverse fT fL (PtLTuple t) = PtLTuple <$> bitransverse fT fL t
+  bitransverse fT fL (PtLVariant v) = PtLVariant <$> bitransverse fT fL v
 
 data TermF ty pt f a =
     TmLInt (TmFInt ty pt f a)
@@ -351,10 +357,10 @@ fragmentInputBase :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt 
 fragmentInputBase = mconcat [ptVarFragment, tmVarFragment, intFragment, boolFragment]
 
 fragmentInputLazy :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy, stlcFragmentLazy, caseFragmentLazy]
+fragmentInputLazy = mconcat [fragmentInputBase, pairFragmentLazy, tupleFragmentLazy, recordFragmentLazy, stlcFragmentLazy, caseFragmentLazy, variantFragmentLazy]
 
 fragmentInputStrict :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict, stlcFragmentStrict, caseFragmentStrict]
+fragmentInputStrict = mconcat [fragmentInputBase, pairFragmentStrict, tupleFragmentStrict, recordFragmentStrict, stlcFragmentStrict, caseFragmentStrict, variantFragmentStrict]
 
 type M e s r = StateT s (ReaderT r (Except e))
 

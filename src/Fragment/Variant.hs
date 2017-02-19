@@ -30,6 +30,7 @@ module Fragment.Variant (
   , variantFragmentLazy
   , variantFragmentStrict
   , tyVariant
+  , ptVariant
   , tmVariant
   ) where
 
@@ -37,6 +38,7 @@ module Fragment.Variant (
 -- - the strict version should make sure the term in the case is a value before proceeding
 -- - the lazy version will just match the tag and substitute the unevaluated term
 
+import Control.Monad (MonadPlus(..))
 import Text.Show
 
 import Control.Monad.Reader (MonadReader, local)
@@ -82,7 +84,7 @@ instance EqRec TyFVariant where
       and $ N.zipWith f vs1 vs2
 
 instance OrdRec TyFVariant where
-  liftCompareRec cR c (TyVariantF vs1) (TyVariantF vs2) =
+  liftCompareRec cR _ (TyVariantF vs1) (TyVariantF vs2) =
     let
       f [] [] = EQ
       f [] (_ : _) = LT
@@ -99,10 +101,10 @@ instance OrdRec TyFVariant where
 instance ShowRec TyFVariant where
   liftShowsPrecRec sR _ _ _ n (TyVariantF xs) =
     let
-      g n (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
-                 sR n x .
+      g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
+                 sR m x .
                  showString ")"
-      f n ps = showListWith (g 0) ps
+      f _ ps = showListWith (g 0) ps
     in
       showsUnaryWith f "TyVariantF" n (N.toList xs)
 
@@ -220,44 +222,51 @@ inferTmVariant inferFn tm = do
     expectEq tyL tyV
     return ty
 
-{-
-inferTmCaseIx :: (Ord a, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a) => (Term ty pt tm a -> m (Type ty a)) -> Scope () (Ast ty pt tm) (AstVar a) -> Type ty a -> m (Type ty a)
-inferTmCaseIx inferFn s ty = do
-  v <- freshTmVar
-  let tmV = instantiate1 (review _TmVar v) s
-  local (termContext %~ insertTerm v ty) $ inferFn tmV
+matchVariant :: (AsPtVariant pt, AsTmVariant ty pt tm) => (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+matchVariant matchFn p tm = do
+  (lP, pV) <- preview _PtVariant p
+  (lV, tmV, _) <- preview _TmVariant tm
+  if lP == lV
+  then matchFn pV tmV
+  else mzero
 
-inferTmCase :: (Ord a, EqRec ty, Monad tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e ty a, AsExpectedAllEq e ty a, AsTyVariant ty, AsTmVariant ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
-inferTmCase inferFn tm = do
-  (tmE, s) <- preview _TmCase tm
+checkVariant :: (MonadError e m, AsExpectedTyVariant e ty a, AsVariantNotFound e, AsPtVariant pt, AsTyVariant ty) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkVariant checkFn p ty = do
+  (lV, pV) <- preview _PtVariant p
   return $ do
-    tyE <- inferFn tmE
-    vTys <- expectTyVariant tyE
-    branchTys <- traverse (inferTmCaseIx inferFn s . snd) vTys
-    expectAllEq branchTys
--}
+    vs <- expectTyVariant ty
+    tyV <-lookupVariant vs lV
+    checkFn pV tyV
 
-type VariantContext e s r m ty pt tm a = (Ord a, EqRec ty, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e ty a, AsExpectedAllEq e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsTyVariant ty, AsTmVariant ty pt tm)
+type VariantContext e s r m ty pt tm a = (Ord a, EqRec ty, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedTyVariant e ty a, AsExpectedAllEq e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsTyVariant ty, AsPtVariant pt, AsTmVariant ty pt tm)
 
-variantFragmentStrict :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
-variantFragmentStrict =
+evalRulesStrict :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+evalRulesStrict =
   FragmentInput
     [ ValueRecurse valueVariant ]
     [ EvalStep stepVariant ]
+    [] [] []
+
+baseRules :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+baseRules =
+  FragmentInput [] []
     [ InferRecurse inferTmVariant ]
-    [] []
+    [ PMatchRecurse matchVariant ]
+    [ PCheckRecurse checkVariant ]
+
+variantFragmentStrict :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
+variantFragmentStrict = evalRulesStrict `mappend` baseRules
 
 variantFragmentLazy :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
-variantFragmentLazy =
-  FragmentInput
-    [] []
-    [ InferRecurse inferTmVariant ]
-    [] []
+variantFragmentLazy = baseRules
 
 -- Helpers
 
 tyVariant :: AsTyVariant ty => N.NonEmpty (T.Text, Type ty a) -> Type ty a
 tyVariant = review _TyVariant
+
+ptVariant :: AsPtVariant pt => T.Text -> Pattern pt a -> Pattern pt a
+ptVariant = curry $ review _PtVariant
 
 tmVariant :: AsTmVariant ty pt tm => T.Text -> Term ty pt tm a -> Type ty a -> Term ty pt tm a
 tmVariant l tm ty = review _TmVariant (l, tm, ty)
