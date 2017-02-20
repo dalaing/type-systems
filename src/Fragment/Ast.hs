@@ -16,7 +16,6 @@ Portability : non-portable
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
--- {-# LANGUAGE RankNTypes #-}
 module Fragment.Ast (
     AstVar(..)
   , _ATyVar
@@ -79,20 +78,6 @@ data Ast ty pt tm a =
   | ATerm (tm ty pt (Ast ty pt tm) a)
 
 makePrisms ''Ast
-
-{-
-type TripleConstraint (k :: * -> Constraint) ty pt tm a =
-  ( k (ty (Ast ty pt tm) a)
-  , k (pt (Ast ty pt tm) a)
-  , k (tm ty pt (Ast ty pt tm) a)
-  )
-
-type TripleConstraint1 (k :: (* -> *) -> Constraint) ty pt tm =
-  ( k (ty (Ast ty pt tm))
-  , k (pt (Ast ty pt tm))
-  , k (tm ty pt (Ast ty pt tm))
-  )
--}
 
 type AstConstraint (k :: ((* -> *) -> * -> *) -> Constraint) ty pt tm = (k ty, k pt, k (tm ty pt))
 type AstTransversable ty pt tm = AstConstraint (Bitransversable) ty pt tm
@@ -337,6 +322,9 @@ astToPattern'' _ = Nothing
 _Pattern :: AstTransversable ty pt tm => Prism' (Ast ty pt tm (AstVar a)) (Pattern pt a)
 _Pattern = prism patternToAst (\x -> note x . astToPattern $ x)
 
+-- Should we pack a TmVar / TmTree in here, and bury the Ast one level down?
+-- The goal would be to have Scope () Term a instead of Scope () Ast (AstVar a) in the prism APIs
+-- If we can hide Ast completely, we should
 newtype Term ty pt tm a = Term (Ast ty pt tm (AstVar a))
   deriving (Eq, Ord, Show)
 
@@ -357,4 +345,3 @@ deriving instance AstTransversable ty pt tm => Traversable (Term ty pt tm)
 
 _TmVar :: Prism' (Term ty pt tm a) a
 _TmVar = _Wrapped . _AVar . _ATmVar
-

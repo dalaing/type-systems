@@ -289,7 +289,7 @@ checkBool p ty = do
   _ <- preview _PtBool p
   return $ do
     let tyB = review _TyBool ()
-    expect tyB ty
+    expect (Expected tyB) (Actual ty)
     return []
 
 type BoolContext e s r m ty pt tm a = (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)

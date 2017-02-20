@@ -9,7 +9,9 @@ Portability : non-portable
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Error (
-    AsUnexpected(..)
+    Expected(..)
+  , Actual(..)
+  , AsUnexpected(..)
   , expect
   , AsExpectedEq(..)
   , expectEq
@@ -31,13 +33,19 @@ import Fragment.Ast
 
 import Util
 
-class AsUnexpected e ty a | e -> ty, e -> a where
-  _Unexpected :: Prism' e (Type ty a, Type ty a)
+newtype Expected ty a = Expected (Type ty a)
+  deriving (Eq, Ord, Show)
 
-expect :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => Type ty a -> Type ty a -> m ()
-expect ty1 ty2 =
+newtype Actual ty a = Actual (Type ty a)
+  deriving (Eq, Ord, Show)
+
+class AsUnexpected e ty a | e -> ty, e -> a where
+  _Unexpected :: Prism' e (Expected ty a, Actual ty a)
+
+expect :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => Expected ty a -> Actual ty a -> m ()
+expect e@(Expected ty1) a@(Actual ty2) =
   unless (ty1 == ty2) $
-    throwing _Unexpected (ty1, ty2)
+    throwing _Unexpected (e, a)
 
 class AsExpectedEq e ty a | e -> ty, e -> a where
   _ExpectedEq :: Prism' e (Type ty a, Type ty a)

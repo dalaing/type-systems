@@ -106,7 +106,7 @@ inferTmIf inferFn tm = do
   (tmB, tmT, tmF) <- preview _TmIf tm
   return $ do
     tyB <- inferFn tmB
-    expect tyB (review _TyBool ())
+    expect (Expected tyB) (Actual (review _TyBool ()))
     tyT <- inferFn tmT
     tyF <- inferFn tmF
     expectEq tyT tyF

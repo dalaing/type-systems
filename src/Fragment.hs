@@ -29,7 +29,7 @@ import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
 
 import Fragment.Ast
-import Error (AsUnexpected(..), expect, AsUnknownTypeError(..))
+import Error
 import Util
 
 data ValueRule ty pt tm a =
@@ -127,7 +127,7 @@ mkCheck inferFn =
   let
     go tm ty = do
       tyAc <- inferFn tm
-      expect tyAc ty
+      expect (Expected ty) (Actual tyAc)
   in
     go
 

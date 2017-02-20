@@ -401,7 +401,7 @@ instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLSystemF sf) = TmLSystemF <$> bitransverse fT fL sf
 
 data Error ty pt tm a =
-    EUnexpected (Type ty a) (Type ty a)
+    EUnexpected (Expected ty a) (Actual ty a)
   | EExpectedEq (Type ty a) (Type ty a)
   | EExpectedTyPair (Type ty a)
   | EExpectedTyTuple (Type ty a)

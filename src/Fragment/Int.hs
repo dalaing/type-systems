@@ -289,7 +289,7 @@ checkInt p ty = do
   _ <- preview _PtInt p
   return $ do
     let tyI = review _TyInt ()
-    expect tyI ty
+    expect (Expected tyI) (Actual ty)
     return []
 
 type IntContext e s r m ty pt tm a = (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyInt ty, AsPtInt pt, AsTmInt ty pt tm)
