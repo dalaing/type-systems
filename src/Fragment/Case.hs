@@ -73,6 +73,20 @@ instance (Eq a, Eq1 tm, Monad tm) => Eq (Alt ty pt tm a) where (==) = eq1
 instance (Ord a, Ord1 tm, Monad tm) => Ord (Alt ty pt tm a) where compare = compare1
 instance (Show a, Show1 tm) => Show (Alt ty pt tm a) where showsPrec = showsPrec1
 
+instance EqRec (Alt ty pt) where
+  liftEqRec eR e (Alt pt1 tm1) (Alt pt2 tm2) =
+    eR pt1 pt2 && liftEqRec eR e tm1 tm2
+
+instance OrdRec (Alt ty pt) where
+  liftCompareRec cR c (Alt pt1 tm1) (Alt pt2 tm2) =
+    case cR pt1 pt2 of
+      EQ -> liftCompareRec cR c tm1 tm2
+      z -> z
+
+instance ShowRec (Alt ty pt) where
+  liftShowsPrecRec sR slR s sl n (Alt pt tm) =
+    showsBinaryWith sR (liftShowsPrecRec sR slR s sl) "Alt" n pt tm
+
 instance Bound (Alt ty pt) where
   Alt pt s >>>= f = Alt (pt >>= f) (s >>>= f)
 
@@ -97,6 +111,29 @@ instance (Ord1 tm, Monad tm) => Ord1 (TmFCase ty pt tm) where
 
 instance (Show1 tm) => Show1 (TmFCase ty pt tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFCase)
+
+instance EqRec (TmFCase ty pt) where
+  liftEqRec eR e (TmCaseF tm1 alts1) (TmCaseF tm2 alts2) =
+    eR tm1 tm2 && and (N.zipWith (liftEqRec eR e) alts1 alts2)
+
+instance OrdRec (TmFCase ty pt) where
+  liftCompareRec cR c (TmCaseF tm1 alts1) (TmCaseF tm2 alts2) =
+    let
+      f [] [] = EQ
+      f [] _ = LT
+      f _ [] = GT
+      f (x : xs) (y : ys) =
+        case liftCompareRec cR c x y of
+          EQ -> f xs ys
+          z -> z
+    in
+      case cR tm1 tm2 of
+        EQ -> f (N.toList alts1) (N.toList alts2)
+        z -> z
+
+instance ShowRec (TmFCase ty pt) where
+  liftShowsPrecRec sR slR s sl n (TmCaseF tm alts) =
+    showsBinaryWith sR (\_ -> liftShowListRec sR slR s sl) "TmCaseF" n tm (N.toList alts)
 
 instance Bound (TmFCase ty pt) where
   TmCaseF tm alts >>>= f = TmCaseF (tm >>= f) (fmap (>>>= f) alts)

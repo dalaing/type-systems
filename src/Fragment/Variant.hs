@@ -40,7 +40,7 @@ module Fragment.Variant (
 import Control.Monad (MonadPlus(..))
 import Text.Show
 
-import Control.Monad.Reader (MonadReader, local)
+import Control.Monad.Reader (MonadReader)
 import Control.Monad.State (MonadState)
 import Control.Monad.Except (MonadError)
 
@@ -132,6 +132,20 @@ deriveEq1 ''PtFVariant
 deriveOrd1 ''PtFVariant
 deriveShow1 ''PtFVariant
 
+instance EqRec PtFVariant where
+  liftEqRec eR _ (PtVariantF t1 x1) (PtVariantF t2 x2) =
+    t1 == t2 && eR x1 x2
+
+instance OrdRec PtFVariant where
+  liftCompareRec cR _ (PtVariantF t1 x1) (PtVariantF t2 x2) =
+    case compare t1 t2 of
+      EQ -> cR x1 x2
+      z -> z
+
+instance ShowRec PtFVariant where
+  liftShowsPrecRec sR _ _ _ n (PtVariantF t x) =
+    showsBinaryWith showsPrec sR "PtVariantF" n t x
+
 instance Bound PtFVariant where
   PtVariantF l p >>>= f = PtVariantF l (p >>= f)
 
@@ -153,14 +167,30 @@ data TmFVariant (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
 
 makePrisms ''TmFVariant
 
-instance (EqRec ty, Eq1 tm, Monad tm) => Eq1 (TmFVariant ty pt tm) where
-  liftEq = $(makeLiftEq ''TmFVariant)
+deriveEq1 ''TmFVariant
+deriveOrd1 ''TmFVariant
+deriveShow1 ''TmFVariant
 
-instance (OrdRec ty, Ord1 tm, Monad tm) => Ord1 (TmFVariant ty pt tm) where
-  liftCompare = $(makeLiftCompare ''TmFVariant)
+instance EqRec (TmFVariant ty pt) where
+  liftEqRec eR _ (TmVariantF t1 tm1 ty1) (TmVariantF t2 tm2 ty2) =
+    t1 == t2 && eR tm1 tm2 && eR ty1 ty2
 
-instance (ShowRec ty, Show1 tm) => Show1 (TmFVariant ty pt tm) where
-  liftShowsPrec = $(makeLiftShowsPrec ''TmFVariant)
+instance OrdRec (TmFVariant ty pt) where
+  liftCompareRec cR _ (TmVariantF t1 tm1 ty1) (TmVariantF t2 tm2 ty2) =
+    case compare t1 t2 of
+      EQ -> case cR tm1 tm2 of
+        EQ -> cR ty1 ty2
+        z -> z
+      z -> z
+
+instance ShowRec (TmFVariant ty pt) where
+  liftShowsPrecRec sR _ _ _ n (TmVariantF t tm ty) =
+    showString "TmFVariant " .
+    showString (T.unpack t) .
+    showString " " .
+    sR n tm .
+    showString " " .
+    sR n ty
 
 instance Bound (TmFVariant ty pt) where
   TmVariantF t tm ty >>>= f = TmVariantF t (tm >>= f) (ty >>= f)

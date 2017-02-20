@@ -137,8 +137,8 @@ instance OrdRec TypeF where
   -- liftCompareRec _ _  (TyLSTLC _) _ = LT
   -- liftCompareRec _ _ _ (TyLSTLC _) = GT
   liftCompareRec cR c (TyLSystemF x) (TyLSystemF y) = liftCompareRec cR c x y
-  liftCompareRec _ _  (TyLSystemF _) _ = LT
-  liftCompareRec _ _ _ (TyLSystemF _) = GT
+  -- liftCompareRec _ _  (TyLSystemF _) _ = LT
+  -- liftCompareRec _ _ _ (TyLSystemF _) = GT
 
 instance ShowRec TypeF where
   liftShowsPrecRec sR slR s sl n (TyLInt x) = liftShowsPrecRec sR slR s sl n x
@@ -207,6 +207,46 @@ instance AsPtRecord PatternF where
 instance AsPtVariant PatternF where
   _PtVariantP = _PtLVariant
 
+instance EqRec PatternF where
+  liftEqRec eR e (PtLWild x) (PtLWild y) = liftEqRec eR e x y
+  liftEqRec eR e (PtLInt x) (PtLInt y) = liftEqRec eR e x y
+  liftEqRec eR e (PtLBool x) (PtLBool y) = liftEqRec eR e x y
+  liftEqRec eR e (PtLPair x) (PtLPair y) = liftEqRec eR e x y
+  liftEqRec eR e (PtLTuple x) (PtLTuple y) = liftEqRec eR e x y
+  liftEqRec eR e (PtLRecord x) (PtLRecord y) = liftEqRec eR e x y
+  liftEqRec eR e (PtLVariant x) (PtLVariant y) = liftEqRec eR e x y
+  liftEqRec _ _ _ _ = False
+
+instance OrdRec PatternF where
+  liftCompareRec cR c (PtLWild x) (PtLWild y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (PtLWild _) _ = LT
+  liftCompareRec _ _ _ (PtLWild _) = GT
+  liftCompareRec cR c (PtLInt x) (PtLInt y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (PtLInt _) _ = LT
+  liftCompareRec _ _ _ (PtLInt _) = GT
+  liftCompareRec cR c (PtLBool x) (PtLBool y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (PtLBool _) _ = LT
+  liftCompareRec _ _ _ (PtLBool _) = GT
+  liftCompareRec cR c (PtLPair x) (PtLPair y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (PtLPair _) _ = LT
+  liftCompareRec _ _ _ (PtLPair _) = GT
+  liftCompareRec cR c (PtLTuple x) (PtLTuple y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (PtLTuple _) _ = LT
+  liftCompareRec _ _ _ (PtLTuple _) = GT
+  liftCompareRec cR c (PtLRecord x) (PtLRecord y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (PtLRecord _) _ = LT
+  liftCompareRec _ _ _ (PtLRecord _) = GT
+  liftCompareRec cR c (PtLVariant x) (PtLVariant y) = liftCompareRec cR c x y
+
+instance ShowRec PatternF where
+  liftShowsPrecRec sR slR s sl n (PtLWild x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (PtLInt x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (PtLBool x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (PtLPair x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (PtLTuple x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (PtLRecord x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (PtLVariant x) = liftShowsPrecRec sR slR s sl n x
+
 instance Bound PatternF where
   PtLWild w >>>= f = PtLWild (w >>>= f)
   PtLInt i >>>= f = PtLInt (i >>>= f)
@@ -228,8 +268,8 @@ instance Bitransversable PatternF where
 data TermF ty pt f a =
     TmLInt (TmFInt ty pt f a)
   | TmLBool (TmFBool ty pt f a)
-  | TmLPair (TmFPair ty pt f a)
   | TmLIf (TmFIf ty pt f a)
+  | TmLPair (TmFPair ty pt f a)
   | TmLTuple (TmFTuple ty pt f a)
   | TmLRecord (TmFRecord ty pt f a)
   | TmLVariant (TmFVariant ty pt f a)
@@ -278,6 +318,63 @@ instance AsTmCase ty pt TermF where
 
 instance (Bitransversable ty, Bitransversable pt) => AsTmSystemF ty pt TermF where
   _TmSystemFP = _TmLSystemF
+
+instance EqRec (TermF ty pt) where
+  liftEqRec eR e (TmLInt x) (TmLInt y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLBool x) (TmLBool y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLIf x) (TmLIf y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLPair x) (TmLPair y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLTuple x) (TmLTuple y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLRecord x) (TmLRecord y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLVariant x) (TmLVariant y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLCase x) (TmLCase y) = liftEqRec eR e x y
+  -- liftEqRec eR e (TmLSTLC x) (TmLSTLC y) = liftEqRec eR e x y
+  liftEqRec eR e (TmLSystemF x) (TmLSystemF y) = liftEqRec eR e x y
+  liftEqRec _ _ _ _ = False
+
+instance OrdRec (TermF ty pt) where
+  liftCompareRec cR c (TmLInt x) (TmLInt y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TmLInt _) _ = LT
+  liftCompareRec _ _ _ (TmLInt _) = GT
+  liftCompareRec cR c (TmLBool x) (TmLBool y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TmLBool _) _ = LT
+  liftCompareRec _ _ _ (TmLBool _) = GT
+  liftCompareRec cR c (TmLIf x) (TmLIf y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TmLIf _) _ = LT
+  liftCompareRec _ _ _ (TmLIf _) = GT
+  liftCompareRec cR c (TmLPair x) (TmLPair y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TmLPair _) _ = LT
+  liftCompareRec _ _ _ (TmLPair _) = GT
+  liftCompareRec cR c (TmLTuple x) (TmLTuple y) = liftCompareRec cR c x y
+  liftCompareRec _ _ (TmLTuple _) _ = LT
+  liftCompareRec _ _ _ (TmLTuple _) = GT
+  liftCompareRec cR c (TmLRecord x) (TmLRecord y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (TmLRecord _) _ = LT
+  liftCompareRec _ _ _ (TmLRecord _) = GT
+  liftCompareRec cR c (TmLVariant x) (TmLVariant y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (TmLVariant _) _ = LT
+  liftCompareRec _ _ _ (TmLVariant _) = GT
+  liftCompareRec cR c (TmLCase x) (TmLCase y) = liftCompareRec cR c x y
+  liftCompareRec _ _  (TmLCase _) _ = LT
+  liftCompareRec _ _ _ (TmLCase _) = GT
+  -- liftCompareRec cR c (TmLSTLC x) (TmLSTLC y) = liftCompareRec cR c x y
+  -- liftCompareRec _ _  (TmLSTLC _) _ = LT
+  -- liftCompareRec _ _ _ (TmLSTLC _) = GT
+  liftCompareRec cR c (TmLSystemF x) (TmLSystemF y) = liftCompareRec cR c x y
+  -- liftCompareRec _ _  (TmLSystemF _) _ = LT
+  -- liftCompareRec _ _ _ (TmLSystemF _) = GT
+
+instance ShowRec (TermF ty pt) where
+  liftShowsPrecRec sR slR s sl n (TmLInt x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLBool x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLIf x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLPair x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLTuple x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLRecord x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLVariant x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLCase x) = liftShowsPrecRec sR slR s sl n x
+  -- liftShowsPrecRec sR slR s sl n (TmLSTLC x) = liftShowsPrecRec sR slR s sl n x
+  liftShowsPrecRec sR slR s sl n (TmLSystemF x) = liftShowsPrecRec sR slR s sl n x
 
 instance Bound (TermF ty pt) where
   TmLInt i >>>= f = TmLInt (i >>>= f)

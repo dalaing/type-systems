@@ -75,7 +75,7 @@ instance OrdRec TyFTuple where
 
 instance ShowRec TyFTuple where
   liftShowsPrecRec _ slR _ _ n (TyTupleF xs) =
-    showsUnaryWith (const slR) "TyTypleF" n xs
+    showsUnaryWith (const slR) "TyTupleF" n xs
 
 instance Bound TyFTuple where
   TyTupleF tys >>>= f = TyTupleF (fmap (>>= f) tys)
@@ -102,6 +102,22 @@ deriveEq1 ''PtFTuple
 deriveOrd1 ''PtFTuple
 deriveShow1 ''PtFTuple
 
+instance EqRec PtFTuple where
+  liftEqRec eR _ (PtTupleF xs) (PtTupleF ys) = and $ zipWith eR xs ys
+
+instance OrdRec PtFTuple where
+  liftCompareRec _ _ (PtTupleF []) (PtTupleF []) = EQ
+  liftCompareRec _ _ (PtTupleF []) (PtTupleF (_ : _)) = LT
+  liftCompareRec _ _ (PtTupleF (_ : _)) (PtTupleF []) = GT
+  liftCompareRec cR c (PtTupleF (x : xs)) (PtTupleF (y : ys)) =
+    case cR x y of
+      EQ -> liftCompareRec cR c (PtTupleF xs) (PtTupleF ys)
+      z -> z
+
+instance ShowRec PtFTuple where
+  liftShowsPrecRec _ slR _ _ n (PtTupleF xs) =
+    showsUnaryWith (const slR) "PtPupleF" n xs
+
 instance Bound PtFTuple where
   PtTupleF pts >>>= f = PtTupleF (fmap (>>= f) pts)
 
@@ -127,6 +143,34 @@ makePrisms ''TmFTuple
 deriveEq1 ''TmFTuple
 deriveOrd1 ''TmFTuple
 deriveShow1 ''TmFTuple
+
+instance EqRec (TmFTuple ty pt) where
+  liftEqRec eR _ (TmTupleF xs) (TmTupleF ys) =
+    and $ zipWith eR xs ys
+  liftEqRec eR _ (TmTupleIxF x1 i1) (TmTupleIxF x2 i2) =
+    eR x1 x2 && i1 == i2
+  liftEqRec _ _ _ _ = False
+
+instance OrdRec (TmFTuple ty pt) where
+  liftCompareRec _ _ (TmTupleF []) (TmTupleF []) = EQ
+  liftCompareRec _ _ (TmTupleF []) (TmTupleF (_ : _)) = LT
+  liftCompareRec _ _ (TmTupleF (_ : _)) (TmTupleF []) = GT
+  liftCompareRec cR c (TmTupleF (x : xs)) (TmTupleF (y : ys)) =
+    case cR x y of
+      EQ -> liftCompareRec cR c (TmTupleF xs) (TmTupleF ys)
+      z -> z
+  liftCompareRec _ _ (TmTupleF _) _ = LT
+  liftCompareRec _ _ _ (TmTupleF _) = GT
+  liftCompareRec cR _ (TmTupleIxF x1 i1) (TmTupleIxF x2 i2) =
+    case cR x1 x2 of
+      EQ -> compare i1 i2
+      z -> z
+
+instance ShowRec (TmFTuple ty pt) where
+  liftShowsPrecRec _ slR _ _ n (TmTupleF xs) =
+    showsUnaryWith (const slR) "TmTupleF" n xs
+  liftShowsPrecRec sR _ _ _ n (TmTupleIxF x i) =
+    showsBinaryWith sR showsPrec "TmTupleIxF" n x i
 
 instance Bound (TmFTuple ty pt) where
   TmTupleF tms >>>= f = TmTupleF (fmap (>>= f) tms)

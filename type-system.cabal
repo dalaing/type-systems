@@ -17,7 +17,6 @@ library
                      , Fragment.Ast
                      -- , Fragment.Ast2
                      , Fragment.Var
-                     , Fragment.Case
                      , Fragment.Int
                      , Fragment.Bool
                      , Fragment.If
@@ -25,6 +24,7 @@ library
                      , Fragment.Tuple
                      , Fragment.Record
                      , Fragment.Variant
+                     , Fragment.Case
                      , Fragment.STLC
                      , Fragment.SystemF
                      , Error

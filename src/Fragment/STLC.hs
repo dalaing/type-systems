@@ -102,6 +102,39 @@ instance (Ord1 k,  Monad k) => Ord1 (TmFSTLC ty pt k) where
 instance (Show1 k) => Show1 (TmFSTLC ty pt k) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFSTLC)
 
+instance EqRec (TmFSTLC ty pt) where
+  liftEqRec eR e (TmLamF ty1 s1) (TmLamF ty2 s2) =
+    eR ty1 ty2 && liftEqRec eR e s1 s2
+  liftEqRec eR _ (TmAppF x1 y1) (TmAppF x2 y2) =
+    eR x1 x2 && eR y1 y2
+  liftEqRec _ _ _ _ = False
+
+instance OrdRec (TmFSTLC ty pt) where
+  liftCompareRec cR c (TmLamF ty1 s1) (TmLamF ty2 s2) =
+    case cR ty1 ty2 of
+      EQ -> liftCompareRec cR c s1 s2
+      z -> z
+  liftCompareRec _ _ (TmLamF _ _) _ = LT
+  liftCompareRec _ _ _ (TmLamF _ _) = GT
+  liftCompareRec cR _ (TmAppF x1 y1) (TmAppF x2 y2) =
+    case cR x1 x2 of
+      EQ -> cR y1 y2
+      z -> z
+
+instance ShowRec (TmFSTLC ty pt) where
+  liftShowsPrecRec sR slR s sl n (TmLamF ty sc) =
+    showsBinaryWith sR (liftShowsPrecRec sR slR s sl) "TmLamF" n ty sc
+  liftShowsPrecRec sR _ _ _ n (TmAppF x y) =
+    showsBinaryWith sR sR "TmAppF" n x y
+
+instance Bound (TmFSTLC ty pt) where
+  TmLamF ty s >>>= f = TmLamF (ty >>= f) (s >>>= f)
+  TmAppF x y >>>= f = TmAppF (x >>= f) (y >>= f)
+
+instance Bitransversable (TmFSTLC ty pt) where
+  bitransverse fT fL (TmLamF ty s) = TmLamF <$> fT fL ty <*> bitransverse fT fL s
+  bitransverse fT fL (TmAppF x y) = TmAppF <$> fT fL x <*> fT fL y
+
 class AstTransversable ty pt tm => AsTmSTLC ty pt tm where
   _TmSTLCP :: Prism' (tm ty pt k a) (TmFSTLC ty pt k a)
 
@@ -116,14 +149,6 @@ class AstTransversable ty pt tm => AsTmSTLC ty pt tm where
 
 instance (Bitransversable ty, Bitransversable pt) => AsTmSTLC ty pt TmFSTLC where
   _TmSTLCP = id
-
-instance Bound (TmFSTLC ty pt) where
-  TmLamF ty s >>>= f = TmLamF (ty >>= f) (s >>>= f)
-  TmAppF x y >>>= f = TmAppF (x >>= f) (y >>= f)
-
-instance Bitransversable (TmFSTLC ty pt) where
-  bitransverse fT fL (TmLamF ty s) = TmLamF <$> fT fL ty <*> bitransverse fT fL s
-  bitransverse fT fL (TmAppF x y) = TmAppF <$> fT fL x <*> fT fL y
 
 -- Errors
 

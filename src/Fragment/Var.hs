@@ -67,6 +67,15 @@ deriveEq1 ''PtFWild
 deriveOrd1 ''PtFWild
 deriveShow1 ''PtFWild
 
+instance EqRec PtFWild where
+  liftEqRec _ _ PtWildF PtWildF = True
+
+instance OrdRec PtFWild where
+  liftCompareRec _ _ PtWildF PtWildF = EQ
+
+instance ShowRec PtFWild where
+  liftShowsPrecRec _ _ _ _ n PtWildF = showsPrec n PtWildF
+
 instance Bound PtFWild where
   PtWildF >>>= _ = PtWildF
 

@@ -23,6 +23,7 @@ In the short term I want to:
     - I think I know how to either inline all of the typeclass code, or to have it all work by dictionary passing
 - add row types
     - in the short term I'm only after a subset of that functionality
+    - polymorphic variants would also be pretty cool
 - play around with a few different options for type and kind inference
 - look at annotating everything with source locations and at how nice I can make type errors
 

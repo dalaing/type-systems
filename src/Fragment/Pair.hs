@@ -96,6 +96,20 @@ deriveEq1 ''PtFPair
 deriveOrd1 ''PtFPair
 deriveShow1 ''PtFPair
 
+instance EqRec PtFPair where
+  liftEqRec eR _ (PtPairF x1 y1) (PtPairF x2 y2) =
+    eR x1 x2 && eR y1 y2
+
+instance OrdRec PtFPair where
+  liftCompareRec cR _ (PtPairF x1 y1) (PtPairF x2 y2) =
+    case cR x1 x2 of
+      EQ -> cR y1 y2
+      x -> x
+
+instance ShowRec PtFPair where
+  liftShowsPrecRec sR _ _ _ n (PtPairF x y) =
+    showsBinaryWith sR sR "PtPairF" n x y
+
 instance Bound PtFPair where
   PtPairF x y >>>= f = PtPairF (x >>= f) (y >>= f)
 
@@ -122,6 +136,38 @@ makePrisms ''TmFPair
 deriveEq1 ''TmFPair
 deriveOrd1 ''TmFPair
 deriveShow1 ''TmFPair
+
+instance EqRec (TmFPair ty pt) where
+  liftEqRec eR _ (TmPairF x1 y1) (TmPairF x2 y2) =
+    eR x1 x2 && eR y1 y2
+  liftEqRec eR _ (TmFstF x1) (TmFstF x2) =
+    eR x1 x2
+  liftEqRec eR _ (TmSndF x1) (TmSndF x2) =
+    eR x1 x2
+  liftEqRec _ _ _ _ =
+    False
+
+instance OrdRec (TmFPair ty pt) where
+  liftCompareRec cR _ (TmPairF x1 y1) (TmPairF x2 y2) =
+    case cR x1 x2 of
+      EQ -> cR y1 y2
+      x -> x
+  liftCompareRec _ _ (TmPairF _ _) _ = LT
+  liftCompareRec _ _ _ (TmPairF _ _) = GT
+  liftCompareRec cR _ (TmFstF x1) (TmFstF x2) =
+    cR x1 x2
+  liftCompareRec _ _ (TmFstF _) _ = LT
+  liftCompareRec _ _ _ (TmFstF _) = GT
+  liftCompareRec cR _ (TmSndF x1) (TmSndF x2) =
+    cR x1 x2
+
+instance ShowRec (TmFPair ty pt) where
+  liftShowsPrecRec sR _ _ _ n (TmPairF x y) =
+    showsBinaryWith sR sR "TmPairF" n x y
+  liftShowsPrecRec sR _ _ _ n (TmFstF x) =
+    showsUnaryWith sR "TmFstF" n x
+  liftShowsPrecRec sR _ _ _ n (TmSndF x) =
+    showsUnaryWith sR "TmSndF" n x
 
 instance Bound (TmFPair ty pt) where
   TmPairF x y >>>= f = TmPairF (x >>= f) (y >>= f)

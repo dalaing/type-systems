@@ -38,6 +38,7 @@ import Control.Monad.Except (MonadError)
 import Control.Lens
 
 import Bound
+import Data.Functor.Classes
 import Data.Deriving
 
 import Fragment
@@ -89,6 +90,15 @@ deriveEq1 ''PtFInt
 deriveOrd1 ''PtFInt
 deriveShow1 ''PtFInt
 
+instance EqRec PtFInt where
+  liftEqRec _ _ (PtIntF i) (PtIntF j) = i == j
+
+instance OrdRec PtFInt where
+  liftCompareRec _ _ (PtIntF i) (PtIntF j) = compare i j
+
+instance ShowRec PtFInt where
+  liftShowsPrecRec _ _ _ _ = showsPrec
+
 instance Bound PtFInt where
   PtIntF i >>>= _ = PtIntF i
 
@@ -115,6 +125,35 @@ makePrisms ''TmFInt
 deriveEq1 ''TmFInt
 deriveOrd1 ''TmFInt
 deriveShow1 ''TmFInt
+
+instance EqRec (TmFInt ty pt) where
+  liftEqRec _ _ (TmIntF i) (TmIntF j) = i == j
+  liftEqRec eR _ (TmAddF x1 y1) (TmAddF x2 y2) = eR x1 x2 && eR y1 y2
+  liftEqRec eR _ (TmMulF x1 y1) (TmMulF x2 y2) = eR x1 x2 && eR y1 y2
+  liftEqRec _ _ _ _ = False
+
+instance OrdRec (TmFInt ty pt) where
+  liftCompareRec _ _ (TmIntF i) (TmIntF j) = compare i j
+  liftCompareRec _ _ (TmIntF _) _ = LT
+  liftCompareRec _ _ _ (TmIntF _) = GT
+  liftCompareRec cR _ (TmAddF x1 y1) (TmAddF x2 y2) =
+    case cR x1 x2 of
+      EQ -> cR y1 y2
+      z -> z
+  liftCompareRec _ _ (TmAddF _ _) _ = LT
+  liftCompareRec _ _ _ (TmAddF _ _) = GT
+  liftCompareRec cR _ (TmMulF x1 y1) (TmMulF x2 y2) =
+    case cR x1 x2 of
+      EQ -> cR y1 y2
+      z -> z
+
+instance ShowRec (TmFInt ty pt) where
+  liftShowsPrecRec _ _ _ _ n (TmIntF i) =
+    showsUnaryWith showsPrec "TmIntF" n i
+  liftShowsPrecRec sR _ _ _ n (TmAddF x y) =
+    showsBinaryWith sR sR "TmAddF" n x y
+  liftShowsPrecRec sR _ _ _ n (TmMulF x y) =
+    showsBinaryWith sR sR "TmMulF" n x y
 
 instance Bound (TmFInt ty pt) where
   TmIntF b >>>= _ = TmIntF b

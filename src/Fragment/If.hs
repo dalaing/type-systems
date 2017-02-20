@@ -26,9 +26,11 @@ module Fragment.If (
 
 import Control.Monad.Except (MonadError)
 
+
 import Control.Lens
 
 import Bound
+
 import Data.Deriving
 
 import Fragment
@@ -46,6 +48,27 @@ makePrisms ''TmFIf
 deriveEq1 ''TmFIf
 deriveOrd1 ''TmFIf
 deriveShow1 ''TmFIf
+
+instance EqRec (TmFIf ty pt) where
+  liftEqRec eR _ (TmIfF x1 y1 z1) (TmIfF x2 y2 z2) =
+    eR x1 x2 && eR y1 y2 && eR z1 z2
+
+instance OrdRec (TmFIf ty pt) where
+  liftCompareRec cR _ (TmIfF x1 y1 z1) (TmIfF x2 y2 z2) =
+    case cR x1 x2 of
+      EQ -> case cR y1 y2 of
+        EQ -> cR z1 z2
+        z -> z
+      z -> z
+
+instance ShowRec (TmFIf ty pt) where
+  liftShowsPrecRec sR _ _ _ n (TmIfF x y z) =
+    showString "if " .
+    sR n x .
+    showString " then " .
+    sR n y .
+    showString " else " .
+    sR n z
 
 instance Bound (TmFIf ty pt) where
   TmIfF b t e >>>= f = TmIfF (b >>= f) (t >>= f) (e >>= f)

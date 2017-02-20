@@ -116,6 +116,34 @@ deriveEq1 ''PtFRecord
 deriveOrd1 ''PtFRecord
 deriveShow1 ''PtFRecord
 
+instance EqRec PtFRecord where
+  liftEqRec eR _ (PtRecordF xs) (PtRecordF ys) =
+    let
+      f (l1, x1) (l2, x2) = l1 == l2 && eR x1 x2
+    in
+      and $ zipWith f xs ys
+
+instance OrdRec PtFRecord where
+  liftCompareRec _ _ (PtRecordF []) (PtRecordF []) = EQ
+  liftCompareRec _ _ (PtRecordF []) (PtRecordF (_ : _)) = LT
+  liftCompareRec _ _ (PtRecordF (_ : _)) (PtRecordF []) = GT
+  liftCompareRec cR c (PtRecordF ((lx, x) : xs)) (PtRecordF ((ly, y) : ys)) =
+    case compare lx ly of
+      EQ -> case cR x y of
+        EQ -> liftCompareRec cR c (PtRecordF xs) (PtRecordF ys)
+        z -> z
+      z -> z
+
+instance ShowRec PtFRecord where
+  liftShowsPrecRec sR _ _ _ n (PtRecordF xs) =
+    let
+      g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
+                 sR m x .
+                 showString ")"
+      f _ ps = showListWith (g 0) ps
+    in
+      showsUnaryWith f "PtRecordF" n xs
+
 instance Bound PtFRecord where
   PtRecordF pts >>>= f = PtRecordF (fmap (fmap (>>= f)) pts)
 
@@ -141,6 +169,46 @@ makePrisms ''TmFRecord
 deriveEq1 ''TmFRecord
 deriveOrd1 ''TmFRecord
 deriveShow1 ''TmFRecord
+
+instance EqRec (TmFRecord ty pt) where
+  liftEqRec eR _ (TmRecordF xs) (TmRecordF ys) =
+    let
+      f (l1, x1) (l2, x2) = l1 == l2 && eR x1 x2
+    in
+      and $ zipWith f xs ys
+  liftEqRec eR _ (TmRecordIxF x1 i1) (TmRecordIxF x2 i2) =
+    eR x1 x2 && i1 == i2
+  liftEqRec _ _ _ _ =
+    False
+
+instance OrdRec (TmFRecord ty pt) where
+  liftCompareRec _ _ (TmRecordF []) (TmRecordF []) = EQ
+  liftCompareRec _ _ (TmRecordF []) (TmRecordF (_ : _)) = LT
+  liftCompareRec _ _ (TmRecordF (_ : _)) (TmRecordF []) = GT
+  liftCompareRec cR c (TmRecordF ((lx, x) : xs)) (TmRecordF ((ly, y) : ys)) =
+    case compare lx ly of
+      EQ -> case cR x y of
+        EQ -> liftCompareRec cR c (TmRecordF xs) (TmRecordF ys)
+        z -> z
+      z -> z
+  liftCompareRec _ _ (TmRecordF _) _ = LT
+  liftCompareRec _ _ _ (TmRecordF _) = GT
+  liftCompareRec cR _ (TmRecordIxF x1 i1) (TmRecordIxF x2 i2) =
+    case cR x1 x2 of
+      EQ -> compare i1 i2
+      z -> z
+
+instance ShowRec (TmFRecord ty pt) where
+  liftShowsPrecRec sR _ _ _ n (TmRecordF xs) =
+    let
+      g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
+                 sR m x .
+                 showString ")"
+      f _ ps = showListWith (g 0) ps
+    in
+      showsUnaryWith f "TmRecordF" n xs
+  liftShowsPrecRec sR _ _ _ n (TmRecordIxF x i) =
+    showsBinaryWith sR showsPrec "TmRecordIxF" n x i
 
 instance Bound (TmFRecord ty pt) where
   TmRecordF tms >>>= f = TmRecordF (fmap (fmap (>>= f)) tms)
