@@ -20,6 +20,7 @@ library
                      , Fragment.Case
                      , Fragment.Int
                      , Fragment.Bool
+                     , Fragment.If
                      , Fragment.Pair
                      , Fragment.Tuple
                      , Fragment.Record

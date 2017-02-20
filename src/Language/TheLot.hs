@@ -48,6 +48,7 @@ import Util
 import Fragment.Var
 import Fragment.Int
 import Fragment.Bool
+import Fragment.If
 import Fragment.Pair
 import Fragment.Tuple
 import Fragment.Record
@@ -228,6 +229,7 @@ data TermF ty pt f a =
     TmLInt (TmFInt ty pt f a)
   | TmLBool (TmFBool ty pt f a)
   | TmLPair (TmFPair ty pt f a)
+  | TmLIf (TmFIf ty pt f a)
   | TmLTuple (TmFTuple ty pt f a)
   | TmLRecord (TmFRecord ty pt f a)
   | TmLVariant (TmFVariant ty pt f a)
@@ -253,6 +255,9 @@ instance AsTmInt ty pt TermF where
 instance AsTmBool ty pt TermF where
   _TmBoolP = _TmLBool
 
+instance AsTmIf ty pt TermF where
+  _TmIfP = _TmLIf
+
 instance AsTmPair ty pt TermF where
   _TmPairP = _TmLPair
 
@@ -277,6 +282,7 @@ instance (Bitransversable ty, Bitransversable pt) => AsTmSystemF ty pt TermF whe
 instance Bound (TermF ty pt) where
   TmLInt i >>>= f = TmLInt (i >>>= f)
   TmLBool b >>>= f = TmLBool (b >>>= f)
+  TmLIf i >>>= f = TmLIf (i >>>= f)
   TmLPair p >>>= f = TmLPair (p >>>= f)
   TmLTuple t >>>= f = TmLTuple (t >>>= f)
   TmLRecord r >>>= f = TmLRecord (r >>>= f)
@@ -288,6 +294,7 @@ instance Bound (TermF ty pt) where
 instance Bitransversable (TermF ty tp) where
   bitransverse fT fL (TmLInt i) = TmLInt <$> bitransverse fT fL i
   bitransverse fT fL (TmLBool b) = TmLBool <$> bitransverse fT fL b
+  bitransverse fT fL (TmLIf i) = TmLIf <$> bitransverse fT fL i
   bitransverse fT fL (TmLPair p) = TmLPair <$> bitransverse fT fL p
   bitransverse fT fL (TmLTuple t) = TmLTuple <$> bitransverse fT fL t
   bitransverse fT fL (TmLRecord r) = TmLRecord <$> bitransverse fT fL r
@@ -377,6 +384,7 @@ type LContext e s r m ty pt tm a =
   , PtVarContext e s r m ty pt tm a
   , IntContext e s r m ty pt tm a
   , BoolContext e s r m ty pt tm a
+  , IfContext e s r m ty pt tm a
   , PairContext e s r m ty pt tm a
   , TupleContext e s r m ty pt tm a
   , RecordContext e s r m ty pt tm a
@@ -388,7 +396,7 @@ type LContext e s r m ty pt tm a =
   )
 
 fragmentInputBase :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
-fragmentInputBase = mconcat [ptVarFragment, tmVarFragment, intFragment, boolFragment]
+fragmentInputBase = mconcat [ptVarFragment, tmVarFragment, intFragment, boolFragment, ifFragment]
 
 fragmentInputLazy :: LContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 fragmentInputLazy =
