@@ -184,7 +184,7 @@ stepTupleIxLazy tm = do
 -- TODO check this, there might be more rules
 evalRulesLazy :: AsTmTuple ty pt tm => FragmentInput e s r m ty pt tm a
 evalRulesLazy =
-  FragmentInput [] [EvalBase stepTupleIxLazy] [] [] []
+  FragmentInput [] [EvalBase stepTupleIxLazy] [] [] [] [] []
 
 valueTuple :: AsTmTuple ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 valueTuple valueFn tm = do
@@ -227,7 +227,7 @@ evalRulesStrict =
     , EvalValue stepTupleElimIxStrict
     , EvalValueStep stepTuple
     ]
-    [] [] []
+    [] [] [] [] []
 
 inferTmTuple :: (Monad m, AsTyTuple ty, AsTmTuple ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmTuple inferFn tm = do
@@ -247,12 +247,11 @@ inferTmTupleIx inferFn tm = do
 inferRules :: (MonadError e m, AsExpectedTyTuple e ty a, AsTupleOutOfBounds e, AsTyTuple ty, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
 inferRules =
   FragmentInput
-    []
-    []
+    [] []
     [ InferRecurse inferTmTuple
     , InferRecurse inferTmTupleIx
     ]
-    [] []
+    [] [] [] []
 
 matchTuple :: (AsPtTuple pt, AsTmTuple ty pt tm) => (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchTuple matchFn p tm = do
@@ -272,7 +271,7 @@ checkTuple checkFn p ty = do
 patternRules :: (MonadError e m, AsExpectedTyTuple e ty a, AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm) => FragmentInput e s r m ty pt tm a
 patternRules =
   FragmentInput
-    [] [] [] [ PMatchRecurse matchTuple ] [ PCheckRecurse checkTuple ]
+    [] [] [] [ PMatchRecurse matchTuple ] [ PCheckRecurse checkTuple ] [] []
 
 type TupleContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyTuple e ty a, AsTupleOutOfBounds e, AsTyTuple ty, AsPtTuple pt, AsTmTuple ty pt tm)
 

@@ -176,7 +176,7 @@ stepSndLazy tm = do
 -- TODO check this, there might be more rules
 evalRulesLazy :: AsTmPair ty pt tm => FragmentInput e s r m ty pt tm a
 evalRulesLazy =
-  FragmentInput [] [EvalBase stepFstLazy, EvalBase stepSndLazy] [] [] []
+  FragmentInput [] [EvalBase stepFstLazy, EvalBase stepSndLazy] [] [] [] [] []
 
 valuePair :: AsTmPair ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 valuePair valueFn tm = do
@@ -237,7 +237,7 @@ evalRulesStrict =
     , EvalStep stepPair1
     , EvalValueStep stepPair2
     ]
-    [] [] []
+    [] [] [] [] []
 
 inferTmPair :: (Monad m, AsTyPair ty, AsTmPair ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmPair inferFn tm = do
@@ -271,7 +271,7 @@ inferRules =
     , InferRecurse inferTmFst
     , InferRecurse inferTmSnd
     ]
-    [] []
+    [] [] [] []
 
 matchPair :: (AsPtPair pt, AsTmPair ty pt tm) => (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchPair matchFn p tm = do
@@ -294,6 +294,7 @@ patternRules =
     [] [] []
     [ PMatchRecurse matchPair ]
     [ PCheckRecurse checkPair ]
+    [] []
 
 type PairContext e s r m ty pt tm a = (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty, AsPtPair pt, AsTmPair ty pt tm)
 

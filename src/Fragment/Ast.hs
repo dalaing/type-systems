@@ -13,16 +13,22 @@ Portability : non-portable
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE RankNTypes #-}
+-- {-# LANGUAGE RankNTypes #-}
 module Fragment.Ast (
     AstVar(..)
   , _ATyVar
   , _APtVar
   , _ATmVar
   , Ast(..)
+  , AstConstraint
+  , AstTransversable
+  , AstBound
+  , AstEq
+  , AstOrd
+  , AstShow
   , _AVar
   , _AType
   , _APattern
@@ -37,8 +43,6 @@ module Fragment.Ast (
   , _Pattern
   , Term(..)
   , _TmVar
-  , TripleConstraint
-  , TripleConstraint1
   ) where
 
 import Control.Monad (ap)
@@ -61,11 +65,11 @@ data AstVar a =
   | ATmVar a
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
+makePrisms ''AstVar
+
 deriveEq1 ''AstVar
 deriveOrd1 ''AstVar
 deriveShow1 ''AstVar
-
-makePrisms ''AstVar
 
 -- with type families, we could add annotations here by just adding some more constraints
 data Ast ty pt tm a =
@@ -76,6 +80,7 @@ data Ast ty pt tm a =
 
 makePrisms ''Ast
 
+{-
 type TripleConstraint (k :: * -> Constraint) ty pt tm a =
   ( k (ty (Ast ty pt tm) a)
   , k (pt (Ast ty pt tm) a)
@@ -87,32 +92,82 @@ type TripleConstraint1 (k :: (* -> *) -> Constraint) ty pt tm =
   , k (pt (Ast ty pt tm))
   , k (tm ty pt (Ast ty pt tm))
   )
+-}
 
-deriving instance (Eq a, TripleConstraint Eq ty pt tm a) => Eq (Ast ty pt tm a)
+type AstConstraint (k :: ((* -> *) -> * -> *) -> Constraint) ty pt tm = (k ty, k pt, k (tm ty pt))
+type AstTransversable ty pt tm = AstConstraint (Bitransversable) ty pt tm
+type AstBound ty pt tm = AstConstraint Bound ty pt tm
+type AstEq ty pt tm = AstConstraint EqRec ty pt tm
+type AstOrd ty pt tm = AstConstraint OrdRec ty pt tm
+type AstShow ty pt tm = AstConstraint ShowRec ty pt tm
 
-deriving instance (Ord a, TripleConstraint Ord ty pt tm a) => Ord (Ast ty pt tm a)
+instance (Eq a, AstEq ty pt tm) => Eq (Ast ty pt tm a) where
+  AVar x == AVar y = x == y
+  AType x == AType y = eqRec x y
+  APattern x == APattern y = eqRec x y
+  ATerm x == ATerm y = eqRec x y
+  _ == _ = False
 
-deriving instance (Show a, TripleConstraint Show ty pt tm a) => Show (Ast ty pt tm a)
+instance AstEq ty pt tm => Eq1 (Ast ty pt tm) where
+  liftEq e (AVar x) (AVar y) = e x y
+  liftEq e (AType x) (AType y) = liftEq1Rec e x y
+  liftEq e (APattern x) (APattern y) = liftEq1Rec e x y
+  liftEq e (ATerm x) (ATerm y) = liftEq1Rec e x y
+  liftEq _ _ _ = False
 
-instance TripleConstraint1 Eq1 ty pt tm => Eq1 (Ast ty pt tm) where
-  liftEq = $(makeLiftEq ''Ast)
+instance (Ord a, AstOrd ty pt tm) => Ord (Ast ty pt tm a) where
+  compare (AVar x) (AVar y) = compare x y
+  compare (AVar _) _ = LT
+  compare _ (AVar _) = GT
+  compare (AType x) (AType y) = compareRec x y
+  compare (AType _) _ = LT
+  compare _ (AType _) = GT
+  compare (APattern x) (APattern y) = compareRec x y
+  compare (APattern _) _ = LT
+  compare _ (APattern _) = GT
+  compare (ATerm x) (ATerm y) = compareRec x y
 
-instance TripleConstraint1 Ord1 ty pt tm => Ord1 (Ast ty pt tm) where
-  liftCompare = $(makeLiftCompare ''Ast)
+instance AstOrd ty pt tm => Ord1 (Ast ty pt tm) where
+  liftCompare c (AVar x) (AVar y) = c x y
+  liftCompare _ (AVar _) _ = LT
+  liftCompare _ _ (AVar _) = GT
+  liftCompare c (AType x) (AType y) = liftCompare1Rec c x y
+  liftCompare _ (AType _) _ = LT
+  liftCompare _ _ (AType _) = GT
+  liftCompare c (APattern x) (APattern y) = liftCompare1Rec c x y
+  liftCompare _ (APattern _) _ = LT
+  liftCompare _ _ (APattern _) = GT
+  liftCompare c (ATerm x) (ATerm y) = liftCompare1Rec c x y
 
-instance TripleConstraint1 Show1 ty pt tm => Show1 (Ast ty pt tm) where
-  liftShowsPrec = $(makeLiftShowsPrec ''Ast)
+instance (Show a, AstShow ty pt tm) => Show (Ast ty pt tm a) where
+  showsPrec n (AVar x) = showsUnaryWith showsPrec "AVar" n x
+  showsPrec n (AType x) = showsUnaryWith showsPrecRec "AType" n x
+  showsPrec n (APattern x) = showsUnaryWith showsPrecRec "APattern" n x
+  showsPrec n (ATerm x) = showsUnaryWith showsPrecRec "ATerm" n x
 
-deriving instance TripleConstraint1 Functor ty pt tm => Functor (Ast ty pt tm)
-deriving instance TripleConstraint1 Foldable ty pt tm => Foldable (Ast ty pt tm)
+instance AstShow ty pt tm => Show1 (Ast ty pt tm) where
+  liftShowsPrec s _ n (AVar x) = s n x
+  liftShowsPrec s sl n (AType x) = liftShowsPrec1Rec s sl n x
+  liftShowsPrec s sl n (APattern x) = liftShowsPrec1Rec s sl n x
+  liftShowsPrec s sl n (ATerm x) = liftShowsPrec1Rec s sl n x
 
-deriving instance TripleConstraint1 Traversable ty pt tm => Traversable (Ast ty pt tm)
+instance AstTransversable ty pt tm => Functor (Ast ty pt tm) where
+  fmap = fmapDefault
 
-instance (TripleConstraint1 Functor ty pt tm, Bound ty, Bound pt, Bound (tm ty pt)) => Applicative (Ast ty pt tm) where
+instance AstTransversable ty pt tm => Foldable (Ast ty pt tm) where
+  foldMap = foldMapDefault
+
+instance AstTransversable ty pt tm => Traversable (Ast ty pt tm) where
+  traverse f (AVar x) = AVar <$> f x
+  traverse f (AType x) = AType <$> traverseDefault f x
+  traverse f (APattern x) = APattern <$> traverseDefault f x
+  traverse f (ATerm x) = ATerm <$> traverseDefault f x
+
+instance (AstTransversable ty pt tm, AstBound ty pt tm) => Applicative (Ast ty pt tm) where
   pure = return
   (<*>) = ap
 
-instance (TripleConstraint1 Functor ty pt tm, Bound ty, Bound pt, Bound (tm ty pt)) => Monad (Ast ty pt tm) where
+instance (AstTransversable ty pt tm, AstBound ty pt tm) => Monad (Ast ty pt tm) where
   return = AVar
 
   AVar x >>= f = f x
@@ -124,31 +179,31 @@ data Type ty a = TyVar a | TyTree (ty (Type ty) a)
 
 makePrisms ''Type
 
-typeToAst :: (Traversable (ty (Type ty)), Bitransversable ty) => Type ty a -> Ast ty pt tm (AstVar a)
+typeToAst :: Bitransversable ty => Type ty a -> Ast ty pt tm (AstVar a)
 typeToAst = runIdentity . typeToAst' (Identity . ATyVar)
 
-typeToAst' :: (Traversable (ty (Type ty)), Bitransversable ty) => (a -> Identity b) -> Type ty a -> Identity (Ast ty pt tm b)
+typeToAst' :: Bitransversable ty => (a -> Identity b) -> Type ty a -> Identity (Ast ty pt tm b)
 typeToAst' fV x = typeToAst'' =<< traverse fV x
 
-typeToAst'' :: (Traversable (ty (Type ty)), Bitransversable ty) => Type ty a -> Identity (Ast ty pt tm a)
+typeToAst'' :: Bitransversable ty => Type ty a -> Identity (Ast ty pt tm a)
 typeToAst'' (TyVar x) = Identity (AVar x)
 typeToAst'' (TyTree ty) = fmap AType . bitransverse typeToAst' pure $ ty
 
-astToType :: (TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Ast ty pt tm (AstVar a) -> Maybe (Type ty a)
+astToType :: AstTransversable ty pt tm => Ast ty pt tm (AstVar a) -> Maybe (Type ty a)
 astToType = astToType' fV
   where
     fV (ATyVar x) = Just x
     fV _ = Nothing
 
-astToType' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => (a -> Maybe b) -> Ast ty pt tm a -> Maybe (Type ty b)
+astToType' :: AstTransversable ty pt tm => (a -> Maybe b) -> Ast ty pt tm a -> Maybe (Type ty b)
 astToType' fV x = astToType'' =<< traverse fV x
 
-astToType'' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Ast ty pt tm a -> Maybe (Type ty a)
+astToType'' :: (Bitransversable ty, Bitransversable pt, Bitransversable (tm ty pt)) => Ast ty pt tm a -> Maybe (Type ty a)
 astToType'' (AVar x) = Just (TyVar x)
 astToType'' (AType ty) = fmap TyTree . bitransverse astToType' pure $ ty
 astToType'' _ = Nothing
 
-_Type :: (Traversable (ty (Type ty)), TripleConstraint1 Traversable ty pt tm, Bitransversable ty) => Prism' (Ast ty pt tm (AstVar a)) (Type ty a)
+_Type :: AstTransversable ty pt tm => Prism' (Ast ty pt tm (AstVar a)) (Type ty a)
 _Type = prism typeToAst (\x -> note x . astToType $ x)
 
 instance Bitransversable ty => Functor (Type ty) where
@@ -159,7 +214,7 @@ instance Bitransversable ty => Foldable (Type ty) where
 
 instance Bitransversable ty => Traversable (Type ty) where
   traverse f (TyVar x) = TyVar <$> f x
-  traverse f (TyTree x) = TyTree <$> bitransverse traverse f x
+  traverse f (TyTree x) = TyTree <$> traverseDefault f x
 
 instance (Eq a, EqRec ty) => Eq (Type ty a) where
   TyVar x == TyVar y = (==) x y
@@ -168,20 +223,20 @@ instance (Eq a, EqRec ty) => Eq (Type ty a) where
 
 instance EqRec ty => Eq1 (Type ty) where
   liftEq e (TyVar x) (TyVar y) = e x y
-  liftEq e (TyTree x) (TyTree y) = liftEqRec (liftEq e) e x y
+  liftEq e (TyTree x) (TyTree y) = liftEq1Rec e x y
   liftEq _ _ _ = False
 
 instance (Ord a, OrdRec ty) => Ord (Type ty a) where
   compare (TyVar x) (TyVar y) = compare x y
+  compare (TyVar _) _ = LT
+  compare _ (TyVar _) = GT
   compare (TyTree x) (TyTree y) = compareRec x y
-  compare (TyVar _) (TyTree _) = LT
-  compare (TyTree _) (TyVar _) = GT
 
 instance OrdRec ty => Ord1 (Type ty) where
   liftCompare c (TyVar x) (TyVar y) = c x y
-  liftCompare c (TyTree x) (TyTree y) = liftCompareRec (liftCompare c) c x y
-  liftCompare _ (TyVar _) (TyTree _) = LT
-  liftCompare _ (TyTree _) (TyVar _) = GT
+  liftCompare _ (TyVar _) _ = LT
+  liftCompare _ _ (TyVar _) = GT
+  liftCompare c (TyTree x) (TyTree y) = liftCompare1Rec c x y
 
 instance (Show a, ShowRec ty) => Show (Type ty a) where
   showsPrec n (TyVar x) = showsUnaryWith showsPrec "TyVar" n x
@@ -189,7 +244,7 @@ instance (Show a, ShowRec ty) => Show (Type ty a) where
 
 instance ShowRec ty => Show1 (Type ty) where
   liftShowsPrec s _ n (TyVar x) = s n x
-  liftShowsPrec s sl n (TyTree x) = liftShowsPrecRec (liftShowsPrec s sl) (liftShowList s sl) s sl n x
+  liftShowsPrec s sl n (TyTree x) = liftShowsPrec1Rec s sl n x
 
 instance (Bound ty, Bitransversable ty) => Applicative (Type ty) where
   pure = return
@@ -213,7 +268,7 @@ instance Bitransversable pt => Foldable (Pattern pt) where
 
 instance Bitransversable pt => Traversable (Pattern pt) where
   traverse f (PtVar x) = PtVar <$> f x
-  traverse f (PtTree x) = PtTree <$> bitransverse traverse f x
+  traverse f (PtTree x) = PtTree <$> traverseDefault f x
 
 instance (Eq a, EqRec pt) => Eq (Pattern pt a) where
   PtVar x == PtVar y = (==) x y
@@ -222,20 +277,20 @@ instance (Eq a, EqRec pt) => Eq (Pattern pt a) where
 
 instance EqRec pt => Eq1 (Pattern pt) where
   liftEq e (PtVar x) (PtVar y) = e x y
-  liftEq e (PtTree x) (PtTree y) = liftEqRec (liftEq e) e x y
+  liftEq e (PtTree x) (PtTree y) = liftEq1Rec e x y
   liftEq _ _ _ = False
 
 instance (Ord a, OrdRec pt) => Ord (Pattern pt a) where
   compare (PtVar x) (PtVar y) = compare x y
+  compare (PtVar _) _ = LT
+  compare _ (PtVar _) = GT
   compare (PtTree x) (PtTree y) = compareRec x y
-  compare (PtVar _) (PtTree _) = LT
-  compare (PtTree _) (PtVar _) = GT
 
 instance OrdRec pt => Ord1 (Pattern pt) where
   liftCompare c (PtVar x) (PtVar y) = c x y
-  liftCompare c (PtTree x) (PtTree y) = liftCompareRec (liftCompare c) c x y
-  liftCompare _ (PtVar _) (PtTree _) = LT
-  liftCompare _ (PtTree _) (PtVar _) = GT
+  liftCompare _ (PtVar _) _ = LT
+  liftCompare _ _ (PtVar _) = GT
+  liftCompare c (PtTree x) (PtTree y) = liftCompare1Rec c x y
 
 instance (Show a, ShowRec pt) => Show (Pattern pt a) where
   showsPrec n (PtVar x) = showsUnaryWith showsPrec "PtVar" n x
@@ -243,7 +298,7 @@ instance (Show a, ShowRec pt) => Show (Pattern pt a) where
 
 instance ShowRec pt => Show1 (Pattern pt) where
   liftShowsPrec s _ n (PtVar x) = s n x
-  liftShowsPrec s sl n (PtTree x) = liftShowsPrecRec (liftShowsPrec s sl) (liftShowList s sl) s sl n x
+  liftShowsPrec s sl n (PtTree x) = liftShowsPrec1Rec s sl n x
 
 instance (Bound pt, Bitransversable pt) => Applicative (Pattern pt) where
   pure = return
@@ -255,53 +310,51 @@ instance (Bound pt, Bitransversable pt) => Monad (Pattern pt) where
   PtVar x >>= f = f x
   PtTree pt >>= f = PtTree (pt >>>= f)
 
-patternToAst :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Ast ty pt tm (AstVar a)
+patternToAst :: Bitransversable pt => Pattern pt a -> Ast ty pt tm (AstVar a)
 patternToAst = runIdentity . patternToAst' (Identity . APtVar)
 
-patternToAst' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => (a -> Identity b) -> Pattern pt a -> Identity (Ast ty pt tm b)
+patternToAst' :: Bitransversable pt => (a -> Identity b) -> Pattern pt a -> Identity (Ast ty pt tm b)
 patternToAst' fV x = patternToAst'' =<< traverse fV x
 
-patternToAst'' :: (Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Identity (Ast ty pt tm a)
-patternToAst'' (PtVar x) = Identity (AVar x)
+patternToAst'' :: Bitransversable pt => Pattern pt a -> Identity (Ast ty pt tm a)
+patternToAst'' (PtVar x) = pure (AVar x)
 patternToAst'' (PtTree pt) = fmap APattern . bitransverse patternToAst' pure $ pt
 
-astToPattern :: (TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => Ast ty pt tm (AstVar a) -> Maybe (Pattern pt a)
+astToPattern :: AstTransversable ty pt tm => Ast ty pt tm (AstVar a) -> Maybe (Pattern pt a)
 astToPattern = astToPattern' fV
   where
     fV (APtVar x) = Just x
     fV _ = Nothing
 
-astToPattern' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => (a -> Maybe b) -> Ast ty pt tm a -> Maybe (Pattern pt b)
+astToPattern' :: AstTransversable ty pt tm => (a -> Maybe b) -> Ast ty pt tm a -> Maybe (Pattern pt b)
 astToPattern' fV x = astToPattern'' =<< traverse fV x
 
-astToPattern'' :: (TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => Ast ty pt tm a -> Maybe (Pattern pt a)
-astToPattern'' (AVar x) = Just (PtVar x)
+astToPattern'' :: AstTransversable ty pt tm => Ast ty pt tm a -> Maybe (Pattern pt a)
+astToPattern'' (AVar x) = pure (PtVar x)
 astToPattern'' (APattern pt) = fmap PtTree . bitransverse astToPattern' pure $ pt
 astToPattern'' _ = Nothing
 
-_Pattern :: (Traversable (pt (Pattern pt)), TripleConstraint1 Traversable ty pt tm, Bitransversable pt) => Prism' (Ast ty pt tm (AstVar a)) (Pattern pt a)
+_Pattern :: AstTransversable ty pt tm => Prism' (Ast ty pt tm (AstVar a)) (Pattern pt a)
 _Pattern = prism patternToAst (\x -> note x . astToPattern $ x)
 
 newtype Term ty pt tm a = Term (Ast ty pt tm (AstVar a))
+  deriving (Eq, Ord, Show)
 
 makeWrapped ''Term
 
-deriving instance (Eq a, TripleConstraint Eq ty pt tm (AstVar a)) => Eq (Term ty pt tm a)
-deriving instance (Ord a, TripleConstraint Ord ty pt tm (AstVar a)) => Ord (Term ty pt tm a)
-deriving instance (Show a, TripleConstraint Show ty pt tm (AstVar a)) => Show (Term ty pt tm a)
-
-instance (TripleConstraint1 Eq1 ty pt tm) => Eq1 (Term ty pt tm) where
+instance AstEq ty pt tm => Eq1 (Term ty pt tm) where
   liftEq = $(makeLiftEq ''Term)
 
-instance (TripleConstraint1 Ord1 ty pt tm) => Ord1 (Term ty pt tm) where
+instance AstOrd ty pt tm => Ord1 (Term ty pt tm) where
   liftCompare = $(makeLiftCompare ''Term)
 
-instance (TripleConstraint1 Show1 ty pt tm) => Show1 (Term ty pt tm) where
+instance AstShow ty pt tm => Show1 (Term ty pt tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''Term)
 
-deriving instance (TripleConstraint1 Functor ty pt tm) => Functor (Term ty pt tm)
-deriving instance (TripleConstraint1 Foldable ty pt tm) => Foldable (Term ty pt tm)
-deriving instance (TripleConstraint1 Traversable ty pt tm) => Traversable (Term ty pt tm)
+deriving instance AstTransversable ty pt tm => Functor (Term ty pt tm)
+deriving instance AstTransversable ty pt tm => Foldable (Term ty pt tm)
+deriving instance AstTransversable ty pt tm => Traversable (Term ty pt tm)
 
 _TmVar :: Prism' (Term ty pt tm a) a
 _TmVar = _Wrapped . _AVar . _ATmVar
+

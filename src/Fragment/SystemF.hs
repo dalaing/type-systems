@@ -15,7 +15,6 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE UndecidableInstances #-}
 -- {-# LANGUAGE OverloadedStrings #-}
 module Fragment.SystemF (
     TyFSystemF(..)
@@ -86,6 +85,7 @@ instance EqRec TyFSystemF where
     eR x1 x2 && eR y1 y2
   liftEqRec eR e (TyAllF s1) (TyAllF s2) =
     liftEqRec eR e s1 s2
+  liftEqRec _ _ _ _ = False
 
 instance OrdRec TyFSystemF where
   liftCompareRec cR _ (TyArrF x1 y1) (TyArrF x2 y2) =
@@ -96,8 +96,6 @@ instance OrdRec TyFSystemF where
   liftCompareRec _ _ _ (TyArrF _ _) = GT
   liftCompareRec cR c (TyAllF s1) (TyAllF s2) =
     liftCompareRec cR c s1 s2
-  liftCompareRec _ _ (TyAllF _) _ = LT
-  liftCompareRec _ _ _ (TyAllF _) = GT
 
 instance ShowRec TyFSystemF where
   liftShowsPrecRec sR _ _ _ n (TyArrF x y) =
@@ -131,7 +129,7 @@ instance (Ord1 k,  Monad k) => Ord1 (TmFSystemF ty pt k) where
 instance (Show1 k) => Show1 (TmFSystemF ty pt k) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFSystemF)
 
-class (TripleConstraint1 Traversable ty pt tm, Bitransversable ty, Traversable (ty (Type ty))) => AsTmSystemF ty pt tm where
+class AstTransversable ty pt tm => AsTmSystemF ty pt tm where
   _TmSystemFP :: Prism' (tm ty pt k a) (TmFSystemF ty pt k a)
 
   _TmSystemFLink :: Prism' (Term ty pt tm a) (TmFSystemF ty pt (Ast ty pt tm) (AstVar a))
@@ -149,7 +147,7 @@ class (TripleConstraint1 Traversable ty pt tm, Bitransversable ty, Traversable (
   _TmAppTy :: Prism' (Term ty pt tm a) (Term ty pt tm a, Type ty a)
   _TmAppTy = _TmSystemFLink . _TmAppTyF . mkPair _Unwrapped _Type
 
-instance (TripleConstraint1 Traversable ty pt TmFSystemF, Bitransversable ty, Traversable (ty (Type ty))) => AsTmSystemF ty pt TmFSystemF where
+instance (Bitransversable ty, Bitransversable pt) => AsTmSystemF ty pt TmFSystemF where
   _TmSystemFP = id
 
 instance Bound (TmFSystemF ty pt) where
@@ -273,7 +271,7 @@ systemFFragmentLazy =
     , InferRecurse inferTmLamTy
     , InferRecurse inferTmAppTy
     ]
-    [] []
+    [] [] [] []
 
 stepTmApp2 :: AsTmSystemF ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmApp2 valueFn stepFn tm = do
@@ -284,7 +282,7 @@ stepTmApp2 valueFn stepFn tm = do
 
 systemFFragmentStrict :: SystemFContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 systemFFragmentStrict =
-  mappend systemFFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] [] [] []
+  mappend systemFFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] [] [] [] [] []
 
 -- Helpers
 
@@ -294,13 +292,13 @@ tyArr = curry $ review _TyArr
 tyAll :: (Eq a, Bound ty, Bitransversable ty, AsTySystemF ty) => a -> Type ty a -> Type ty a
 tyAll v ty = review _TyAll (abstract1 v ty)
 
-tmLam :: (Eq a, AsTmSystemF ty pt tm, Bound ty, Bound pt, Bound (tm ty pt)) => a -> Type ty a -> Term ty pt tm a -> Term ty pt tm a
+tmLam :: (Eq a, AsTmSystemF ty pt tm, AstBound ty pt tm) => a -> Type ty a -> Term ty pt tm a -> Term ty pt tm a
 tmLam v ty tm = review _TmLam (ty, abstract1 (review _ATmVar v) . review _Unwrapped $ tm)
 
 tmApp :: AsTmSystemF ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
 tmApp = curry $ review _TmApp
 
-tmLamTy :: (Eq a, AsTmSystemF ty pt tm, Bound ty, Bound pt, Bound (tm ty pt)) => a -> Term ty pt tm a -> Term ty pt tm a
+tmLamTy :: (Eq a, AsTmSystemF ty pt tm, AstBound ty pt tm) => a -> Term ty pt tm a -> Term ty pt tm a
 tmLamTy v tm = review _TmLamTy (abstract1 (review _ATyVar v) . review _Unwrapped $ tm)
 
 tmAppTy :: AsTmSystemF ty pt tm => Term ty pt tm a -> Type ty a -> Term ty pt tm a

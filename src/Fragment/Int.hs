@@ -273,6 +273,8 @@ intFragment =
     ]
     [ PMatchEval matchInt ]
     [ PCheckBase checkInt ]
+    [ ]
+    [ ]
 
 -- Helpers
 

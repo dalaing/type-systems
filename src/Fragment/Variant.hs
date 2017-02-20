@@ -16,7 +16,6 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE UndecidableInstances #-}
 module Fragment.Variant (
     TyFVariant(..)
   , AsTyVariant(..)
@@ -169,13 +168,13 @@ instance Bound (TmFVariant ty pt) where
 instance Bitransversable (TmFVariant ty pt) where
   bitransverse fT fL (TmVariantF l tm ty) = TmVariantF <$> pure l <*> fT fL tm <*> fT fL ty
 
-class (TripleConstraint1 Traversable ty pt tm, Bitransversable ty, Traversable (ty (Type ty))) => AsTmVariant ty pt tm where
+class AstTransversable ty pt tm => AsTmVariant ty pt tm where
   _TmVariantP :: Prism' (tm ty pt k a) (TmFVariant ty pt k a)
 
   _TmVariant :: Prism' (Term ty pt tm a) (T.Text, Term ty pt tm a, Type ty a)
   _TmVariant = _Wrapped . _ATerm . _TmVariantP . _TmVariantF . mkTriple id _Unwrapped _Type
 
-instance (TripleConstraint1 Traversable ty pt TmFVariant, Bitransversable ty, Traversable (ty (Type ty))) => AsTmVariant ty pt TmFVariant where
+instance (Bitransversable ty, Bitransversable pt) => AsTmVariant ty pt TmFVariant where
   _TmVariantP = id
 
 -- Errors
@@ -245,7 +244,7 @@ evalRulesStrict =
   FragmentInput
     [ ValueRecurse valueVariant ]
     [ EvalStep stepVariant ]
-    [] [] []
+    [] [] [] [] []
 
 baseRules :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
 baseRules =
@@ -253,6 +252,7 @@ baseRules =
     [ InferRecurse inferTmVariant ]
     [ PMatchRecurse matchVariant ]
     [ PCheckRecurse checkVariant ]
+    [] []
 
 variantFragmentStrict :: VariantContext e s r m ty p tm a => FragmentInput e s r m ty p tm a
 variantFragmentStrict = evalRulesStrict `mappend` baseRules

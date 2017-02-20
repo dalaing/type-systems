@@ -262,16 +262,16 @@ instance AsTmTuple ty pt TermF where
 instance AsTmRecord ty pt TermF where
   _TmRecordP = _TmLRecord
 
-instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmVariant ty pt TermF where
+instance (Bitransversable ty, Bitransversable pt) => AsTmVariant ty pt TermF where
   _TmVariantP = _TmLVariant
 
 instance AsTmCase ty pt TermF where
   _TmCaseP = _TmLCase
 
---instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSTLC ty pt TermF where
+--instance (Bitransversable ty, Bitransversable pt) => AsTmSTLC ty pt TermF where
 --  _TmSTLCP = _TmLSTLC
 
-instance (TripleConstraint1 Traversable ty pt TermF, Traversable (ty (Type ty)), Bitransversable ty) => AsTmSystemF ty pt TermF where
+instance (Bitransversable ty, Bitransversable pt) => AsTmSystemF ty pt TermF where
   _TmSystemFP = _TmLSystemF
 
 instance Bound (TermF ty pt) where
@@ -315,9 +315,9 @@ data Error ty pt tm a =
   | EUnusedPatternVariables (N.NonEmpty a)
   | EUnknownTypeError
 
-deriving instance (Eq a, EqRec ty, TripleConstraint Eq ty pt tm (AstVar a)) => Eq (Error ty pt tm a)
-deriving instance (Ord a, OrdRec ty, TripleConstraint Ord ty pt tm (AstVar a)) => Ord (Error ty pt tm a)
-deriving instance (Show a, ShowRec ty, TripleConstraint Show ty pt tm (AstVar a)) => Show (Error ty pt tm a)
+deriving instance (Eq a, AstEq ty pt tm) => Eq (Error ty pt tm a)
+deriving instance (Ord a, AstOrd ty pt tm) => Ord (Error ty pt tm a)
+deriving instance (Show a, AstShow ty pt tm) => Show (Error ty pt tm a)
 
 makePrisms ''Error
 
@@ -425,47 +425,47 @@ runM s r m =
   flip evalStateT s $
   m
 
-type LTerm = Term TypeF PatternF TermF
-type LType = Type TypeF
-type LError = Error TypeF PatternF TermF
+type LTerm = Term TypeF PatternF TermF String
+type LType = Type TypeF String
+type LError = Error TypeF PatternF TermF String
 
 -- TODO could use different supplies for the variables
 
-type Output a = FragmentOutput (LError a) Int (TermContext TypeF a a) (M (LError a) Int (TermContext TypeF a a)) TypeF PatternF TermF a
+type Output = FragmentOutput LError Int (TermContext TypeF String String) (M LError Int (TermContext TypeF String String)) TypeF PatternF TermF String
 
-fragmentOutputLazy :: (Ord a, ToTmVar a, ToTyVar a) => Output a
+fragmentOutputLazy :: Output
 fragmentOutputLazy = prepareFragmentLazy fragmentInputLazy
 
-fragmentOutputStrict :: (Ord a, ToTmVar a, ToTyVar a) => Output a
+fragmentOutputStrict :: Output
 fragmentOutputStrict = prepareFragmentStrict fragmentInputStrict
 
-runEvalLazy :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> LTerm a
+runEvalLazy :: LTerm -> LTerm
 runEvalLazy =
   foEval fragmentOutputLazy
 
-runEvalStrict :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> LTerm a
+runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
   foEval fragmentOutputStrict
 
-runInfer :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Either (LError a) (LType a)
+runInfer :: LTerm -> Either LError LType
 runInfer =
   runM 0 emptyTermContext .
   foInfer fragmentOutputLazy
 
-runCheck :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> LType a -> Either (LError a) ()
+runCheck :: LTerm -> LType -> Either LError ()
 runCheck tm ty =
   runM 0 emptyTermContext $ foCheck fragmentOutputLazy tm ty
 
 -- for debugging
 
-runStepLazy :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Maybe (LTerm a)
+runStepLazy :: LTerm -> Maybe LTerm
 runStepLazy =
   foStep fragmentOutputLazy
 
-runValueStrict :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Maybe (LTerm a)
+runValueStrict :: LTerm -> Maybe LTerm
 runValueStrict =
   foValue fragmentOutputStrict
 
-runStepStrict :: (Ord a, ToTmVar a, ToTyVar a) => LTerm a -> Maybe (LTerm a)
+runStepStrict :: LTerm -> Maybe LTerm
 runStepStrict =
   foStep fragmentOutputStrict

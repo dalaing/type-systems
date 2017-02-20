@@ -112,12 +112,10 @@ ptVarFragment =
     []
     []
     []
-    [ PMatchBase matchWild
-    , PMatchBase matchVar
-    ]
-    [ PCheckBase checkWild
-    , PCheckBase checkVar
-    ]
+    [ PMatchBase matchWild, PMatchBase matchVar ]
+    [ PCheckBase checkWild, PCheckBase checkVar ]
+    [ ]
+    [ ]
 
 -- State
 
@@ -129,6 +127,9 @@ instance HasTmVarSupply Int where
 
 class ToTmVar a where
   toTmVar :: Int -> a
+
+instance ToTmVar String where
+  toTmVar x = 'x' : show x
 
 instance ToTmVar T.Text where
   toTmVar x = T.append "x" (T.pack . show $ x)
@@ -147,6 +148,9 @@ instance HasTyVarSupply Int where
 
 class ToTyVar a where
   toTyVar :: Int -> a
+
+instance ToTyVar String where
+  toTyVar x = 'X' : show x
 
 instance ToTyVar T.Text where
   toTyVar x = T.append "X" (T.pack . show $ x)
@@ -196,7 +200,7 @@ tmVarFragment :: TmVarContext e s r m ty pt tm a
             => FragmentInput e s r m ty pt tm a
 tmVarFragment =
   FragmentInput
-    [] [] [InferBase inferTmVar] [] []
+    [] [] [InferBase inferTmVar] [] [] [] []
 
 -- Helpers
 

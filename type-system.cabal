@@ -29,6 +29,7 @@ library
                      , Error
                      , Util
                      , Language.TheLot
+                     --, Rules.Pattern
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

@@ -12,10 +12,13 @@ module Util (
   , traverseDefault
   , EqRec(..)
   , eqRec
+  , liftEq1Rec
   , OrdRec(..)
   , compareRec
+  , liftCompare1Rec
   , ShowRec(..)
   , showsPrecRec
+  , liftShowsPrec1Rec
   , mkPair
   , mkTriple
   ) where
@@ -31,7 +34,7 @@ class Bitransversable s where
   bitransverse :: Applicative f => (forall a b. (a -> f b) -> t a -> f (u b)) -> (c -> f d) -> s t c -> f (s u d)
 
 traverseDefault :: (Applicative f, Traversable r, Bitransversable t) => (a -> f b) -> t r a -> f (t r b)
-traverseDefault fL = bitransverse traverse fL
+traverseDefault = bitransverse traverse
 
 instance Bitransversable (Scope b) where
   bitransverse = bitransverseScope
@@ -45,6 +48,9 @@ instance Eq b => EqRec (Scope b) where
 eqRec :: (Eq a, Eq1 g, EqRec f) => f g a -> f g a -> Bool
 eqRec = liftEqRec eq1 (==)
 
+liftEq1Rec :: (Eq1 g, EqRec f) => (a -> b -> Bool) -> f g a -> f g b -> Bool
+liftEq1Rec e = liftEqRec (liftEq e) e
+
 class EqRec f => OrdRec f where
   liftCompareRec :: Ord1 g => (g a -> g b -> Ordering) -> (a -> b -> Ordering) -> f g a -> f g b -> Ordering
 
@@ -53,6 +59,9 @@ instance Ord b => OrdRec (Scope b) where
 
 compareRec :: (Ord a, Ord1 g, OrdRec f) => f g a -> f g a -> Ordering
 compareRec = liftCompareRec compare1 compare
+
+liftCompare1Rec :: (Ord1 g, OrdRec f) => (a -> b -> Ordering) -> f g a -> f g b -> Ordering
+liftCompare1Rec c = liftCompareRec (liftCompare c) c
 
 class ShowRec f where
   liftShowsPrecRec :: Show1 g => (Int -> g a -> ShowS) -> ([g a] -> ShowS) -> (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f g a -> ShowS
@@ -69,6 +78,14 @@ instance Show b => ShowRec (Scope b) where
 
 showsPrecRec :: (Show a, Show1 g, ShowRec f) => Int -> f g a -> ShowS
 showsPrecRec = liftShowsPrecRec showsPrec1 (liftShowList showsPrec showList) showsPrec showList
+
+liftShowsPrec1Rec :: (Show1 g, ShowRec f) => (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f g a -> ShowS
+liftShowsPrec1Rec s sl n =
+  let
+    sR = liftShowsPrec s sl
+    slR = showListWith (sR 0)
+  in
+    liftShowsPrecRec sR slR s sl n
 
 mkPair :: Prism' a b -> Prism' c d -> Prism' (a,c) (b, d)
 mkPair p1 p2 = prism f g

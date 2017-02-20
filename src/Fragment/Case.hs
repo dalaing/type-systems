@@ -118,7 +118,7 @@ instance AsTmCase ty pt TmFCase where
 class AsExpectedPattern e ty pt tm a | e -> ty, e -> pt, e -> tm, e -> a where
   _ExpectedPattern :: Prism' e (Ast ty pt tm (AstVar a))
 
-expectPattern :: (MonadError e m, AsExpectedPattern e ty pt tm a, TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt) => Ast ty pt tm (AstVar a) -> m (Pattern pt a)
+expectPattern :: (MonadError e m, AsExpectedPattern e ty pt tm a, AstTransversable ty pt tm) => Ast ty pt tm (AstVar a) -> m (Pattern pt a)
 expectPattern ast =
   case preview _Pattern ast of
     Just p -> return p
@@ -157,7 +157,7 @@ checkForUnusedPatternVariables vs is =
 -- Rules
 
 
-type MatchConstraint ty pt tm = (Bound ty, Bound pt, Bound (tm ty pt), TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt)
+type MatchConstraint ty pt tm = (AstTransversable ty pt tm, AstBound ty pt tm)
 
 handleMatch :: MatchConstraint ty pt tm
             => (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
@@ -183,7 +183,7 @@ evalRulesLazy :: (MatchConstraint ty pt tm, AsTmCase ty pt tm) => FragmentInput 
 evalRulesLazy =
   FragmentInput []
     [EvalPMatch stepCaseLazy]
-    [] [] []
+    [] [] [] [] []
 
 stepCaseStepStrict :: AsTmCase ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepCaseStepStrict stepFn tm = do
@@ -201,9 +201,9 @@ evalRulesStrict :: (MatchConstraint ty pt tm, AsTmCase ty pt tm) => FragmentInpu
 evalRulesStrict =
   FragmentInput []
     [EvalStep stepCaseStepStrict, EvalValuePMatch stepCaseValueStrict]
-    [] [] []
+    [] [] [] [] []
 
-type CheckConstraint e s r m ty pt tm a = (Ord a, EqRec ty, MonadError e m, AsExpectedPattern e ty pt tm a, AsExpectedAllEq e ty a, AsDuplicatedPatternVariables e a, AsUnusedPatternVariables e a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, Bound ty, Bound pt, Bound (tm ty pt), TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt, AsTmCase ty pt tm)
+type CheckConstraint e s r m ty pt tm a = (Ord a, EqRec ty, MonadError e m, AsExpectedPattern e ty pt tm a, AsExpectedAllEq e ty a, AsDuplicatedPatternVariables e a, AsUnusedPatternVariables e a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, AstBound ty pt tm, AstTransversable ty pt tm, AsTmCase ty pt tm)
 
 inferCase :: CheckConstraint e s r m ty pt tm a => (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferCase inferFn checkFn tm = do
@@ -233,7 +233,7 @@ inferRules :: CheckConstraint e s r m ty pt tm a => FragmentInput e s r m ty pt 
 inferRules =
   FragmentInput [] []
     [InferPCheck inferCase]
-    [] []
+    [] [] [] []
 
 type CaseContext e s r m ty pt tm a = (Eq a, MonadError e m, AsTmCase ty pt tm, MatchConstraint ty pt tm, CheckConstraint e s r m ty pt tm a)
 
@@ -249,7 +249,7 @@ caseFragmentStrict =
 
 -- Helpers
 
-tmAlt :: (Eq a, Bound pt, Bound ty, Bound (tm ty pt), TripleConstraint1 Traversable ty pt tm, Traversable (pt (Pattern pt)), Bitransversable pt) => Pattern pt a -> Term ty pt tm a -> Alt ty pt (Ast ty pt tm) (AstVar a)
+tmAlt :: (Eq a, AstBound ty pt tm, AstTransversable ty pt tm) => Pattern pt a -> Term ty pt tm a -> Alt ty pt (Ast ty pt tm) (AstVar a)
 tmAlt p tm = Alt (review _Pattern p) s
   where
     vs = fmap ATmVar . toList $ p

@@ -13,6 +13,8 @@ module Fragment (
   , InferRule(..)
   , PMatchRule(..)
   , PCheckRule(..)
+  , PAddRule(..)
+  , PUncoveredRule(..)
   , FragmentInput(..)
   , FragmentOutput(..)
   , prepareFragmentStrict
@@ -168,9 +170,15 @@ mkPCheck rules x y =
   in
     go x y
 
--- TODO split matching and finding bindings
--- - matching is done at run time, we want to find bindings at compile time
--- - use Data.Sequence for the bindings
+data PAddRule (pt :: (* -> *) -> * -> *) a = PAddRule
+
+mkAdd :: [PAddRule pt a] -> ()
+mkAdd _ = ()
+
+data PUncoveredRule (pt :: (* -> *) -> * -> *) a = PUncoveredRule
+
+mkUncovered :: [PUncoveredRule pt a] -> ()
+mkUncovered _ = ()
 
 data FragmentInput e s r m ty pt tm a =
   FragmentInput {
@@ -179,18 +187,22 @@ data FragmentInput e s r m ty pt tm a =
   , fiInferRules :: [InferRule e s r m ty pt tm a]
   , fiPMatchRules :: [PMatchRule ty pt tm a]
   , fiPCheckRules :: [PCheckRule e m pt ty a]
+  , fiPAddRules :: [PAddRule pt a]
+  , fiPUncoveredRules :: [PUncoveredRule pt a]
   }
 
 instance Monoid (FragmentInput e s r m ty pt tm a) where
   mempty =
-    FragmentInput mempty mempty mempty mempty mempty
-  mappend (FragmentInput v1 e1 i1 m1 c1) (FragmentInput v2 e2 i2 m2 c2) =
+    FragmentInput mempty mempty mempty mempty mempty mempty mempty
+  mappend (FragmentInput v1 e1 i1 m1 c1 a1 u1) (FragmentInput v2 e2 i2 m2 c2 a2 u2) =
     FragmentInput
       (mappend v1 v2)
       (mappend e1 e2)
       (mappend i1 i2)
       (mappend m1 m2)
       (mappend c1 c2)
+      (mappend a1 a2)
+      (mappend u1 u2)
 
 data FragmentOutput e s r m ty pt tm a =
   FragmentOutput {
@@ -201,6 +213,8 @@ data FragmentOutput e s r m ty pt tm a =
   , foCheck :: Term ty pt tm a -> Type ty a -> m ()
   , foPMatch :: Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
   , foPCheck :: Pattern pt a -> Type ty a -> m [Type ty a]
+  , foPAdd :: ()
+  , foPUncovered :: ()
   }
 
 prepareFragment :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
@@ -216,8 +230,10 @@ prepareFragment innerMatchEval fi =
     c = mkCheck i
     pm = mkPMatch innerMatchEval . fiPMatchRules $ fi
     pc = mkPCheck . fiPCheckRules $ fi
+    a = mkAdd . fiPAddRules $ fi
+    u = mkUncovered . fiPUncoveredRules $ fi
   in
-    FragmentOutput v s e i c pm pc
+    FragmentOutput v s e i c pm pc a u
 
 prepareFragmentStrict :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
                 => FragmentInput e s r m ty pt tm a

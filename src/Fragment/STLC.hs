@@ -15,7 +15,6 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE UndecidableInstances #-}
 -- {-# LANGUAGE OverloadedStrings #-}
 module Fragment.STLC (
     TyFSTLC(..)
@@ -103,7 +102,7 @@ instance (Ord1 k,  Monad k) => Ord1 (TmFSTLC ty pt k) where
 instance (Show1 k) => Show1 (TmFSTLC ty pt k) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFSTLC)
 
-class (TripleConstraint1 Traversable ty pt tm, Bitransversable ty, Traversable (ty (Type ty))) => AsTmSTLC ty pt tm where
+class AstTransversable ty pt tm => AsTmSTLC ty pt tm where
   _TmSTLCP :: Prism' (tm ty pt k a) (TmFSTLC ty pt k a)
 
   _TmSTLCLink :: Prism' (Term ty pt tm a) (TmFSTLC ty pt (Ast ty pt tm) (AstVar a))
@@ -115,7 +114,7 @@ class (TripleConstraint1 Traversable ty pt tm, Bitransversable ty, Traversable (
   _TmApp :: Prism' (Term ty pt tm a) (Term ty pt tm a, Term ty pt tm a)
   _TmApp = _TmSTLCLink . _TmAppF . mkPair _Unwrapped _Unwrapped
 
-instance (TripleConstraint1 Traversable ty pt TmFSTLC, Bitransversable ty, Traversable (ty (Type ty))) => AsTmSTLC ty pt TmFSTLC where
+instance (Bitransversable ty, Bitransversable pt) => AsTmSTLC ty pt TmFSTLC where
   _TmSTLCP = id
 
 instance Bound (TmFSTLC ty pt) where
@@ -150,13 +149,13 @@ stepTmApp1 evalFn tm = do
   f' <- evalFn f
   return $ review _TmApp (f', x)
 
-stepTmLamApp :: (Bound ty, Bound pt, Bound (tm ty pt)) => AsTmSTLC ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
+stepTmLamApp :: AstBound ty pt tm => AsTmSTLC ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmLamApp tm = do
   (tmF, tmX) <- preview _TmApp tm
   (_, s) <- preview _TmLam tmF
   return . review _Wrapped . instantiate1 (review _Unwrapped tmX) $ s
 
-inferTmLam :: (Ord a, Bound ty, Bound pt, Bound (tm ty pt), MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmSTLC ty pt tm, HasTermContext r ty a a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmLam :: (Ord a, AstBound ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmSTLC ty pt tm, HasTermContext r ty a a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmLam inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
   return $ do
@@ -175,7 +174,7 @@ inferTmApp inferFn tm = do
     expectEq tyArg tyX
     return tyRet
 
-type STLCContext e s r m ty pt tm a = (Ord a, EqRec ty, Bound ty, Bound pt, Bound (tm ty pt), MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsTySTLC ty, AsTmSTLC ty pt tm)
+type STLCContext e s r m ty pt tm a = (Ord a, EqRec ty, AstBound ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a a, MonadError e m, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsTySTLC ty, AsTmSTLC ty pt tm)
 
 stlcFragmentLazy :: STLCContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 stlcFragmentLazy =
@@ -187,7 +186,7 @@ stlcFragmentLazy =
     [ InferRecurse inferTmLam
     , InferRecurse inferTmApp
     ]
-    [] []
+    [] [] [] []
 
 stepTmApp2 :: AsTmSTLC ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmApp2 valueFn stepFn tm = do
@@ -198,7 +197,7 @@ stepTmApp2 valueFn stepFn tm = do
 
 stlcFragmentStrict :: STLCContext e s r m ty pt tm a => FragmentInput e s r m ty pt tm a
 stlcFragmentStrict =
-  mappend stlcFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] [] [] []
+  mappend stlcFragmentLazy $ FragmentInput [] [EvalValueStep stepTmApp2] [] [] [] [] []
 
 -- Helpers
 

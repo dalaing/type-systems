@@ -194,7 +194,7 @@ stepRecordIxLazy tm = do
 -- TODO check this, there might be more rules
 evalRulesLazy :: AsTmRecord ty pt tm => FragmentInput e s r m ty pt tm a
 evalRulesLazy =
-  FragmentInput [] [EvalBase stepRecordIxLazy] [] [] []
+  FragmentInput [] [EvalBase stepRecordIxLazy] [] [] [] [] []
 
 valueRecord :: AsTmRecord ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 valueRecord valueFn tm = do
@@ -238,7 +238,7 @@ evalRulesStrict =
     , EvalValue stepRecordElimIxStrict
     , EvalValueStep stepRecord
     ]
-    [] [] []
+    [] [] [] [] []
 
 inferTmRecord :: (Monad m, AsTyRecord ty, AsTmRecord ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmRecord inferFn tm = do
@@ -287,6 +287,7 @@ baseRules =
     ]
     [ PMatchRecurse matchRecord ]
     [ PCheckRecurse checkRecord ]
+    [] []
 
 recordFragmentLazy :: RecordContext e s r m ty pt tm a
              => FragmentInput e s r m ty pt tm a

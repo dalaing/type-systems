@@ -6,11 +6,10 @@ From there I plan to play around with options on a few different axes.
 
 In the short term I want to:
 
-- add pattern matching
+- improve pattern matching
     - including redundancy and incompleteness checking
     - use the patterns in the lambda term
     - add warnings for unused variables in patterns
-- add records and variants
 - add let / fix / letrec
 - it would be nice to have some kind of let / letrec distinction on function declarations
     - the idea being that if you don't have letrec / fix in your language, and you don't have
