@@ -86,21 +86,6 @@ _TAdd = prism TAdd $ \x -> case x of
   TAdd y -> Right y
   _ -> Left x
 
-{-
-class In f xs where
-  _In :: Prism' (TSum xs g a) (f g a)
-
-instance {-# OVERLAPPABLE #-} (In a xs) => In a (b ': xs) where
-  _In = _TNext . _In
-
-instance {-# OVERLAPPING #-} In a (a ': xs) where
-  _In = _TAdd
-
-type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
-  All c '[] = ()
-  All c (x ': xs) = (c x, All c xs)
--}
-
 instance Bound (TSum '[]) where
   _ >>>= _ = error "cannot use Bound with an empty list"
 

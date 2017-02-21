@@ -17,7 +17,6 @@ Portability : non-portable
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DataKinds #-}
---{-# LANGUAGE UndecidableInstances #-}
 module Language.TheLot (
     runEvalStrict
   , runEvalLazy
