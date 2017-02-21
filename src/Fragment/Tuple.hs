@@ -16,6 +16,9 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Fragment.Tuple (
     TyFTuple(..)
   , AsTyTuple(..)
@@ -92,6 +95,12 @@ class AsTyTuple ty where
 instance AsTyTuple TyFTuple where
   _TyTupleP = id
 
+instance {-# OVERLAPPABLE #-} AsTyTuple (TSum xs) => AsTyTuple (TSum (x ': xs)) where
+  _TyTupleP = _TNext . _TyTupleP
+
+instance {-# OVERLAPPING #-} AsTyTuple (TSum (TyFTuple ': xs)) where
+  _TyTupleP = _TAdd . _TyTupleP
+
 data PtFTuple f a =
   PtTupleF [f a]
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -132,6 +141,12 @@ class AsPtTuple pt where
 
 instance AsPtTuple PtFTuple where
   _PtTupleP = id
+
+instance {-# OVERLAPPABLE #-} AsPtTuple (TSum xs) => AsPtTuple (TSum (x ': xs)) where
+  _PtTupleP = _TNext . _PtTupleP
+
+instance {-# OVERLAPPING #-} AsPtTuple (TSum (PtFTuple ': xs)) where
+  _PtTupleP = _TAdd . _PtTupleP
 
 data TmFTuple (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmTupleF [f a]

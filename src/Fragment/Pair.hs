@@ -16,6 +16,9 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Fragment.Pair (
     TyFPair(..)
   , AsTyPair(..)
@@ -86,6 +89,12 @@ class AsTyPair ty where
 instance AsTyPair TyFPair where
   _TyPairP = id
 
+instance {-# OVERLAPPABLE #-} AsTyPair (TSum xs) => AsTyPair (TSum (x ': xs)) where
+  _TyPairP = _TNext . _TyPairP
+
+instance {-# OVERLAPPING #-} AsTyPair (TSum (TyFPair ': xs)) where
+  _TyPairP = _TAdd . _TyPairP
+
 data PtFPair f a =
     PtPairF (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -124,6 +133,12 @@ class AsPtPair pt where
 
 instance AsPtPair PtFPair where
   _PtPairP = id
+
+instance {-# OVERLAPPABLE #-} AsPtPair (TSum xs) => AsPtPair (TSum (x ': xs)) where
+  _PtPairP = _TNext . _PtPairP
+
+instance {-# OVERLAPPING #-} AsPtPair (TSum (PtFPair ': xs)) where
+  _PtPairP = _TAdd . _PtPairP
 
 data TmFPair (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmPairF (f a) (f a)

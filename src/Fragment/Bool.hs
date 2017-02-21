@@ -15,6 +15,9 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Fragment.Bool (
     TyFBool(..)
   , AsTyBool(..)
@@ -80,6 +83,12 @@ class AsTyBool ty where
 instance AsTyBool TyFBool where
   _TyBoolP = id
 
+instance {-# OVERLAPPABLE #-} AsTyBool (TSum xs) => AsTyBool (TSum (x ': xs)) where
+  _TyBoolP = _TNext . _TyBoolP
+
+instance {-# OVERLAPPING #-} AsTyBool (TSum (TyFBool ': xs)) where
+  _TyBoolP = _TAdd . _TyBoolP
+
 data PtFBool (f :: * -> *) a =
   PtBoolF Bool
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -113,6 +122,12 @@ class AsPtBool pt where
 
 instance AsPtBool PtFBool where
   _PtBoolP = id
+
+instance {-# OVERLAPPABLE #-} AsPtBool (TSum xs) => AsPtBool (TSum (x ': xs)) where
+  _PtBoolP = _TNext . _PtBoolP
+
+instance {-# OVERLAPPING #-} AsPtBool (TSum (PtFBool ': xs)) where
+  _PtBoolP = _TAdd . _PtBoolP
 
 data TmFBool (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmBoolF Bool

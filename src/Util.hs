@@ -5,10 +5,22 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Util (
-    Bitransversable(..)
+    TSum(..)
+  , _TNext
+  , _TAdd
+  , Bitransversable(..)
   , traverseDefault
   , EqRec(..)
   , eqRec
@@ -23,27 +35,111 @@ module Util (
   , mkTriple
   ) where
 
+import Data.Traversable
+
 import Data.Functor.Classes
 import Text.Show
 
 import Control.Lens
 
+import Bound
 import Bound.Scope
+
+data TSum (f :: [(* -> *) -> * -> *]) (g :: (* -> *)) (a :: *) where
+  TNext :: TSum b g a -> TSum (f ': b) g a
+  TAdd :: f g a -> TSum (f ': b) g a
+
+instance (Eq a, Eq1 g, EqRec (TSum xs)) => Eq (TSum xs g a) where
+  (==) = eqRec
+
+instance (Eq1 g, EqRec (TSum xs)) => Eq1 (TSum xs g) where
+  liftEq = liftEq1Rec
+
+instance (Ord a, Ord1 g, OrdRec (TSum xs)) => Ord (TSum xs g a) where
+  compare = compareRec
+
+instance (Ord1 g, OrdRec (TSum xs)) => Ord1 (TSum xs g) where
+  liftCompare = liftCompare1Rec
+
+instance (Show a, Show1 g, ShowRec (TSum xs)) => Show (TSum xs g a) where
+  showsPrec = showsPrecRec
+
+instance (Show1 g, ShowRec (TSum xs)) => Show1 (TSum xs g) where
+  liftShowsPrec = liftShowsPrec1Rec
+
+instance (Traversable g, Bitransversable (TSum xs)) => Functor (TSum xs g) where
+  fmap = fmapDefault
+
+instance (Traversable g, Bitransversable (TSum xs)) => Foldable (TSum xs g) where
+  foldMap = foldMapDefault
+
+instance (Traversable g, Bitransversable (TSum xs)) => Traversable (TSum xs g) where
+  traverse = traverseDefault
+
+_TNext :: Prism' (TSum (f ': b) g a) (TSum b g a)
+_TNext = prism TNext $ \x -> case x of
+  TNext y -> Right y
+  _ -> Left x
+
+_TAdd :: Prism' (TSum (f ': b) g a) (f g a)
+_TAdd = prism TAdd $ \x -> case x of
+  TAdd y -> Right y
+  _ -> Left x
+
+{-
+class In f xs where
+  _In :: Prism' (TSum xs g a) (f g a)
+
+instance {-# OVERLAPPABLE #-} (In a xs) => In a (b ': xs) where
+  _In = _TNext . _In
+
+instance {-# OVERLAPPING #-} In a (a ': xs) where
+  _In = _TAdd
+
+type family All (c :: k -> Constraint) (xs :: [k]) :: Constraint where
+  All c '[] = ()
+  All c (x ': xs) = (c x, All c xs)
+-}
+
+instance Bound (TSum '[]) where
+  _ >>>= _ = error "cannot use Bound with an empty list"
+
+instance (Bound x, Bound (TSum xs)) => Bound (TSum (x ': xs)) where
+  TAdd a >>>= f = TAdd (a >>>= f)
+  TNext n >>>= f = TNext (n >>>= f)
 
 class Bitransversable s where
   bitransverse :: Applicative f => (forall a b. (a -> f b) -> t a -> f (u b)) -> (c -> f d) -> s t c -> f (s u d)
 
-traverseDefault :: (Applicative f, Traversable r, Bitransversable t) => (a -> f b) -> t r a -> f (t r b)
-traverseDefault = bitransverse traverse
-
 instance Bitransversable (Scope b) where
   bitransverse = bitransverseScope
+
+instance Bitransversable (TSum '[]) where
+  bitransverse _ _ = error "cannot use Bitransversable with an empty list"
+
+instance (Bitransversable x, Bitransversable (TSum xs)) => Bitransversable (TSum (x ': xs)) where
+  bitransverse fT fL (TAdd a) = TAdd <$> bitransverse fT fL a
+  bitransverse fT fL (TNext n) = TNext <$> bitransverse fT fL n
+
+traverseDefault :: (Applicative f, Traversable r, Bitransversable t) => (a -> f b) -> t r a -> f (t r b)
+traverseDefault = bitransverse traverse
 
 class EqRec f where
   liftEqRec :: Eq1 g => (g a -> g b -> Bool) -> (a -> b -> Bool) -> f g a -> f g b -> Bool
 
 instance Eq b => EqRec (Scope b) where
   liftEqRec eR _ (Scope s1) (Scope s2) = liftEq (liftEq eR) s1 s2
+
+instance EqRec (TSum '[]) where
+  liftEqRec _ _ _ _ = True
+
+instance (EqRec x, EqRec (TSum xs)) => EqRec (TSum (x ': xs)) where
+  liftEqRec eR e (TAdd a1) (TAdd a2) =
+    liftEqRec eR e a1 a2
+  liftEqRec eR e (TNext n1) (TNext n2) =
+    liftEqRec eR e n1 n2
+  liftEqRec _ _ _ _ =
+    False
 
 eqRec :: (Eq a, Eq1 g, EqRec f) => f g a -> f g a -> Bool
 eqRec = liftEqRec eq1 (==)
@@ -56,6 +152,19 @@ class EqRec f => OrdRec f where
 
 instance Ord b => OrdRec (Scope b) where
   liftCompareRec cR _ (Scope s1) (Scope s2) = liftCompare (liftCompare cR) s1 s2
+
+instance OrdRec (TSum '[]) where
+  liftCompareRec _ _ _ _ = EQ
+
+instance (EqRec x, EqRec (TSum xs), OrdRec x, OrdRec (TSum xs)) => OrdRec (TSum (x ': xs)) where
+  liftCompareRec cR c (TAdd a1) (TAdd a2) =
+    liftCompareRec cR c a1 a2
+  liftCompareRec _ _ (TAdd _) _ =
+    LT
+  liftCompareRec _ _ _ (TAdd _) =
+    GT
+  liftCompareRec cR c (TNext n1) (TNext n2) =
+    liftCompareRec cR c n1 n2
 
 compareRec :: (Ord a, Ord1 g, OrdRec f) => f g a -> f g a -> Ordering
 compareRec = liftCompareRec compare1 compare
@@ -75,6 +184,17 @@ instance Show b => ShowRec (Scope b) where
       f m = liftShowsPrec sR slR m
     in
       liftShowsPrec f (showListWith (f n)) n s
+
+instance ShowRec (TSum '[]) where
+  liftShowsPrecRec _ _ _ _ _ _ = id
+
+instance (ShowRec x, ShowRec (TSum xs)) => ShowRec (TSum (x ': xs)) where
+  liftShowsPrecRec sR slR s sl m (TAdd a) =
+    liftShowsPrecRec sR slR s sl m a
+    -- showsUnaryWith (liftShowsPrecRec sR slR s sl) "TAdd" m a
+  liftShowsPrecRec sR slR s sl m (TNext n) =
+    liftShowsPrecRec sR slR s sl m n
+    -- showsUnaryWith (liftShowsPrecRec sR slR s sl) "TNext" m n
 
 showsPrecRec :: (Show a, Show1 g, ShowRec f) => Int -> f g a -> ShowS
 showsPrecRec = liftShowsPrecRec showsPrec1 (liftShowList showsPrec showList) showsPrec showList
@@ -102,4 +222,3 @@ mkTriple p1 p2 p3 = prism f g
     g (x, y, z) = case (\a b c -> (a, b, c)) <$> preview p1 x <*> preview p2 y <*> preview p3 z of 
       Just a -> Right a
       Nothing -> Left (x, y, z)
-

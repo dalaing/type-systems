@@ -15,6 +15,9 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 -- {-# LANGUAGE OverloadedStrings #-}
 module Fragment.SystemF (
     TyFSystemF(..)
@@ -110,6 +113,13 @@ class AsTySystemF ty where
 
 instance AsTySystemF TyFSystemF where
   _TySystemFP = id
+
+instance {-# OVERLAPPABLE #-} AsTySystemF (TSum xs) => AsTySystemF (TSum (x ': xs)) where
+  _TySystemFP = _TNext . _TySystemFP
+
+instance {-# OVERLAPPING #-} AsTySystemF (TSum (TyFSystemF ': xs)) where
+  _TySystemFP = _TAdd . _TySystemFP
+
 
 data TmFSystemF (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
     TmLamF (k a) (Scope () k a)

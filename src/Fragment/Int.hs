@@ -15,6 +15,9 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Fragment.Int (
     TyFInt(..)
   , AsTyInt(..)
@@ -80,6 +83,12 @@ class AsTyInt ty where
 instance AsTyInt TyFInt where
   _TyIntP = id
 
+instance {-# OVERLAPPABLE #-} AsTyInt (TSum xs) => AsTyInt (TSum (x ': xs)) where
+  _TyIntP = _TNext . _TyIntP
+
+instance {-# OVERLAPPING #-} AsTyInt (TSum (TyFInt ': xs)) where
+  _TyIntP = _TAdd . _TyIntP
+
 data PtFInt (f :: * -> *) a =
   PtIntF Int
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -113,6 +122,12 @@ class AsPtInt pt where
 
 instance AsPtInt PtFInt where
   _PtIntP = id
+
+instance {-# OVERLAPPABLE #-} AsPtInt (TSum xs) => AsPtInt (TSum (x ': xs)) where
+  _PtIntP = _TNext . _PtIntP
+
+instance {-# OVERLAPPING #-} AsPtInt (TSum (PtFInt ': xs)) where
+  _PtIntP = _TAdd . _PtIntP
 
 data TmFInt (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmIntF Int

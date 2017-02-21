@@ -15,6 +15,9 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 -- {-# LANGUAGE OverloadedStrings #-}
 module Fragment.STLC (
     TyFSTLC(..)
@@ -66,6 +69,12 @@ class AsTySTLC ty where
 
 instance AsTySTLC TyFSTLC where
   _TySTLCP = id
+
+instance {-# OVERLAPPABLE #-} AsTySTLC (TSum xs) => AsTySTLC (TSum (x ': xs)) where
+  _TySTLCP = _TNext . _TySTLCP
+
+instance {-# OVERLAPPING #-} AsTySTLC (TSum (TyFSTLC ': xs)) where
+  _TySTLCP = _TAdd . _TySTLCP
 
 instance EqRec TyFSTLC where
   liftEqRec eR _ (TyArrF x1 y1) (TyArrF x2 y2) = eR x1 x2 && eR y1 y2

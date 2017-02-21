@@ -16,6 +16,9 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Fragment.Variant (
     TyFVariant(..)
   , AsTyVariant(..)
@@ -122,6 +125,12 @@ class AsTyVariant ty where
 instance AsTyVariant TyFVariant where
   _TyVariantP = id
 
+instance {-# OVERLAPPABLE #-} AsTyVariant (TSum xs) => AsTyVariant (TSum (x ': xs)) where
+  _TyVariantP = _TNext . _TyVariantP
+
+instance {-# OVERLAPPING #-} AsTyVariant (TSum (TyFVariant ': xs)) where
+  _TyVariantP = _TAdd . _TyVariantP
+
 data PtFVariant f a =
   PtVariantF T.Text (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -160,6 +169,12 @@ class AsPtVariant pt where
 
 instance AsPtVariant PtFVariant where
   _PtVariantP = id
+
+instance {-# OVERLAPPABLE #-} AsPtVariant (TSum xs) => AsPtVariant (TSum (x ': xs)) where
+  _PtVariantP = _TNext . _PtVariantP
+
+instance {-# OVERLAPPING #-} AsPtVariant (TSum (PtFVariant ': xs)) where
+  _PtVariantP = _TAdd . _PtVariantP
 
 data TmFVariant (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmVariantF T.Text (f a) (f a)

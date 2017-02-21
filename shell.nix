@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "default", withProfiling ? false, withHoogle ? true }:
+{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc802", withProfiling ? false, withHoogle ? true }:
 
 let
 
@@ -63,8 +63,8 @@ let
     bound = pkgs.fetchFromGitHub {
       owner = "ekmett";
       repo = "bound";
-      rev = "179212e348279216ed221a8ec85b0d1caa92c9c1";
-      sha256 = "0cwwprf9d88xig6p5v1sfbs8mwbi00340f7n01qj61rklz3iywy3";
+      rev =  "db3f5baaf975b074612917d6f6e53b6b7ceff8b0";
+      sha256 = "0l49x94g9nz4jx6j8n1ixwpvl9nhgwlp39sair526bwq3q8xlcx2";
     };
   };
 

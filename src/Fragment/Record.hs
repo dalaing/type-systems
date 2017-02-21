@@ -16,6 +16,9 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Fragment.Record (
     TyFRecord(..)
   , AsTyRecord(..)
@@ -106,6 +109,12 @@ class AsTyRecord ty where
 instance AsTyRecord TyFRecord where
   _TyRecordP = id
 
+instance {-# OVERLAPPABLE #-} AsTyRecord (TSum xs) => AsTyRecord (TSum (x ': xs)) where
+  _TyRecordP = _TNext . _TyRecordP
+
+instance {-# OVERLAPPING #-} AsTyRecord (TSum (TyFRecord ': xs)) where
+  _TyRecordP = _TAdd . _TyRecordP
+
 data PtFRecord pt a =
     PtRecordF [(T.Text, pt a)]
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -158,6 +167,12 @@ class AsPtRecord pt where
 
 instance AsPtRecord PtFRecord where
   _PtRecordP = id
+
+instance {-# OVERLAPPABLE #-} AsPtRecord (TSum xs) => AsPtRecord (TSum (x ': xs)) where
+  _PtRecordP = _TNext . _PtRecordP
+
+instance {-# OVERLAPPING #-} AsPtRecord (TSum (PtFRecord ': xs)) where
+  _PtRecordP = _TAdd . _PtRecordP
 
 data TmFRecord (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmRecordF [(T.Text, f a)]

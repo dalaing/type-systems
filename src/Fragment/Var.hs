@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-|
 Copyright   : (c) Dave Laing, 2017
 License     : BSD3
@@ -11,10 +12,14 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE GADTs #-}
 module Fragment.Var (
     PtFWild(..)
   , AsPtWild(..)
@@ -90,6 +95,12 @@ class AsPtWild pt where
 
 instance AsPtWild PtFWild where
   _PtWildP = id
+
+instance {-# OVERLAPPABLE #-} AsPtWild (TSum xs) => AsPtWild (TSum (x ': xs)) where
+  _PtWildP = _TNext . _PtWildP
+
+instance {-# OVERLAPPING #-} AsPtWild (TSum (PtFWild ': xs)) where
+  _PtWildP = _TAdd . _PtWildP
 
 matchWild :: AsPtWild pt => Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchWild p _ = do
