@@ -45,7 +45,7 @@ import Control.Lens
 import Bound
 import Bound.Scope
 
-data TSum (f :: [(* -> *) -> * -> *]) (g :: (* -> *)) (a :: *) where
+data TSum (f :: [(k1 -> k2 -> *)]) (g :: k1) (a :: k2) where
   TNext :: TSum b g a -> TSum (f ': b) g a
   TAdd :: f g a -> TSum (f ': b) g a
 
@@ -176,10 +176,10 @@ instance ShowRec (TSum '[]) where
 instance (ShowRec x, ShowRec (TSum xs)) => ShowRec (TSum (x ': xs)) where
   liftShowsPrecRec sR slR s sl m (TAdd a) =
     liftShowsPrecRec sR slR s sl m a
-    -- showsUnaryWith (liftShowsPrecRec sR slR s sl) "TAdd" m a
+    -- TODO this might be a better way of showing what is going on
+    -- showsUnaryWith (liftShowsPrecRec sR slR s sl) "TSum" m a
   liftShowsPrecRec sR slR s sl m (TNext n) =
     liftShowsPrecRec sR slR s sl m n
-    -- showsUnaryWith (liftShowsPrecRec sR slR s sl) "TNext" m n
 
 showsPrecRec :: (Show a, Show1 g, ShowRec f) => Int -> f g a -> ShowS
 showsPrecRec = liftShowsPrecRec showsPrec1 (liftShowList showsPrec showList) showsPrec showList

@@ -30,7 +30,91 @@ library
                      , Error
                      , Util
                      , Language.TheLot
+                     -- new stuff starts here
+                     , Ast.Type
+                     , Ast.Type.Var
+                     , Ast.Error
+                     , Ast.Error.Common
+                     , Ast.Pattern
+                     , Ast.Term
+                     , Ast.Term.Var
+                     , Context.Term
+                     , Context.Term.Error
+                     , Rules
+                     , Rules.Eval
+                     , Rules.Infer
                      --, Rules.Pattern
+                     , Fragment.Int.Ast.Type
+                     , Fragment.Int.Ast.Pattern
+                     , Fragment.Int.Ast.Term
+                     , Fragment.Int.Rules
+                     , Fragment.Int.Rules.Infer
+                     , Fragment.Int.Rules.Eval
+                     , Fragment.Int.Helpers
+                     , Fragment.Bool.Ast.Type
+                     , Fragment.Bool.Ast.Pattern
+                     , Fragment.Bool.Ast.Term
+                     , Fragment.Bool.Rules
+                     , Fragment.Bool.Rules.Infer
+                     , Fragment.Bool.Rules.Eval
+                     , Fragment.Bool.Helpers
+                     , Fragment.If.Ast.Term
+                     , Fragment.If.Rules
+                     , Fragment.If.Rules.Infer
+                     , Fragment.If.Rules.Eval
+                     , Fragment.If.Helpers
+                     , Fragment.Pair.Ast.Type
+                     , Fragment.Pair.Ast.Error
+                     , Fragment.Pair.Ast.Pattern
+                     , Fragment.Pair.Ast.Term
+                     , Fragment.Pair.Rules
+                     , Fragment.Pair.Rules.Infer
+                     , Fragment.Pair.Rules.Eval
+                     , Fragment.Pair.Helpers
+                     , Fragment.Tuple.Ast.Type
+                     , Fragment.Tuple.Ast.Error
+                     , Fragment.Tuple.Ast.Pattern
+                     , Fragment.Tuple.Ast.Term
+                     , Fragment.Tuple.Rules
+                     , Fragment.Tuple.Rules.Infer
+                     , Fragment.Tuple.Rules.Eval
+                     , Fragment.Tuple.Helpers
+                     , Fragment.Record.Ast.Type
+                     , Fragment.Record.Ast.Error
+                     , Fragment.Record.Ast.Pattern
+                     , Fragment.Record.Ast.Term
+                     , Fragment.Record.Rules
+                     , Fragment.Record.Rules.Infer
+                     , Fragment.Record.Rules.Eval
+                     , Fragment.Record.Helpers
+                     , Fragment.Variant.Ast.Type
+                     , Fragment.Variant.Ast.Error
+                     , Fragment.Variant.Ast.Pattern
+                     , Fragment.Variant.Ast.Term
+                     , Fragment.Variant.Rules
+                     , Fragment.Variant.Rules.Infer
+                     , Fragment.Variant.Rules.Eval
+                     , Fragment.Variant.Helpers
+                     , Fragment.Case.Ast.Error
+                     , Fragment.Case.Ast.Term
+                     , Fragment.Case.Rules
+                     , Fragment.Case.Rules.Infer
+                     , Fragment.Case.Rules.Eval
+                     , Fragment.Case.Helpers
+                     , Fragment.STLC.Ast.Type
+                     , Fragment.STLC.Ast.Error
+                     , Fragment.STLC.Ast.Term
+                     , Fragment.STLC.Rules
+                     , Fragment.STLC.Rules.Infer
+                     , Fragment.STLC.Rules.Eval
+                     , Fragment.STLC.Helpers
+                     , Fragment.SystemF.Ast.Type
+                     , Fragment.SystemF.Ast.Error
+                     , Fragment.SystemF.Ast.Term
+                     , Fragment.SystemF.Rules
+                     , Fragment.SystemF.Rules.Infer
+                     , Fragment.SystemF.Rules.Eval
+                     , Fragment.SystemF.Helpers
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10
