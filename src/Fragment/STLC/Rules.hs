@@ -6,19 +6,28 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.STLC.Rules (
-    STLCContext
-  , stlcRules
+    RSTLC
   ) where
 
 import Rules
 
+import Fragment.STLC.Ast
 import Fragment.STLC.Rules.Infer
 import Fragment.STLC.Rules.Eval
 
-type STLCContext e s r m ty pt tm a = (STLCInferContext e s r m ty pt tm a, STLCEvalContext ty pt tm a)
+data RSTLC
 
-stlcRules :: STLCContext e s r m ty pt tm a
-          => RulesInput e s r m ty pt tm a
-stlcRules =
-  RulesInput stlcInferRules stlcEvalRulesLazy stlcEvalRulesStrict
+instance RulesIn RSTLC where
+  type RuleInferContext e s r m ty pt tm a RSTLC = STLCInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RSTLC = STLCEvalContext ty pt tm a
+  type TypeList RSTLC = '[TyFSTLC]
+  type ErrorList ty pt tm a RSTLC = '[ErrExpectedTyArr ty a]
+  type PatternList RSTLC = '[]
+  type TermList RSTLC = '[TmFSTLC]
+
+  inferInput _ = stlcInferRules
+  evalLazyInput _ = stlcEvalRulesLazy
+  evalStrictInput _ = stlcEvalRulesStrict

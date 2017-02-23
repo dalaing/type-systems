@@ -6,19 +6,29 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Int.Rules (
-    IntContext
-  , intRules
+    RInt
   ) where
 
 import Rules
+import Ast.Error.Common
 
+import Fragment.Int.Ast
 import Fragment.Int.Rules.Infer
 import Fragment.Int.Rules.Eval
 
-type IntContext e s r m ty pt tm a = (IntInferContext e s r m ty pt tm a, IntEvalContext ty pt tm a)
+data RInt
 
-intRules :: IntContext e s r m ty pt tm a
-         => RulesInput e s r m ty pt tm a
-intRules =
-  RulesInput intInferRules intEvalRules intEvalRules
+instance RulesIn RInt where
+  type RuleInferContext e s r m ty pt tm a RInt = IntInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RInt = IntEvalContext ty pt tm a
+  type TypeList RInt = '[TyFInt]
+  type ErrorList ty pt tm a RInt = '[ErrUnexpected ty a]
+  type PatternList RInt = '[PtFInt]
+  type TermList RInt = '[TmFInt]
+
+  inferInput _ = intInferRules
+  evalLazyInput _ = intEvalRules
+  evalStrictInput _ = intEvalRules

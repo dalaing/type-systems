@@ -18,22 +18,15 @@ module Language.TheLot (
   , runCheck
   ) where
 
--- TODO reexport the helpers
--- TODO probably should put them into their own module for that
+import Data.Proxy
 
 import Control.Monad.Reader
 import Control.Monad.Except
 import Control.Monad.State
 
--- import Util
-
 import Ast.Type
-import Ast.Error
-import Ast.Error.Common
-import Ast.Pattern
 import Ast.Term
 import Context.Term
-import Context.Term.Error
 
 import Rules
 import Rules.Infer
@@ -53,95 +46,31 @@ import Fragment.Variant
 import Fragment.SystemF
 import Fragment.Case
 
-type TypeF =
-  TySum '[ TyFInt
-         , TyFBool
-         , TyFPair
-         , TyFTuple
-         , TyFRecord
-         , TyFVariant
-         , TyFSystemF
-         ]
+type Rules =
+  '[ RPtVar
+   , RPtWild
+   , RTmVar
+   , RInt
+   , RBool
+   , RIf
+   , RPair
+   , RTuple
+   , RRecord
+   , RVariant
+   , RCase
+   , RSystemF
+   ]
 
-type PatternF =
-  PtSum '[ PtFWild
-         , PtFInt
-         , PtFBool
-         , PtFPair
-         , PtFTuple
-         , PtFRecord
-         , PtFVariant
-         ]
+rules :: Proxy Rules
+rules = Proxy
 
-type TermF =
-  TmSum '[ TmFInt
-         , TmFBool
-         , TmFIf
-         , TmFPair
-         , TmFTuple
-         , TmFRecord
-         , TmFVariant
-         , TmFSystemF
-         , TmFCase
-         ]
-
-type Error ty pt tm a =
-  ErrSum '[ ErrUnexpected ty a
-          , ErrExpectedEq ty a
-          , ErrExpectedAllEq ty a
-          , ErrExpectedTyPair ty a
-          , ErrExpectedTyTuple ty a
-          , ErrTupleOutOfBounds
-          , ErrExpectedTyRecord ty a
-          , ErrRecordNotFound
-          , ErrExpectedTyVariant ty a
-          , ErrVariantNotFound,
-            ErrExpectedTyArr ty a
-          , ErrExpectedTyAll ty a
-          , ErrUnboundTermVariable a
-          , ErrExpectedPattern ty pt tm a
-          , ErrDuplicatedPatternVariables a
-          , ErrUnusedPatternVariables a
-          , ErrUnknownTypeError
-          ]
+type TypeF = RTypeF Rules
+type PatternF = RPatternF Rules
+type TermF = RTermF Rules
 
 type LTerm = Term TypeF PatternF TermF String
 type LType = Type TypeF String
-type LError = Error TypeF PatternF TermF String
-
-type LContext e s r m ty pt tm a =
-  ( PtVarContext e s r m ty pt tm a
-  , PtWildContext e s r m ty pt tm a
-  , TmVarContext e s r m ty pt tm a
-  , IntContext e s r m ty pt tm a
-  , BoolContext e s r m ty pt tm a
-  , IfContext e s r m ty pt tm a
-  , PairContext e s r m ty pt tm a
-  , TupleContext e s r m ty pt tm a
-  , RecordContext e s r m ty pt tm a
-  , VariantContext e s r m ty pt tm a
-  , CaseContext e s r m ty pt tm a
-  -- , STLCContext e s r m ty pt tm a
-  , SystemFContext e s r m ty pt tm a
-  )
-
-rulesInput:: LContext e s r m ty pt tm a => RulesInput e s r m ty pt tm a
-rulesInput =
-  mconcat
-    [ ptVarRules
-    , ptWildRules
-    , tmVarRules
-    , intRules
-    , boolRules
-    , ifRules
-    , pairRules
-    , tupleRules
-    , recordRules
-    , variantRules
-    , caseRules
-    -- , stlcRules
-    , systemFRules
-    ]
+type LError = RError TypeF PatternF TermF String Rules
 
 type M e s r = StateT s (ReaderT r (Except e))
 
@@ -152,40 +81,34 @@ runM s r m =
   flip evalStateT s $
   m
 
--- TODO could use different supplies for the variables
-
-type Output = RulesOutput LError Int (TermContext TypeF String) (M LError Int (TermContext TypeF String)) TypeF PatternF TermF String
-
-rulesOutput :: Output
-rulesOutput = prepareRules rulesInput
-
 runEvalLazy :: LTerm -> LTerm
 runEvalLazy =
-  eoEval . roEvalOutputLazy $ rulesOutput
+  eoEval $ evalLazyOutput rules
 
 runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
-  eoEval . roEvalOutputStrict $ rulesOutput
+  eoEval $ evalStrictOutput rules
 
 runInfer :: LTerm -> Either LError LType
 runInfer =
-  runM 0 emptyTermContext .
-  (ioInfer . roInferOutput $ rulesOutput)
+  runM (0 :: Int) emptyTermContext .
+  ioInfer (inferOutput rules)
 
 runCheck :: LTerm -> LType -> Either LError ()
 runCheck tm ty =
-  runM 0 emptyTermContext $ (ioCheck . roInferOutput $ rulesOutput) tm ty
+  runM (0 :: Int) emptyTermContext $
+  (ioCheck $ inferOutput rules) tm ty
 
 -- for debugging
 
 runStepLazy :: LTerm -> Maybe LTerm
 runStepLazy =
-  (eoStep . roEvalOutputLazy) rulesOutput
+  eoStep $ evalLazyOutput rules
 
 runValueStrict :: LTerm -> Maybe LTerm
 runValueStrict =
-  (eoValue . roEvalOutputStrict) rulesOutput
+  eoValue $ evalStrictOutput rules
 
 runStepStrict :: LTerm -> Maybe LTerm
 runStepStrict =
-  (eoStep . roEvalOutputStrict) rulesOutput
+  eoStep $ evalStrictOutput rules

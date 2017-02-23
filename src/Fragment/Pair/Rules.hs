@@ -6,19 +6,28 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Pair.Rules (
-    PairContext
-  , pairRules
+    RPair
   ) where
 
 import Rules
 
+import Fragment.Pair.Ast
 import Fragment.Pair.Rules.Infer
 import Fragment.Pair.Rules.Eval
 
-type PairContext e s r m ty pt tm a = (PairInferContext e s r m ty pt tm a, PairEvalContext ty pt tm a)
+data RPair
 
-pairRules :: PairContext e s r m ty pt tm a
-          => RulesInput e s r m ty pt tm a
-pairRules =
-  RulesInput pairInferRules pairEvalRulesLazy pairEvalRulesStrict
+instance RulesIn RPair where
+  type RuleInferContext e s r m ty pt tm a RPair = PairInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RPair = PairEvalContext ty pt tm a
+  type TypeList RPair = '[TyFPair]
+  type ErrorList ty pt tm a RPair = '[ErrExpectedTyPair ty a]
+  type PatternList RPair = '[PtFPair]
+  type TermList RPair = '[TmFPair]
+
+  inferInput _ = pairInferRules
+  evalLazyInput _ = pairEvalRulesLazy
+  evalStrictInput _ = pairEvalRulesStrict

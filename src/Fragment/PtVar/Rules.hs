@@ -6,9 +6,10 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.PtVar.Rules (
-    PtVarContext
-  , ptVarRules
+    RPtVar
   ) where
 
 import Rules
@@ -16,9 +17,16 @@ import Rules
 import Fragment.PtVar.Rules.Infer
 import Fragment.PtVar.Rules.Eval
 
-type PtVarContext e s r m ty pt tm a = (PtVarInferContext e s r m ty pt tm a, PtVarEvalContext ty pt tm a)
+data RPtVar
 
-ptVarRules :: PtVarContext e s r m ty pt tm a
-         => RulesInput e s r m ty pt tm a
-ptVarRules =
-  RulesInput ptVarInferRules ptVarEvalRules ptVarEvalRules
+instance RulesIn RPtVar where
+  type RuleInferContext e s r m ty pt tm a RPtVar = PtVarInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RPtVar = PtVarEvalContext ty pt tm a
+  type TypeList RPtVar = '[]
+  type ErrorList ty pt tm a RPtVar = '[]
+  type PatternList RPtVar = '[]
+  type TermList RPtVar = '[]
+
+  inferInput _ = ptVarInferRules
+  evalLazyInput _ = ptVarEvalRules
+  evalStrictInput _ = ptVarEvalRules

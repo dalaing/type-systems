@@ -6,19 +6,28 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.PtWild.Rules (
-    PtWildContext
-  , ptWildRules
+    RPtWild
   ) where
 
 import Rules
 
+import Fragment.PtWild.Ast
 import Fragment.PtWild.Rules.Infer
 import Fragment.PtWild.Rules.Eval
 
-type PtWildContext e s r m ty pt tm a = (PtWildInferContext e s r m ty pt tm a, PtWildEvalContext ty pt tm a)
+data RPtWild
 
-ptWildRules :: PtWildContext e s r m ty pt tm a
-         => RulesInput e s r m ty pt tm a
-ptWildRules =
-  RulesInput ptWildInferRules ptWildEvalRules ptWildEvalRules
+instance RulesIn RPtWild where
+  type RuleInferContext e s r m ty pt tm a RPtWild = PtWildInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RPtWild = PtWildEvalContext ty pt tm a
+  type TypeList RPtWild = '[]
+  type ErrorList ty pt tm a RPtWild = '[]
+  type PatternList RPtWild = '[PtFWild]
+  type TermList RPtWild = '[]
+
+  inferInput _ = ptWildInferRules
+  evalLazyInput _ = ptWildEvalRules
+  evalStrictInput _ = ptWildEvalRules

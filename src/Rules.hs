@@ -6,40 +6,102 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Rules (
-    RulesInput(..)
-  , RulesOutput(..)
-  , RulesContext
-  , prepareRules
+    RulesIn(..)
+  , RulesOut(..)
   ) where
+
+import Data.Proxy
+import GHC.Exts (Constraint)
 
 import Rules.Infer
 import Rules.Eval
+import Ast.Type
+import Ast.Error
+import Ast.Error.Common
+import Ast.Pattern
+import Ast.Term
 
-data RulesInput e s r m ty pt tm a =
-  RulesInput {
-    riInferInput :: InferInput e s r m ty pt tm a
-  , riEvalInputLazy :: EvalInput ty pt tm a
-  , riEvalInputStrict :: EvalInput ty pt tm a
-  }
+class TLAppend (xs :: [k]) (ys :: [k]) where
+  type Append xs ys :: [k]
 
-instance Monoid (RulesInput e s r m ty pt tm a) where
-  mempty =
-    RulesInput mempty mempty mempty
-  mappend (RulesInput i1 l1 s1) (RulesInput i2 l2 s2) =
-    RulesInput (mappend i1 i2) (mappend l1 l2) (mappend s1 s2)
+instance TLAppend '[] ys where
+  type Append '[] ys = ys
 
-data RulesOutput e s r m ty pt tm a =
-  RulesOutput {
-    roInferOutput :: InferOutput e s r m ty pt tm a
-  , roEvalOutputLazy :: EvalOutput ty pt tm a
-  , roEvalOutputStrict :: EvalOutput ty pt tm a
-  }
+instance TLAppend xs ys => TLAppend (x ': xs) ys where
+  type Append (x ': xs) ys = x ': (Append xs ys)
 
-type RulesContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, EvalContext ty pt tm a)
+class RulesIn (k :: j) where
+  type RuleInferContext e s r (m :: * -> *) (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
+  type RuleEvalContext (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
+  type TypeList k :: [(* -> *) -> * -> *]
+  type ErrorList (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
+  type PatternList k :: [(* -> *) -> * -> *]
+  type TermList k :: [((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
 
-prepareRules :: RulesContext e s r m ty pt tm a
-             => RulesInput e s r m ty pt tm a
-             -> RulesOutput e s r m ty pt tm a
-prepareRules(RulesInput i l s) =
-  RulesOutput (prepareInfer i) (prepareEvalLazy l) (prepareEvalStrict s)
+  inferInput :: (InferContext e s r m ty pt tm a , RuleInferContext e s r m ty pt tm a k) => Proxy k -> InferInput e s r m ty pt tm a
+  evalLazyInput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalInput ty pt tm a
+  evalStrictInput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalInput ty pt tm a
+
+instance RulesIn '[] where
+  type RuleInferContext e s r m ty pt tm a '[] = (() :: Constraint)
+  type RuleEvalContext ty pt tm a '[] = (() :: Constraint)
+  type TypeList '[] = '[]
+  type ErrorList ty pt tm a '[] = '[ErrUnknownTypeError]
+  type PatternList '[] = '[]
+  type TermList '[] = '[]
+
+  inferInput _ = mempty
+  evalLazyInput _ = mempty
+  evalStrictInput _ = mempty
+
+instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
+  type RuleInferContext e s r m ty pt tm a (k ': ks) = (RuleInferContext e s r m ty pt tm a k, RuleInferContext e s r m ty pt tm a ks)
+  type RuleEvalContext ty pt tm a (k ': ks) = (RuleEvalContext ty pt tm a k, RuleEvalContext ty pt tm a ks)
+  type TypeList (k ': ks) = Append (TypeList k) (TypeList ks)
+  type ErrorList ty pt tm a (k ': ks) = Append (ErrorList ty pt tm a k) (ErrorList ty pt tm a ks)
+  type PatternList (k ': ks) = Append (PatternList k) (PatternList ks)
+  type TermList (k ': ks) = Append (TermList k) (TermList ks)
+
+  inferInput _ = inferInput (Proxy :: Proxy k) `mappend` inferInput (Proxy :: Proxy ks)
+  evalLazyInput _ = evalLazyInput (Proxy :: Proxy k) `mappend` evalLazyInput (Proxy :: Proxy ks)
+  evalStrictInput _ = evalStrictInput (Proxy :: Proxy k) `mappend` evalStrictInput (Proxy :: Proxy ks)
+
+class RulesOut (k :: j) where
+
+  type RTypeF k :: ((* -> *) -> * -> *)
+  type RPatternF k :: ((* -> *) -> * -> *)
+  type RTermF k :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)
+
+  type RType k :: (* -> *)
+  type RError (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: *
+  type RPattern k :: (* -> *)
+  type RTerm k :: (* -> *)
+
+  inferOutput :: (InferContext e s r m ty pt tm a, RuleInferContext e s r m ty pt tm a k) => Proxy k -> InferOutput e s r m ty pt tm a
+  evalLazyOutput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalOutput ty pt tm a
+  evalStrictOutput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalOutput ty pt tm a
+
+instance RulesIn k => RulesOut (k :: j) where
+
+  type RTypeF k = TySum (TypeList k)
+  type RPatternF k = PtSum (PatternList k)
+  type RTermF k = TmSum (TermList k)
+
+  type RType k = Type (RTypeF k)
+  type RError ty pt tm a k = ErrSum (ErrorList ty pt tm a k)
+  type RPattern k = Pattern (RPatternF k)
+  type RTerm k = Term (RTypeF k) (RPatternF k) (RTermF k)
+
+  inferOutput = prepareInfer . inferInput
+  evalLazyOutput = prepareEvalLazy . evalLazyInput
+  evalStrictOutput = prepareEvalStrict . evalStrictInput

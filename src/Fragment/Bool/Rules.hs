@@ -6,19 +6,30 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Bool.Rules (
-    BoolContext
-  , boolRules
+    RBool
   ) where
 
 import Rules
+import Ast.Error.Common
 
+import Fragment.Bool.Ast
 import Fragment.Bool.Rules.Infer
 import Fragment.Bool.Rules.Eval
 
-type BoolContext e s r m ty pt tm a = (BoolInferContext e s r m ty pt tm a, BoolEvalContext ty pt tm a)
+data RBool
 
-boolRules :: BoolContext e s r m ty pt tm a
-          => RulesInput e s r m ty pt tm a
-boolRules =
-  RulesInput boolInferRules boolEvalRules boolEvalRules
+instance RulesIn RBool where
+  type RuleInferContext e s r m ty pt tm a RBool = BoolInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RBool = BoolEvalContext ty pt tm a
+  type TypeList RBool = '[TyFBool]
+  type ErrorList ty pt tm a RBool = '[ErrUnexpected ty a]
+  type PatternList RBool = '[PtFBool]
+  type TermList RBool = '[TmFBool]
+
+  inferInput _ = boolInferRules
+  evalLazyInput _ = boolEvalRules
+  evalStrictInput _ = boolEvalRules
+

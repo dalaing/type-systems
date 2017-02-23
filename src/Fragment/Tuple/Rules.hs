@@ -6,19 +6,28 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Tuple.Rules (
-    TupleContext
-  , tupleRules
+    RTuple
   ) where
 
 import Rules
 
+import Fragment.Tuple.Ast
 import Fragment.Tuple.Rules.Infer
 import Fragment.Tuple.Rules.Eval
 
-type TupleContext e s r m ty pt tm a = (TupleInferContext e s r m ty pt tm a, TupleEvalContext ty pt tm a)
+data RTuple
 
-tupleRules :: TupleContext e s r m ty pt tm a
-          => RulesInput e s r m ty pt tm a
-tupleRules =
-  RulesInput tupleInferRules tupleEvalRulesLazy tupleEvalRulesStrict
+instance RulesIn RTuple where
+  type RuleInferContext e s r m ty pt tm a RTuple = TupleInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RTuple = TupleEvalContext ty pt tm a
+  type TypeList RTuple = '[TyFTuple]
+  type ErrorList ty pt tm a RTuple = '[ErrExpectedTyTuple ty a, ErrTupleOutOfBounds]
+  type PatternList RTuple = '[PtFTuple]
+  type TermList RTuple = '[TmFTuple]
+
+  inferInput _ = tupleInferRules
+  evalLazyInput _ = tupleEvalRulesLazy
+  evalStrictInput _ = tupleEvalRulesStrict

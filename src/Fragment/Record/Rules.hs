@@ -6,19 +6,28 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Record.Rules (
-    RecordContext
-  , recordRules
+    RRecord
   ) where
 
 import Rules
 
+import Fragment.Record.Ast
 import Fragment.Record.Rules.Infer
 import Fragment.Record.Rules.Eval
 
-type RecordContext e s r m ty pt tm a = (RecordInferContext e s r m ty pt tm a, RecordEvalContext ty pt tm a)
+data RRecord
 
-recordRules :: RecordContext e s r m ty pt tm a
-            => RulesInput e s r m ty pt tm a
-recordRules =
-  RulesInput recordInferRules recordEvalRulesLazy recordEvalRulesStrict
+instance RulesIn RRecord where
+  type RuleInferContext e s r m ty pt tm a RRecord = RecordInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RRecord = RecordEvalContext ty pt tm a
+  type TypeList RRecord = '[TyFRecord]
+  type ErrorList ty pt tm a RRecord = '[ErrExpectedTyRecord ty a, ErrRecordNotFound]
+  type PatternList RRecord = '[PtFRecord]
+  type TermList RRecord = '[TmFRecord]
+
+  inferInput _ = recordInferRules
+  evalLazyInput _ = recordEvalRulesLazy
+  evalStrictInput _ = recordEvalRulesStrict

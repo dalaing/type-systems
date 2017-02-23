@@ -6,19 +6,32 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.If.Rules (
-    IfContext
-  , ifRules
+    RIf
   ) where
 
 import Rules
+import Ast.Error.Common
 
+import Fragment.Bool.Ast.Type
+import Fragment.Bool.Ast.Term
+
+import Fragment.If.Ast
 import Fragment.If.Rules.Infer
 import Fragment.If.Rules.Eval
 
-type IfContext e s r m ty pt tm a = (IfInferContext e s r m ty pt tm a, IfEvalContext ty pt tm a)
+data RIf
 
-ifRules :: IfContext e s r m ty pt tm a
-          => RulesInput e s r m ty pt tm a
-ifRules =
-  RulesInput ifInferRules ifEvalRules ifEvalRules
+instance RulesIn RIf where
+  type RuleInferContext e s r m ty pt tm a RIf = IfInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RIf = IfEvalContext ty pt tm a
+  type TypeList RIf = '[TyFBool]
+  type ErrorList ty pt tm a RIf = '[ErrUnexpected ty a, ErrExpectedEq ty a]
+  type PatternList RIf = '[]
+  type TermList RIf = '[TmFBool, TmFIf]
+
+  inferInput _ = ifInferRules
+  evalLazyInput _ = ifEvalRules
+  evalStrictInput _ = ifEvalRules

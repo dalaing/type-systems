@@ -6,19 +6,28 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.SystemF.Rules (
-    SystemFContext
-  , systemFRules
+    RSystemF
   ) where
 
 import Rules
 
+import Fragment.SystemF.Ast
 import Fragment.SystemF.Rules.Infer
 import Fragment.SystemF.Rules.Eval
 
-type SystemFContext e s r m ty pt tm a = (SystemFInferContext e s r m ty pt tm a, SystemFEvalContext ty pt tm a)
+data RSystemF
 
-systemFRules :: SystemFContext e s r m ty pt tm a
-          => RulesInput e s r m ty pt tm a
-systemFRules =
-  RulesInput systemFInferRules systemFEvalRulesLazy systemFEvalRulesStrict
+instance RulesIn RSystemF where
+  type RuleInferContext e s r m ty pt tm a RSystemF = SystemFInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RSystemF = SystemFEvalContext ty pt tm a
+  type TypeList RSystemF = '[TyFSystemF]
+  type ErrorList ty pt tm a RSystemF = '[ErrExpectedTyArr ty a, ErrExpectedTyAll ty a]
+  type PatternList RSystemF = '[]
+  type TermList RSystemF = '[TmFSystemF]
+
+  inferInput _ = systemFInferRules
+  evalLazyInput _ = systemFEvalRulesLazy
+  evalStrictInput _ = systemFEvalRulesStrict

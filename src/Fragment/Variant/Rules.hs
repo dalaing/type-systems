@@ -6,19 +6,28 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Variant.Rules (
-    VariantContext
-  , variantRules
+    RVariant
   ) where
 
 import Rules
 
+import Fragment.Variant.Ast
 import Fragment.Variant.Rules.Infer
 import Fragment.Variant.Rules.Eval
 
-type VariantContext e s r m ty pt tm a = (VariantInferContext e s r m ty pt tm a, VariantEvalContext ty pt tm a)
+data RVariant
 
-variantRules :: VariantContext e s r m ty pt tm a
-            => RulesInput e s r m ty pt tm a
-variantRules =
-  RulesInput variantInferRules variantEvalRules variantEvalRules
+instance RulesIn RVariant where
+  type RuleInferContext e s r m ty pt tm a RVariant = VariantInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RVariant = VariantEvalContext ty pt tm a
+  type TypeList RVariant = '[TyFVariant]
+  type ErrorList ty pt tm a RVariant = '[ErrExpectedTyVariant ty a, ErrVariantNotFound]
+  type PatternList RVariant = '[PtFVariant]
+  type TermList RVariant = '[TmFVariant]
+
+  inferInput _ = variantInferRules
+  evalLazyInput _ = variantEvalRules
+  evalStrictInput _ = variantEvalRules

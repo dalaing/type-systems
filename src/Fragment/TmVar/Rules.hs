@@ -6,18 +6,29 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.TmVar.Rules (
-    TmVarContext
-  , tmVarRules
+    RTmVar
   ) where
 
+import GHC.Exts (Constraint)
+
 import Rules
+import Context.Term.Error
 
 import Fragment.TmVar.Rules.Infer
 
-type TmVarContext e s r m ty pt tm a = TmVarInferContext e s r m ty pt tm a
+data RTmVar
 
-tmVarRules :: TmVarContext e s r m ty pt tm a
-           => RulesInput e s r m ty pt tm a
-tmVarRules =
-  RulesInput tmVarInferRules mempty mempty
+instance RulesIn RTmVar where
+  type RuleInferContext e s r m ty pt tm a RTmVar = TmVarInferContext e s r m ty pt tm a
+  type RuleEvalContext ty tm pt a RTmVar = (() :: Constraint)
+  type TypeList RTmVar = '[]
+  type ErrorList ty tm pt a RTmVar = '[ErrUnboundTermVariable a]
+  type PatternList RTmVar = '[]
+  type TermList RTmVar = '[]
+
+  inferInput _ = tmVarInferRules
+  evalLazyInput _ = mempty
+  evalStrictInput _ = mempty

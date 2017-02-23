@@ -6,19 +6,30 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Case.Rules (
-    CaseContext
-  , caseRules
+    RCase
   ) where
 
 import Rules
+import Ast.Error.Common
+import Context.Term.Error
 
+import Fragment.Case.Ast
 import Fragment.Case.Rules.Infer
 import Fragment.Case.Rules.Eval
 
-type CaseContext e s r m ty pt tm a = (CaseInferContext e s r m ty pt tm a, CaseEvalContext ty pt tm a)
+data RCase
 
-caseRules :: CaseContext e s r m ty pt tm a
-            => RulesInput e s r m ty pt tm a
-caseRules =
-  RulesInput caseInferRules caseEvalRulesLazy caseEvalRulesStrict
+instance RulesIn RCase where
+  type RuleInferContext e s r m ty pt tm a RCase = CaseInferContext e s r m ty pt tm a
+  type RuleEvalContext ty pt tm a RCase = CaseEvalContext ty pt tm a
+  type TypeList RCase = '[]
+  type ErrorList ty pt tm a RCase = '[ErrExpectedAllEq ty a, ErrUnboundTermVariable a, ErrExpectedPattern ty pt tm a, ErrDuplicatedPatternVariables a, ErrUnusedPatternVariables a]
+  type PatternList RCase = '[]
+  type TermList RCase = '[TmFCase]
+
+  inferInput _ = caseInferRules
+  evalLazyInput _ = caseEvalRulesLazy
+  evalStrictInput _ = caseEvalRulesStrict
