@@ -40,16 +40,16 @@ data ErrExpectedTyRecord ty a = ErrExpectedTyRecord (Type ty a)
 
 makePrisms ''ErrExpectedTyRecord
 
-class AsExpectedTyRecord e ty a | e -> ty, e -> a where
+class AsExpectedTyRecord e ty a where -- | e -> ty, e -> a where
   _ExpectedTyRecord :: Prism' e (Type ty a)
 
 instance AsExpectedTyRecord (ErrExpectedTyRecord ty a) ty a where
   _ExpectedTyRecord = _ErrExpectedTyRecord
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyRecord ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyRecord (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyRecord (ErrSum xs) ty a => AsExpectedTyRecord (ErrSum (x ': xs)) ty a where
   _ExpectedTyRecord = _ErrNext . _ExpectedTyRecord
 
-instance {-# OVERLAPPING #-} AsExpectedTyRecord (ErrSum (ErrExpectedTyRecord ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyRecord (ErrSum (ErrExpectedTyRecord ty a ': xs)) ty a where
   _ExpectedTyRecord = _ErrNow . _ExpectedTyRecord
 
 expectTyRecord :: (MonadError e m, AsExpectedTyRecord e ty a, AsTyRecord ty) => Type ty a -> m [(T.Text, Type ty a)]
@@ -69,10 +69,10 @@ class AsRecordNotFound e where
 instance AsRecordNotFound ErrRecordNotFound where
   _RecordNotFound = _ErrRecordNotFound
 
-instance {-# OVERLAPPABLE #-} AsRecordNotFound ((ErrSum xs) ty pt tm a) => AsRecordNotFound (ErrSum (x ': xs) ty pt tm a) where
+instance {-# OVERLAPPABLE #-} AsRecordNotFound (ErrSum xs) => AsRecordNotFound (ErrSum (x ': xs)) where
   _RecordNotFound = _ErrNext . _RecordNotFound
 
-instance {-# OVERLAPPING #-} AsRecordNotFound (ErrSum (ErrRecordNotFound ': xs) ty pt tm a) where
+instance {-# OVERLAPPING #-} AsRecordNotFound (ErrSum (ErrRecordNotFound ': xs)) where
   _RecordNotFound = _ErrNow . _RecordNotFound
 
 lookupRecord :: (MonadError e m, AsRecordNotFound e) =>  [(T.Text, t a)] -> T.Text -> m (t a)

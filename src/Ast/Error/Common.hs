@@ -54,16 +54,16 @@ data ErrUnexpected ty a = ErrUnexpected (ExpectedType ty a) (ActualType ty a)
 
 makePrisms ''ErrUnexpected
 
-class AsUnexpected e ty a | e -> ty, e -> a where
+class AsUnexpected e ty a where -- | e -> ty, e -> a where
   _Unexpected :: Prism' e (ExpectedType ty a, ActualType ty a)
 
 instance AsUnexpected (ErrUnexpected ty a) ty a where
   _Unexpected = _ErrUnexpected
 
-instance {-# OVERLAPPABLE #-} AsUnexpected ((ErrSum xs) ty pt tm a) ty a => AsUnexpected (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsUnexpected (ErrSum xs) ty a => AsUnexpected (ErrSum (x ': xs)) ty a where
   _Unexpected = _ErrNext . _Unexpected
 
-instance {-# OVERLAPPING #-} AsUnexpected (ErrSum (ErrUnexpected ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsUnexpected (ErrSum (ErrUnexpected ty a ': xs)) ty a where
   _Unexpected = _ErrNow . _Unexpected
 
 expect :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => ExpectedType ty a -> ActualType ty a -> m ()
@@ -76,16 +76,16 @@ data ErrExpectedEq ty a = ErrExpectedEq (Type ty a) (Type ty a)
 
 makePrisms ''ErrExpectedEq
 
-class AsExpectedEq e ty a | e -> ty, e -> a where
+class AsExpectedEq e ty a where -- | e -> ty, e -> a where
   _ExpectedEq :: Prism' e (Type ty a, Type ty a)
 
 instance AsExpectedEq (ErrExpectedEq ty a) ty a where
   _ExpectedEq = _ErrExpectedEq
 
-instance {-# OVERLAPPABLE #-} AsExpectedEq ((ErrSum xs) ty pt tm a) ty a => AsExpectedEq (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedEq (ErrSum xs) ty a => AsExpectedEq (ErrSum (x ': xs)) ty a where
   _ExpectedEq = _ErrNext . _ExpectedEq
 
-instance {-# OVERLAPPING #-} AsExpectedEq (ErrSum (ErrExpectedEq ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedEq (ErrSum (ErrExpectedEq ty a ': xs)) ty a where
   _ExpectedEq = _ErrNow . _ExpectedEq
 
 expectEq :: (Eq a, EqRec ty, MonadError e m, AsExpectedEq e ty a) => Type ty a -> Type ty a -> m ()
@@ -98,16 +98,16 @@ data ErrExpectedAllEq ty a = ErrExpectedAllEq (NonEmpty (Type ty a))
 
 makePrisms ''ErrExpectedAllEq
 
-class AsExpectedAllEq e ty a | e -> ty, e -> a where
+class AsExpectedAllEq e ty a where -- | e -> ty, e -> a where
   _ExpectedAllEq :: Prism' e (NonEmpty (Type ty a))
 
 instance AsExpectedAllEq (ErrExpectedAllEq ty a) ty a where
   _ExpectedAllEq = _ErrExpectedAllEq
 
-instance {-# OVERLAPPABLE #-} AsExpectedAllEq ((ErrSum xs) ty pt tm a) ty a => AsExpectedAllEq (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedAllEq (ErrSum xs) ty a => AsExpectedAllEq (ErrSum (x ': xs)) ty a where
   _ExpectedAllEq = _ErrNext . _ExpectedAllEq
 
-instance {-# OVERLAPPING #-} AsExpectedAllEq (ErrSum (ErrExpectedAllEq ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedAllEq (ErrSum (ErrExpectedAllEq ty a ': xs)) ty a where
   _ExpectedAllEq = _ErrNow . _ExpectedAllEq
 
 expectAllEq :: (Eq a, EqRec ty, MonadError e m, AsExpectedAllEq e ty a) => NonEmpty (Type ty a) -> m (Type ty a)
@@ -126,8 +126,8 @@ class AsUnknownTypeError e where
 instance AsUnknownTypeError ErrUnknownTypeError where
   _UnknownTypeError = _ErrUnknownTypeError
 
-instance {-# OVERLAPPABLE #-} AsUnknownTypeError ((ErrSum xs) ty pt tm a) => AsUnknownTypeError (ErrSum (x ': xs) ty pt tm a) where
+instance {-# OVERLAPPABLE #-} AsUnknownTypeError (ErrSum xs) => AsUnknownTypeError (ErrSum (x ': xs)) where
   _UnknownTypeError = _ErrNext . _UnknownTypeError
 
-instance {-# OVERLAPPING #-} AsUnknownTypeError (ErrSum (ErrUnknownTypeError ': xs) ty pt tm a) where
+instance {-# OVERLAPPING #-} AsUnknownTypeError (ErrSum (ErrUnknownTypeError ': xs)) where
   _UnknownTypeError = _ErrNow . _UnknownTypeError

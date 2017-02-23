@@ -5,17 +5,11 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DataKinds #-}
 module Language.TheLot (
     runEvalStrict
@@ -30,15 +24,6 @@ module Language.TheLot (
 import Control.Monad.Reader
 import Control.Monad.Except
 import Control.Monad.State
-
-import qualified Data.List.NonEmpty as N
-import qualified Data.Text as T
-
-import Control.Lens
-
-import Bound
-import Data.Functor.Classes
-import Data.Deriving
 
 -- import Util
 
@@ -97,6 +82,7 @@ type TermF =
          , TmFRecord
          , TmFVariant
          , TmFSystemF
+         , TmFCase
          ]
 
 type Error ty pt tm a =
@@ -117,7 +103,7 @@ type Error ty pt tm a =
           , ErrDuplicatedPatternVariables a
           , ErrUnusedPatternVariables a
           , ErrUnknownTypeError
-          ] ty pt tm a
+          ]
 
 type LTerm = Term TypeF PatternF TermF String
 type LType = Type TypeF String

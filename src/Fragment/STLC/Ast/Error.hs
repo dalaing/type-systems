@@ -35,16 +35,16 @@ data ErrExpectedTyArr ty a = ErrExpectedTyArr (Type ty a)
 
 makePrisms ''ErrExpectedTyArr
 
-class AsExpectedTyArr e ty a | e -> ty, e -> a where
+class AsExpectedTyArr e ty a where -- | e -> ty, e -> a where
   _ExpectedTyArr :: Prism' e (Type ty a)
 
 instance AsExpectedTyArr (ErrExpectedTyArr ty a) ty a where
   _ExpectedTyArr = _ErrExpectedTyArr
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyArr ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyArr (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyArr (ErrSum xs) ty a => AsExpectedTyArr (ErrSum (x ': xs)) ty a where
   _ExpectedTyArr = _ErrNext . _ExpectedTyArr
 
-instance {-# OVERLAPPING #-} AsExpectedTyArr (ErrSum (ErrExpectedTyArr ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyArr (ErrSum (ErrExpectedTyArr ty a ': xs)) ty a where
   _ExpectedTyArr = _ErrNow . _ExpectedTyArr
 
 expectTyArr :: (MonadError e m, AsExpectedTyArr e ty a, AsTySTLC ty) => Type ty a -> m (Type ty a, Type ty a)

@@ -41,16 +41,16 @@ data ErrExpectedTyVariant ty a = ErrExpectedTyVariant (Type ty a)
 
 makePrisms ''ErrExpectedTyVariant
 
-class AsExpectedTyVariant e ty a | e -> ty, e -> a where
+class AsExpectedTyVariant e ty a where -- | e -> ty, e -> a where
   _ExpectedTyVariant :: Prism' e (Type ty a)
 
 instance AsExpectedTyVariant (ErrExpectedTyVariant ty a) ty a where
   _ExpectedTyVariant = _ErrExpectedTyVariant
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyVariant ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyVariant (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyVariant ((ErrSum xs)) ty a => AsExpectedTyVariant (ErrSum (x ': xs)) ty a where
   _ExpectedTyVariant = _ErrNext . _ExpectedTyVariant
 
-instance {-# OVERLAPPING #-} AsExpectedTyVariant (ErrSum (ErrExpectedTyVariant ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyVariant (ErrSum (ErrExpectedTyVariant ty a ': xs)) ty a where
   _ExpectedTyVariant = _ErrNow . _ExpectedTyVariant
 
 expectTyVariant :: (MonadError e m, AsExpectedTyVariant e ty a, AsTyVariant ty) => Type ty a -> m (N.NonEmpty (T.Text, Type ty a))
@@ -70,10 +70,10 @@ class AsVariantNotFound e where
 instance AsVariantNotFound ErrVariantNotFound where
   _VariantNotFound = _ErrVariantNotFound
 
-instance {-# OVERLAPPABLE #-} AsVariantNotFound ((ErrSum xs) ty pt tm a) => AsVariantNotFound (ErrSum (x ': xs) ty pt tm a) where
+instance {-# OVERLAPPABLE #-} AsVariantNotFound (ErrSum xs) => AsVariantNotFound (ErrSum (x ': xs)) where
   _VariantNotFound = _ErrNext . _VariantNotFound
 
-instance {-# OVERLAPPING #-} AsVariantNotFound (ErrSum (ErrVariantNotFound ': xs) ty pt tm a) where
+instance {-# OVERLAPPING #-} AsVariantNotFound (ErrSum (ErrVariantNotFound ': xs)) where
   _VariantNotFound = _ErrNow . _VariantNotFound
 
 lookupVariant :: (MonadError e m, AsVariantNotFound e) =>  N.NonEmpty (T.Text, t a) -> T.Text -> m (t a)

@@ -44,16 +44,16 @@ data ErrExpectedPattern ty pt tm a = ErrExpectedPattern (Ast ty pt tm (AstVar a)
 
 makePrisms ''ErrExpectedPattern
 
-class AsExpectedPattern e ty pt tm a | e -> ty, e -> pt, e -> tm, e -> a where
+class AsExpectedPattern e ty pt tm a where -- | e -> ty, e -> pt, e -> tm, e -> a where
   _ExpectedPattern :: Prism' e (Ast ty pt tm (AstVar a))
 
 instance AsExpectedPattern (ErrExpectedPattern ty pt tm a) ty pt tm a where
   _ExpectedPattern = _ErrExpectedPattern
 
-instance {-# OVERLAPPABLE #-} AsExpectedPattern ((ErrSum xs) ty pt tm a) ty pt tm a => AsExpectedPattern (ErrSum (x ': xs) ty pt tm a) ty pt tm a where
+instance {-# OVERLAPPABLE #-} AsExpectedPattern (ErrSum xs) ty pt tm a => AsExpectedPattern (ErrSum (x ': xs)) ty pt tm a where
   _ExpectedPattern = _ErrNext . _ExpectedPattern
 
-instance {-# OVERLAPPING #-} AsExpectedPattern (ErrSum (ErrExpectedPattern ty pt tm a ': xs) ty pt tm a) ty pt tm a where
+instance {-# OVERLAPPING #-} AsExpectedPattern (ErrSum (ErrExpectedPattern ty pt tm a ': xs)) ty pt tm a where
   _ExpectedPattern = _ErrNow . _ExpectedPattern
 
 expectPattern :: (MonadError e m, AsExpectedPattern e ty pt tm a, AstTransversable ty pt tm) => Ast ty pt tm (AstVar a) -> m (Pattern pt a)
@@ -67,16 +67,16 @@ data ErrDuplicatedPatternVariables a = ErrDuplicatedPatternVariables (N.NonEmpty
 
 makePrisms ''ErrDuplicatedPatternVariables
 
-class AsDuplicatedPatternVariables e a | e -> a where
+class AsDuplicatedPatternVariables e a where -- | e -> a where
   _DuplicatedPatternVariables :: Prism' e (N.NonEmpty a)
 
 instance AsDuplicatedPatternVariables (ErrDuplicatedPatternVariables a) a where
   _DuplicatedPatternVariables = _ErrDuplicatedPatternVariables
 
-instance {-# OVERLAPPABLE #-} AsDuplicatedPatternVariables ((ErrSum xs) ty pt tm a) a => AsDuplicatedPatternVariables (ErrSum (x ': xs) ty pt tm a) a where
+instance {-# OVERLAPPABLE #-} AsDuplicatedPatternVariables (ErrSum xs) a => AsDuplicatedPatternVariables (ErrSum (x ': xs)) a where
   _DuplicatedPatternVariables = _ErrNext . _DuplicatedPatternVariables
 
-instance {-# OVERLAPPING #-} AsDuplicatedPatternVariables (ErrSum (ErrDuplicatedPatternVariables a ': xs) ty pt tm a) a where
+instance {-# OVERLAPPING #-} AsDuplicatedPatternVariables (ErrSum (ErrDuplicatedPatternVariables a ': xs)) a where
   _DuplicatedPatternVariables = _ErrNow . _DuplicatedPatternVariables
 
 checkForDuplicatedPatternVariables :: (Ord a, MonadError e m, AsDuplicatedPatternVariables e a) => [a] -> m ()
@@ -97,16 +97,16 @@ data ErrUnusedPatternVariables a = ErrUnusedPatternVariables (N.NonEmpty a)
 
 makePrisms ''ErrUnusedPatternVariables
 
-class AsUnusedPatternVariables e a | e -> a where
+class AsUnusedPatternVariables e a where -- | e -> a where
   _UnusedPatternVariables :: Prism' e (N.NonEmpty a)
 
 instance AsUnusedPatternVariables (ErrUnusedPatternVariables a) a where
   _UnusedPatternVariables = _ErrUnusedPatternVariables
 
-instance {-# OVERLAPPABLE #-} AsUnusedPatternVariables ((ErrSum xs) ty pt tm a) a => AsUnusedPatternVariables (ErrSum (x ': xs) ty pt tm a) a where
+instance {-# OVERLAPPABLE #-} AsUnusedPatternVariables (ErrSum xs) a => AsUnusedPatternVariables (ErrSum (x ': xs)) a where
   _UnusedPatternVariables = _ErrNext . _UnusedPatternVariables
 
-instance {-# OVERLAPPING #-} AsUnusedPatternVariables (ErrSum (ErrUnusedPatternVariables a ': xs) ty pt tm a) a where
+instance {-# OVERLAPPING #-} AsUnusedPatternVariables (ErrSum (ErrUnusedPatternVariables a ': xs)) a where
   _UnusedPatternVariables = _ErrNow . _UnusedPatternVariables
 
 checkForUnusedPatternVariables :: (MonadError e m, AsUnusedPatternVariables e a) => [a] -> [Int] -> m ()

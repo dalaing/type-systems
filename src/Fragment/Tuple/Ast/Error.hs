@@ -38,16 +38,16 @@ data ErrExpectedTyTuple ty a = ErrExpectedTyTuple (Type ty a)
 
 makePrisms ''ErrExpectedTyTuple
 
-class AsExpectedTyTuple e ty a | e -> ty, e -> a where
+class AsExpectedTyTuple e ty a where -- | e -> ty, e -> a where
   _ExpectedTyTuple :: Prism' e (Type ty a)
 
 instance AsExpectedTyTuple (ErrExpectedTyTuple ty a) ty a where
   _ExpectedTyTuple = _ErrExpectedTyTuple
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyTuple ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyTuple (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyTuple (ErrSum xs) ty a => AsExpectedTyTuple (ErrSum (x ': xs)) ty a where
   _ExpectedTyTuple = _ErrNext . _ExpectedTyTuple
 
-instance {-# OVERLAPPING #-} AsExpectedTyTuple (ErrSum (ErrExpectedTyTuple ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyTuple (ErrSum (ErrExpectedTyTuple ty a ': xs)) ty a where
   _ExpectedTyTuple = _ErrNow . _ExpectedTyTuple
 
 expectTyTuple :: (MonadError e m, AsExpectedTyTuple e ty a, AsTyTuple ty) => Type ty a -> m [Type ty a]
@@ -67,10 +67,10 @@ class AsTupleOutOfBounds e where
 instance AsTupleOutOfBounds ErrTupleOutOfBounds where
   _TupleOutOfBounds = _ErrTupleOutOfBounds
 
-instance {-# OVERLAPPABLE #-} AsTupleOutOfBounds ((ErrSum xs) ty pt tm a) => AsTupleOutOfBounds (ErrSum (x ': xs) ty pt tm a) where
+instance {-# OVERLAPPABLE #-} AsTupleOutOfBounds (ErrSum xs) => AsTupleOutOfBounds (ErrSum (x ': xs)) where
   _TupleOutOfBounds = _ErrNext . _TupleOutOfBounds
 
-instance {-# OVERLAPPING #-} AsTupleOutOfBounds (ErrSum (ErrTupleOutOfBounds ': xs) ty pt tm a) where
+instance {-# OVERLAPPING #-} AsTupleOutOfBounds (ErrSum (ErrTupleOutOfBounds ': xs)) where
   _TupleOutOfBounds = _ErrNow . _TupleOutOfBounds
 
 lookupTuple :: (MonadError e m, AsTupleOutOfBounds e) =>  [t a] -> Int -> m (t a)

@@ -39,16 +39,16 @@ data ErrExpectedTyArr ty a = ErrExpectedTyArr (Type ty a)
 
 makePrisms ''ErrExpectedTyArr
 
-class AsExpectedTyArr e ty a | e -> ty, e -> a where
+class AsExpectedTyArr e ty a where -- | e -> ty, e -> a where
   _ExpectedTyArr :: Prism' e (Type ty a)
 
 instance AsExpectedTyArr (ErrExpectedTyArr ty a) ty a where
   _ExpectedTyArr = _ErrExpectedTyArr
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyArr ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyArr (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyArr (ErrSum xs) ty a => AsExpectedTyArr (ErrSum (x ': xs)) ty a where
   _ExpectedTyArr = _ErrNext . _ExpectedTyArr
 
-instance {-# OVERLAPPING #-} AsExpectedTyArr (ErrSum (ErrExpectedTyArr ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyArr (ErrSum (ErrExpectedTyArr ty a ': xs)) ty a where
   _ExpectedTyArr = _ErrNow . _ExpectedTyArr
 
 expectTyArr :: (MonadError e m, AsExpectedTyArr e ty a, AsTySystemF ty) => Type ty a -> m (Type ty a, Type ty a)
@@ -62,16 +62,16 @@ data ErrExpectedTyAll ty a = ErrExpectedTyAll (Type ty a)
 
 makePrisms ''ErrExpectedTyAll
 
-class AsExpectedTyAll e ty a | e -> ty, e -> a where
+class AsExpectedTyAll e ty a where -- | e -> ty, e -> a where
   _ExpectedTyAll :: Prism' e (Type ty a)
 
 instance AsExpectedTyAll (ErrExpectedTyAll ty a) ty a where
   _ExpectedTyAll = _ErrExpectedTyAll
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyAll ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyAll (ErrSum (x ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyAll (ErrSum xs) ty a => AsExpectedTyAll (ErrSum (x ': xs)) ty a where
   _ExpectedTyAll = _ErrNext . _ExpectedTyAll
 
-instance {-# OVERLAPPING #-} AsExpectedTyAll (ErrSum (ErrExpectedTyAll ty a ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyAll (ErrSum (ErrExpectedTyAll ty a ': xs)) ty a where
   _ExpectedTyAll = _ErrNow . _ExpectedTyAll
 
 expectTyAll :: (MonadError e m, AsExpectedTyAll e ty a, AsTySystemF ty) => Type ty a -> m (Scope () (Type ty) a)

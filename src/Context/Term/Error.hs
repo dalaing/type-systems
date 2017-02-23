@@ -28,14 +28,14 @@ data ErrUnboundTermVariable a = ErrUnboundTermVariable a
 
 makePrisms ''ErrUnboundTermVariable
 
-class AsUnboundTermVariable e a | e -> a where
+class AsUnboundTermVariable e a where -- | e -> a where
   _UnboundTermVariable :: Prism' e a
 
 instance AsUnboundTermVariable (ErrUnboundTermVariable a) a where
   _UnboundTermVariable = _ErrUnboundTermVariable
 
-instance {-# OVERLAPPABLE #-} AsUnboundTermVariable ((ErrSum xs) ty pt tm a) a => AsUnboundTermVariable (ErrSum (x ': xs) ty pt tm a) a where
+instance {-# OVERLAPPABLE #-} AsUnboundTermVariable (ErrSum xs) a => AsUnboundTermVariable (ErrSum (x ': xs)) a where
   _UnboundTermVariable = _ErrNext . _UnboundTermVariable
 
-instance {-# OVERLAPPING #-} AsUnboundTermVariable (ErrSum (ErrUnboundTermVariable a ': xs) ty pt tm a) a where
+instance {-# OVERLAPPING #-} AsUnboundTermVariable (ErrSum (ErrUnboundTermVariable a ': xs)) a where
   _UnboundTermVariable = _ErrNow . _UnboundTermVariable
