@@ -5,10 +5,13 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
-module Fragment.STLC (
-  module X
+module Fragment.TmVar.Helpers (
+    tmVar
   ) where
 
-import Fragment.STLC.Ast as X
-import Fragment.STLC.Rules as X
-import Fragment.STLC.Helpers as X
+import Control.Lens (review)
+
+import Ast.Term
+
+tmVar :: a -> Term ty pt tm a
+tmVar = review _TmVar

@@ -5,10 +5,10 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
-module Fragment.STLC (
-  module X
+module Fragment.PtWild (
+    module X
   ) where
 
-import Fragment.STLC.Ast as X
-import Fragment.STLC.Rules as X
-import Fragment.STLC.Helpers as X
+import Fragment.PtWild.Ast as X
+import Fragment.PtWild.Rules as X
+import Fragment.PtWild.Helpers as X

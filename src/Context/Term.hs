@@ -20,7 +20,7 @@ module Context.Term (
 import Control.Monad.Reader (MonadReader)
 import Control.Monad.Except (MonadError)
 import Control.Lens (Lens', view)
-import Control.Lens.Prism (Prism')
+
 import Control.Monad.Error.Lens (throwing)
 
 import qualified Data.Map as M

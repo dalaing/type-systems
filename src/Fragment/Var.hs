@@ -25,18 +25,6 @@ module Fragment.Var (
   , AsPtWild(..)
   , PtVarContext
   , ptVarFragment
-  , HasTmVarSupply(..)
-  , ToTmVar(..)
-  , freshTmVar
-  , HasTyVarSupply(..)
-  , ToTyVar(..)
-  , freshTyVar
-  , TermContext(..)
-  , emptyTermContext
-  , HasTermContext(..)
-  , AsUnboundTermVariable(..)
-  , lookupTerm
-  , insertTerm
   , TmVarContext
   , tmVarFragment
   , tyVar
@@ -136,76 +124,6 @@ ptVarFragment =
     [ PCheckBase checkWild, PCheckBase checkVar ]
     [ ]
     [ ]
-
--- State
-
-class HasTmVarSupply s where
-  tmVarSupply :: Lens' s Int
-
-instance HasTmVarSupply Int where
-  tmVarSupply = id
-
-class ToTmVar a where
-  toTmVar :: Int -> a
-
-instance ToTmVar String where
-  toTmVar x = 'x' : show x
-
-instance ToTmVar T.Text where
-  toTmVar x = T.append "x" (T.pack . show $ x)
-
-freshTmVar :: (MonadState s m, HasTmVarSupply s, ToTmVar a) => m a
-freshTmVar = do
-  x <- use tmVarSupply
-  tmVarSupply %= succ
-  return $ toTmVar x
-
-class HasTyVarSupply s where
-  tyVarSupply :: Lens' s Int
-
-instance HasTyVarSupply Int where
-  tyVarSupply = id
-
-class ToTyVar a where
-  toTyVar :: Int -> a
-
-instance ToTyVar String where
-  toTyVar x = 'X' : show x
-
-instance ToTyVar T.Text where
-  toTyVar x = T.append "X" (T.pack . show $ x)
-
-freshTyVar :: (MonadState s m, HasTyVarSupply s, ToTyVar a) => m a
-freshTyVar = do
-  x <- use tyVarSupply
-  tyVarSupply %= succ
-  return $ toTyVar x
-
--- Context
-
-data TermContext ty tmV tyV = TermContext (M.Map tmV (Type ty tyV))
-
-emptyTermContext :: TermContext ty tmV tyV
-emptyTermContext = TermContext M.empty
-
-instance HasTermContext (TermContext ty tmV tyV) ty tmV tyV where
-  termContext = id
-
-class HasTermContext l ty tmV tyV | l -> ty, l -> tmV, l -> tyV where
-  termContext :: Lens' l (TermContext ty tmV tyV)
-
-class AsUnboundTermVariable e tm | e -> tm where
-  _UnboundTermVariable :: Prism' e tm
-
-lookupTerm :: (Ord tmV, MonadReader r m, MonadError e m, HasTermContext r ty tmV tyV, AsUnboundTermVariable e tmV) => tmV -> m (Type ty tyV)
-lookupTerm v = do
-  TermContext m <- view termContext
-  case M.lookup v m of
-    Nothing -> throwing _UnboundTermVariable v
-    Just ty -> return ty
-
-insertTerm :: Ord tmV => tmV -> Type ty tyV -> TermContext ty tmV tyV -> TermContext ty tmV tyV
-insertTerm v ty (TermContext m) = TermContext (M.insert v ty m)
 
 -- Rules
 

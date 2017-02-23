@@ -100,7 +100,7 @@ instance Monoid (InferInput e s r m ty pt tm a) where
 data InferOutput e s r m ty pt tm a =
   InferOutput {
     ioInfer :: Term ty pt tm a -> m (Type ty a)
-  , ioPCheck :: Term ty pt tm a -> Type ty a -> m ()
+  , ioCheck :: Term ty pt tm a -> Type ty a -> m ()
   }
 
 type InferContext e s r m (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
