@@ -33,7 +33,7 @@ import Ast.Error
 
 import Fragment.Tuple.Ast.Type
 
-data ErrExpectedTyTuple (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrExpectedTyTuple (Type ty a)
+data ErrExpectedTyTuple ty a = ErrExpectedTyTuple (Type ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyTuple
@@ -41,13 +41,13 @@ makePrisms ''ErrExpectedTyTuple
 class AsExpectedTyTuple e ty a | e -> ty, e -> a where
   _ExpectedTyTuple :: Prism' e (Type ty a)
 
-instance AsExpectedTyTuple (ErrExpectedTyTuple ty pt tm a) ty a where
+instance AsExpectedTyTuple (ErrExpectedTyTuple ty a) ty a where
   _ExpectedTyTuple = _ErrExpectedTyTuple
 
 instance {-# OVERLAPPABLE #-} AsExpectedTyTuple ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyTuple (ErrSum (x ': xs) ty pt tm a) ty a where
   _ExpectedTyTuple = _ErrNext . _ExpectedTyTuple
 
-instance {-# OVERLAPPING #-} AsExpectedTyTuple (ErrSum (ErrExpectedTyTuple ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyTuple (ErrSum (ErrExpectedTyTuple ty a ': xs) ty pt tm a) ty a where
   _ExpectedTyTuple = _ErrNow . _ExpectedTyTuple
 
 expectTyTuple :: (MonadError e m, AsExpectedTyTuple e ty a, AsTyTuple ty) => Type ty a -> m [Type ty a]
@@ -56,7 +56,7 @@ expectTyTuple ty =
     Just tys -> return tys
     _ -> throwing _ExpectedTyTuple ty
 
-data ErrTupleOutOfBounds (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrTupleOutOfBounds Int Int
+data ErrTupleOutOfBounds = ErrTupleOutOfBounds Int Int
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrTupleOutOfBounds
@@ -64,7 +64,7 @@ makePrisms ''ErrTupleOutOfBounds
 class AsTupleOutOfBounds e where
   _TupleOutOfBounds :: Prism' e (Int, Int)
 
-instance AsTupleOutOfBounds (ErrTupleOutOfBounds ty pt tm a) where
+instance AsTupleOutOfBounds ErrTupleOutOfBounds where
   _TupleOutOfBounds = _ErrTupleOutOfBounds
 
 instance {-# OVERLAPPABLE #-} AsTupleOutOfBounds ((ErrSum xs) ty pt tm a) => AsTupleOutOfBounds (ErrSum (x ': xs) ty pt tm a) where

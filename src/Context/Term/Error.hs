@@ -23,7 +23,7 @@ import Control.Lens.TH (makePrisms)
 
 import Ast.Error
 
-data ErrUnboundTermVariable (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrUnboundTermVariable a
+data ErrUnboundTermVariable a = ErrUnboundTermVariable a
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrUnboundTermVariable
@@ -31,11 +31,11 @@ makePrisms ''ErrUnboundTermVariable
 class AsUnboundTermVariable e a | e -> a where
   _UnboundTermVariable :: Prism' e a
 
-instance AsUnboundTermVariable (ErrUnboundTermVariable ty pt tm a) a where
+instance AsUnboundTermVariable (ErrUnboundTermVariable a) a where
   _UnboundTermVariable = _ErrUnboundTermVariable
 
 instance {-# OVERLAPPABLE #-} AsUnboundTermVariable ((ErrSum xs) ty pt tm a) a => AsUnboundTermVariable (ErrSum (x ': xs) ty pt tm a) a where
   _UnboundTermVariable = _ErrNext . _UnboundTermVariable
 
-instance {-# OVERLAPPING #-} AsUnboundTermVariable (ErrSum (ErrUnboundTermVariable ': xs) ty pt tm a) a where
+instance {-# OVERLAPPING #-} AsUnboundTermVariable (ErrSum (ErrUnboundTermVariable a ': xs) ty pt tm a) a where
   _UnboundTermVariable = _ErrNow . _UnboundTermVariable

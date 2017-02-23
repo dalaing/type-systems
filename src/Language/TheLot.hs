@@ -68,17 +68,60 @@ import Fragment.Variant
 import Fragment.SystemF
 import Fragment.Case
 
-type TypeF = TySum '[TyFInt, TyFBool, TyFPair, TyFTuple, TyFRecord, TyFVariant, TyFSystemF]
+type TypeF =
+  TySum '[ TyFInt
+         , TyFBool
+         , TyFPair
+         , TyFTuple
+         , TyFRecord
+         , TyFVariant
+         , TyFSystemF
+         ]
 
-type PatternF = PtSum '[PtFWild, PtFInt, PtFBool, PtFPair, PtFTuple, PtFRecord, PtFVariant]
+type PatternF =
+  PtSum '[ PtFWild
+         , PtFInt
+         , PtFBool
+         , PtFPair
+         , PtFTuple
+         , PtFRecord
+         , PtFVariant
+         ]
 
-type TermF = TmSum '[TmFInt, TmFBool, TmFIf, TmFPair, TmFTuple, TmFRecord, TmFVariant, TmFSystemF]
+type TermF =
+  TmSum '[ TmFInt
+         , TmFBool
+         , TmFIf
+         , TmFPair
+         , TmFTuple
+         , TmFRecord
+         , TmFVariant
+         , TmFSystemF
+         ]
 
-type LError = ErrSum '[ErrUnexpected, ErrExpectedEq, ErrExpectedAllEq, ErrExpectedTyPair, ErrExpectedTyTuple, ErrTupleOutOfBounds, ErrExpectedTyRecord, ErrRecordNotFound, ErrExpectedTyVariant, ErrVariantNotFound, ErrExpectedTyArr, ErrExpectedTyAll, ErrUnboundTermVariable, ErrExpectedPattern, ErrDuplicatedPatternVariables, ErrUnusedPatternVariables, ErrUnknownTypeError] TypeF PatternF TermF String
+type Error ty pt tm a =
+  ErrSum '[ ErrUnexpected ty a
+          , ErrExpectedEq ty a
+          , ErrExpectedAllEq ty a
+          , ErrExpectedTyPair ty a
+          , ErrExpectedTyTuple ty a
+          , ErrTupleOutOfBounds
+          , ErrExpectedTyRecord ty a
+          , ErrRecordNotFound
+          , ErrExpectedTyVariant ty a
+          , ErrVariantNotFound,
+            ErrExpectedTyArr ty a
+          , ErrExpectedTyAll ty a
+          , ErrUnboundTermVariable a
+          , ErrExpectedPattern ty pt tm a
+          , ErrDuplicatedPatternVariables a
+          , ErrUnusedPatternVariables a
+          , ErrUnknownTypeError
+          ] ty pt tm a
 
 type LTerm = Term TypeF PatternF TermF String
 type LType = Type TypeF String
--- type LError = Error TypeF PatternF TermF String
+type LError = Error TypeF PatternF TermF String
 
 type LContext e s r m ty pt tm a =
   ( PtVarContext e s r m ty pt tm a

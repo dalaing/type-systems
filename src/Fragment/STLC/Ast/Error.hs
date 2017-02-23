@@ -30,7 +30,7 @@ import Ast.Error
 
 import Fragment.STLC.Ast.Type
 
-data ErrExpectedTyArr (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrExpectedTyArr (Type ty a)
+data ErrExpectedTyArr ty a = ErrExpectedTyArr (Type ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyArr
@@ -38,13 +38,13 @@ makePrisms ''ErrExpectedTyArr
 class AsExpectedTyArr e ty a | e -> ty, e -> a where
   _ExpectedTyArr :: Prism' e (Type ty a)
 
-instance AsExpectedTyArr (ErrExpectedTyArr ty pt tm a) ty a where
+instance AsExpectedTyArr (ErrExpectedTyArr ty a) ty a where
   _ExpectedTyArr = _ErrExpectedTyArr
 
 instance {-# OVERLAPPABLE #-} AsExpectedTyArr ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyArr (ErrSum (x ': xs) ty pt tm a) ty a where
   _ExpectedTyArr = _ErrNext . _ExpectedTyArr
 
-instance {-# OVERLAPPING #-} AsExpectedTyArr (ErrSum (ErrExpectedTyArr ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyArr (ErrSum (ErrExpectedTyArr ty a ': xs) ty pt tm a) ty a where
   _ExpectedTyArr = _ErrNow . _ExpectedTyArr
 
 expectTyArr :: (MonadError e m, AsExpectedTyArr e ty a, AsTySTLC ty) => Type ty a -> m (Type ty a, Type ty a)

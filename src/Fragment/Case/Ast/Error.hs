@@ -39,7 +39,7 @@ import Ast.Error
 import Ast.Pattern
 import Ast.Term
 
-data ErrExpectedPattern (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrExpectedPattern (Ast ty pt tm (AstVar a))
+data ErrExpectedPattern ty pt tm a = ErrExpectedPattern (Ast ty pt tm (AstVar a))
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedPattern
@@ -53,7 +53,7 @@ instance AsExpectedPattern (ErrExpectedPattern ty pt tm a) ty pt tm a where
 instance {-# OVERLAPPABLE #-} AsExpectedPattern ((ErrSum xs) ty pt tm a) ty pt tm a => AsExpectedPattern (ErrSum (x ': xs) ty pt tm a) ty pt tm a where
   _ExpectedPattern = _ErrNext . _ExpectedPattern
 
-instance {-# OVERLAPPING #-} AsExpectedPattern (ErrSum (ErrExpectedPattern ': xs) ty pt tm a) ty pt tm a where
+instance {-# OVERLAPPING #-} AsExpectedPattern (ErrSum (ErrExpectedPattern ty pt tm a ': xs) ty pt tm a) ty pt tm a where
   _ExpectedPattern = _ErrNow . _ExpectedPattern
 
 expectPattern :: (MonadError e m, AsExpectedPattern e ty pt tm a, AstTransversable ty pt tm) => Ast ty pt tm (AstVar a) -> m (Pattern pt a)
@@ -62,7 +62,7 @@ expectPattern ast =
     Just p -> return p
     _ -> throwing _ExpectedPattern ast
 
-data ErrDuplicatedPatternVariables (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrDuplicatedPatternVariables (N.NonEmpty a)
+data ErrDuplicatedPatternVariables a = ErrDuplicatedPatternVariables (N.NonEmpty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrDuplicatedPatternVariables
@@ -70,13 +70,13 @@ makePrisms ''ErrDuplicatedPatternVariables
 class AsDuplicatedPatternVariables e a | e -> a where
   _DuplicatedPatternVariables :: Prism' e (N.NonEmpty a)
 
-instance AsDuplicatedPatternVariables (ErrDuplicatedPatternVariables ty pt tm a) a where
+instance AsDuplicatedPatternVariables (ErrDuplicatedPatternVariables a) a where
   _DuplicatedPatternVariables = _ErrDuplicatedPatternVariables
 
 instance {-# OVERLAPPABLE #-} AsDuplicatedPatternVariables ((ErrSum xs) ty pt tm a) a => AsDuplicatedPatternVariables (ErrSum (x ': xs) ty pt tm a) a where
   _DuplicatedPatternVariables = _ErrNext . _DuplicatedPatternVariables
 
-instance {-# OVERLAPPING #-} AsDuplicatedPatternVariables (ErrSum (ErrDuplicatedPatternVariables ': xs) ty pt tm a) a where
+instance {-# OVERLAPPING #-} AsDuplicatedPatternVariables (ErrSum (ErrDuplicatedPatternVariables a ': xs) ty pt tm a) a where
   _DuplicatedPatternVariables = _ErrNow . _DuplicatedPatternVariables
 
 checkForDuplicatedPatternVariables :: (Ord a, MonadError e m, AsDuplicatedPatternVariables e a) => [a] -> m ()
@@ -92,7 +92,7 @@ checkForDuplicatedPatternVariables xs =
       Nothing -> return ()
       Just ns -> throwing _DuplicatedPatternVariables ns
 
-data ErrUnusedPatternVariables (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrUnusedPatternVariables (N.NonEmpty a)
+data ErrUnusedPatternVariables a = ErrUnusedPatternVariables (N.NonEmpty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrUnusedPatternVariables
@@ -100,13 +100,13 @@ makePrisms ''ErrUnusedPatternVariables
 class AsUnusedPatternVariables e a | e -> a where
   _UnusedPatternVariables :: Prism' e (N.NonEmpty a)
 
-instance AsUnusedPatternVariables (ErrUnusedPatternVariables ty pt tm a) a where
+instance AsUnusedPatternVariables (ErrUnusedPatternVariables a) a where
   _UnusedPatternVariables = _ErrUnusedPatternVariables
 
 instance {-# OVERLAPPABLE #-} AsUnusedPatternVariables ((ErrSum xs) ty pt tm a) a => AsUnusedPatternVariables (ErrSum (x ': xs) ty pt tm a) a where
   _UnusedPatternVariables = _ErrNext . _UnusedPatternVariables
 
-instance {-# OVERLAPPING #-} AsUnusedPatternVariables (ErrSum (ErrUnusedPatternVariables ': xs) ty pt tm a) a where
+instance {-# OVERLAPPING #-} AsUnusedPatternVariables (ErrSum (ErrUnusedPatternVariables a ': xs) ty pt tm a) a where
   _UnusedPatternVariables = _ErrNow . _UnusedPatternVariables
 
 checkForUnusedPatternVariables :: (MonadError e m, AsUnusedPatternVariables e a) => [a] -> [Int] -> m ()

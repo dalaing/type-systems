@@ -35,7 +35,7 @@ import Ast.Error
 
 import Fragment.Record.Ast.Type
 
-data ErrExpectedTyRecord (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrExpectedTyRecord (Type ty a)
+data ErrExpectedTyRecord ty a = ErrExpectedTyRecord (Type ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyRecord
@@ -43,13 +43,13 @@ makePrisms ''ErrExpectedTyRecord
 class AsExpectedTyRecord e ty a | e -> ty, e -> a where
   _ExpectedTyRecord :: Prism' e (Type ty a)
 
-instance AsExpectedTyRecord (ErrExpectedTyRecord ty pt tm a) ty a where
+instance AsExpectedTyRecord (ErrExpectedTyRecord ty a) ty a where
   _ExpectedTyRecord = _ErrExpectedTyRecord
 
 instance {-# OVERLAPPABLE #-} AsExpectedTyRecord ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyRecord (ErrSum (x ': xs) ty pt tm a) ty a where
   _ExpectedTyRecord = _ErrNext . _ExpectedTyRecord
 
-instance {-# OVERLAPPING #-} AsExpectedTyRecord (ErrSum (ErrExpectedTyRecord ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyRecord (ErrSum (ErrExpectedTyRecord ty a ': xs) ty pt tm a) ty a where
   _ExpectedTyRecord = _ErrNow . _ExpectedTyRecord
 
 expectTyRecord :: (MonadError e m, AsExpectedTyRecord e ty a, AsTyRecord ty) => Type ty a -> m [(T.Text, Type ty a)]
@@ -58,7 +58,7 @@ expectTyRecord ty =
     Just tys -> return tys
     _ -> throwing _ExpectedTyRecord ty
 
-data ErrRecordNotFound (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrRecordNotFound T.Text
+data ErrRecordNotFound = ErrRecordNotFound T.Text
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrRecordNotFound
@@ -66,7 +66,7 @@ makePrisms ''ErrRecordNotFound
 class AsRecordNotFound e where
   _RecordNotFound :: Prism' e T.Text
 
-instance AsRecordNotFound (ErrRecordNotFound ty pt tm a) where
+instance AsRecordNotFound ErrRecordNotFound where
   _RecordNotFound = _ErrRecordNotFound
 
 instance {-# OVERLAPPABLE #-} AsRecordNotFound ((ErrSum xs) ty pt tm a) => AsRecordNotFound (ErrSum (x ': xs) ty pt tm a) where

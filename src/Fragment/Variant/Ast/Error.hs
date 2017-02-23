@@ -36,7 +36,7 @@ import Ast.Error
 
 import Fragment.Variant.Ast.Type
 
-data ErrExpectedTyVariant (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrExpectedTyVariant (Type ty a)
+data ErrExpectedTyVariant ty a = ErrExpectedTyVariant (Type ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyVariant
@@ -44,13 +44,13 @@ makePrisms ''ErrExpectedTyVariant
 class AsExpectedTyVariant e ty a | e -> ty, e -> a where
   _ExpectedTyVariant :: Prism' e (Type ty a)
 
-instance AsExpectedTyVariant (ErrExpectedTyVariant ty pt tm a) ty a where
+instance AsExpectedTyVariant (ErrExpectedTyVariant ty a) ty a where
   _ExpectedTyVariant = _ErrExpectedTyVariant
 
 instance {-# OVERLAPPABLE #-} AsExpectedTyVariant ((ErrSum xs) ty pt tm a) ty a => AsExpectedTyVariant (ErrSum (x ': xs) ty pt tm a) ty a where
   _ExpectedTyVariant = _ErrNext . _ExpectedTyVariant
 
-instance {-# OVERLAPPING #-} AsExpectedTyVariant (ErrSum (ErrExpectedTyVariant ': xs) ty pt tm a) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyVariant (ErrSum (ErrExpectedTyVariant ty a ': xs) ty pt tm a) ty a where
   _ExpectedTyVariant = _ErrNow . _ExpectedTyVariant
 
 expectTyVariant :: (MonadError e m, AsExpectedTyVariant e ty a, AsTyVariant ty) => Type ty a -> m (N.NonEmpty (T.Text, Type ty a))
@@ -59,7 +59,7 @@ expectTyVariant ty =
     Just tys -> return tys
     _ -> throwing _ExpectedTyVariant ty
 
-data ErrVariantNotFound (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = ErrVariantNotFound T.Text
+data ErrVariantNotFound = ErrVariantNotFound T.Text
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrVariantNotFound
@@ -67,7 +67,7 @@ makePrisms ''ErrVariantNotFound
 class AsVariantNotFound e where
   _VariantNotFound :: Prism' e T.Text
 
-instance AsVariantNotFound (ErrVariantNotFound ty pt tm a) where
+instance AsVariantNotFound ErrVariantNotFound where
   _VariantNotFound = _ErrVariantNotFound
 
 instance {-# OVERLAPPABLE #-} AsVariantNotFound ((ErrSum xs) ty pt tm a) => AsVariantNotFound (ErrSum (x ': xs) ty pt tm a) where
