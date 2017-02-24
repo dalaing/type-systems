@@ -38,7 +38,7 @@ import Control.Lens.TH (makePrisms)
 
 import Data.List.NonEmpty (NonEmpty(..))
 
-import Util
+import Data.Functor.Rec
 
 import Ast.Type
 import Ast.Error

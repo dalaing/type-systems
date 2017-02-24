@@ -19,7 +19,10 @@ library
                      -- , Fragment.Ast2
                      -- Fragment.Var
                      -- , Error
-                     Util
+                     Util.Prisms
+                     , Util.NonEmpty
+                     , Data.Bitransversable
+                     , Data.Functor.Rec
                      , Language.TheLot
                      -- new stuff starts here
                      , Ast.Type

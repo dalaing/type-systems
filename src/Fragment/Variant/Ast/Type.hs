@@ -24,39 +24,37 @@ import Text.Show (showListWith)
 
 import Bound (Bound(..))
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
 import qualified Data.Text as T
-import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as N
 
 import Ast.Type
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
+import Util.NonEmpty
 
 data TyFVariant f a =
-  TyVariantF (N.NonEmpty (T.Text, f a))
+  TyVariantF (NE (T.Text, f a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TyFVariant
-
-deriveEq1 ''NonEmpty
-deriveOrd1 ''NonEmpty
-deriveShow1 ''NonEmpty
 
 deriveEq1 ''TyFVariant
 deriveOrd1 ''TyFVariant
 deriveShow1 ''TyFVariant
 
 instance EqRec TyFVariant where
-  liftEqRec eR _ (TyVariantF vs1) (TyVariantF vs2) =
+  liftEqRec eR _ (TyVariantF (NE vs1)) (TyVariantF (NE vs2)) =
     let
       f (l1, v1) (l2, v2) = l1 == l2 && eR v1 v2
     in
       and $ N.zipWith f vs1 vs2
 
 instance OrdRec TyFVariant where
-  liftCompareRec cR _ (TyVariantF vs1) (TyVariantF vs2) =
+  liftCompareRec cR _ (TyVariantF (NE vs1)) (TyVariantF (NE vs2)) =
     let
       f [] [] = EQ
       f [] (_ : _) = LT
@@ -71,7 +69,7 @@ instance OrdRec TyFVariant where
       f (N.toList vs1) (N.toList vs2)
 
 instance ShowRec TyFVariant where
-  liftShowsPrecRec sR _ _ _ n (TyVariantF xs) =
+  liftShowsPrecRec sR _ _ _ n (TyVariantF (NE xs)) =
     let
       g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
                  sR m x .
@@ -90,7 +88,7 @@ class AsTyVariant ty where
   _TyVariantP :: Prism' (ty k a) (TyFVariant k a)
 
   _TyVariant :: Prism' (Type ty a) (N.NonEmpty (T.Text, Type ty a))
-  _TyVariant = _TyTree . _TyVariantP . _TyVariantF
+  _TyVariant = _TyTree . _TyVariantP . _TyVariantF . _Wrapped
 
 instance AsTyVariant TyFVariant where
   _TyVariantP = id

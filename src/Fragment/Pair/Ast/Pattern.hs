@@ -27,7 +27,8 @@ import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
 import Ast.Pattern
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
 
 data PtFPair f a =
     PtPairF (f a) (f a)

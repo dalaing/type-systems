@@ -27,7 +27,9 @@ import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
 import Ast.Term
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
+import Util.Prisms
 
 data TmFIf (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmIfF (f a) (f a) (f a)

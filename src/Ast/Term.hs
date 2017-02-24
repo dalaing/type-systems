@@ -57,7 +57,8 @@ import Control.Lens.TH (makePrisms, makeWrapped)
 import Bound (Bound(..))
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1, makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
 
 import Ast.Type
 import Ast.Pattern

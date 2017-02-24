@@ -30,7 +30,8 @@ import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
 import Ast.Term
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
 
 data TmFTuple (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmTupleF [f a]

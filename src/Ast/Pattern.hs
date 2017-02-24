@@ -30,7 +30,8 @@ import Control.Lens.Prism (Prism', prism)
 import Control.Lens.TH (makePrisms)
 import Bound (Bound(..))
 
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
 
 data Pattern pt a =
     PtVar a

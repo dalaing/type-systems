@@ -24,12 +24,11 @@ import Ast.Term
 import Ast.Term.Var
 import Ast.Error.Common
 import Context.Term
+import Data.Functor.Rec
 
 import Fragment.STLC.Ast.Type
 import Fragment.STLC.Ast.Error
 import Fragment.STLC.Ast.Term
-
-import Util
 
 inferTmLam :: (Ord a, AstBound ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmSTLC ty pt tm, HasTermContext r ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmLam inferFn tm = do

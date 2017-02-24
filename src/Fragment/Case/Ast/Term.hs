@@ -24,17 +24,18 @@ module Fragment.Case.Ast.Term (
 import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), eq1, compare1, showsPrec1, showsBinaryWith)
 
 import Bound (Bound(..), Scope)
-import Control.Lens.Iso (firsting)
+import Control.Lens.Iso (bimapping)
 import Control.Lens.Prism (Prism')
 import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms)
-import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1, makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
+import Data.Deriving (makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
-import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as N
 
 import Ast.Term
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
+import Util.NonEmpty
 
 data Alt (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
   Alt (k a) (Scope Int k a)
@@ -76,14 +77,10 @@ instance Bitransversable (Alt ty pt) where
   bitransverse fT fL (Alt pt s) = Alt <$> fT fL pt <*> bitransverse fT fL s
 
 data TmFCase (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
-    TmCaseF (f a) (N.NonEmpty (Alt ty pt f a))
+    TmCaseF (f a) (NE (Alt ty pt f a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TmFCase
-
-deriveEq1 ''NonEmpty
-deriveOrd1 ''NonEmpty
-deriveShow1 ''NonEmpty
 
 instance (Eq1 tm, Monad tm) => Eq1 (TmFCase ty pt tm) where
   liftEq = $(makeLiftEq ''TmFCase)
@@ -95,11 +92,11 @@ instance (Show1 tm) => Show1 (TmFCase ty pt tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFCase)
 
 instance EqRec (TmFCase ty pt) where
-  liftEqRec eR e (TmCaseF tm1 alts1) (TmCaseF tm2 alts2) =
+  liftEqRec eR e (TmCaseF tm1 (NE alts1)) (TmCaseF tm2 (NE alts2)) =
     eR tm1 tm2 && and (N.zipWith (liftEqRec eR e) alts1 alts2)
 
 instance OrdRec (TmFCase ty pt) where
-  liftCompareRec cR c (TmCaseF tm1 alts1) (TmCaseF tm2 alts2) =
+  liftCompareRec cR c (TmCaseF tm1 (NE alts1)) (TmCaseF tm2 (NE alts2)) =
     let
       f [] [] = EQ
       f [] _ = LT
@@ -114,7 +111,7 @@ instance OrdRec (TmFCase ty pt) where
         z -> z
 
 instance ShowRec (TmFCase ty pt) where
-  liftShowsPrecRec sR slR s sl n (TmCaseF tm alts) =
+  liftShowsPrecRec sR slR s sl n (TmCaseF tm (NE alts)) =
     showsBinaryWith sR (\_ -> liftShowListRec sR slR s sl) "TmCaseF" n tm (N.toList alts)
 
 instance Bound (TmFCase ty pt) where
@@ -127,7 +124,7 @@ class AstTransversable ty pt tm => AsTmCase ty pt tm where
   _TmCaseP :: Prism' (tm ty pt k a) (TmFCase ty pt k a)
 
   _TmCase :: Prism' (Term ty pt tm a) (Term ty pt tm a, N.NonEmpty (Alt ty pt (Ast ty pt tm) (AstVar a)))
-  _TmCase = _Wrapped . _ATerm. _TmCaseP . _TmCaseF . firsting _Unwrapped
+  _TmCase = _Wrapped . _ATerm. _TmCaseP . _TmCaseF . bimapping _Unwrapped _Wrapped
 
 instance (Bitransversable ty, Bitransversable pt) => AsTmCase ty pt TmFCase where
   _TmCaseP = id

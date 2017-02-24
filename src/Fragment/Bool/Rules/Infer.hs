@@ -19,7 +19,7 @@ import Ast.Type
 import Ast.Pattern
 import Ast.Term
 import Ast.Error.Common
-import Util
+import Data.Functor.Rec
 
 import Fragment.Bool.Ast.Type
 import Fragment.Bool.Ast.Pattern

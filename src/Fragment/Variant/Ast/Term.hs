@@ -30,7 +30,9 @@ import qualified Data.Text as T
 
 import Ast.Term
 import Ast.Type
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
+import Util.Prisms
 
 data TmFVariant (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmVariantF T.Text (f a) (f a)

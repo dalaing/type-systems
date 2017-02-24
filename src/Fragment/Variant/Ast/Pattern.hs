@@ -29,7 +29,8 @@ import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import qualified Data.Text as T
 
 import Ast.Pattern
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
 
 data PtFVariant f a =
   PtVariantF T.Text (f a)

@@ -23,7 +23,7 @@ import Data.Foldable (asum)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
 
-import Util
+import Data.Functor.Rec
 
 import Ast.Type
 import Ast.Pattern

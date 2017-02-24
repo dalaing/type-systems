@@ -33,7 +33,8 @@ import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import qualified Data.Text as T
 
 import Ast.Term
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
 
 data TmFRecord (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmRecordF [(T.Text, f a)]

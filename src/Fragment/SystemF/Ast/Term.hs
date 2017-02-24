@@ -30,7 +30,9 @@ import Data.Deriving (makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
 import Ast.Type
 import Ast.Term
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
+import Util.Prisms
 
 data TmFSystemF (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
     TmLamF (k a) (Scope () k a)

@@ -18,7 +18,7 @@ import Rules.Infer
 import Ast.Type
 import Ast.Term
 import Ast.Error.Common
-import Util
+import Data.Functor.Rec
 
 import Fragment.Bool.Ast.Type
 import Fragment.If.Ast.Term

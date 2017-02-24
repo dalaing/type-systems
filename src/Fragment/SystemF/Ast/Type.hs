@@ -27,7 +27,8 @@ import Control.Lens.TH (makePrisms)
 import Data.Deriving (makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
 import Ast.Type
-import Util
+import Data.Bitransversable
+import Data.Functor.Rec
 
 data TyFSystemF f a =
     TyArrF (f a) (f a)
