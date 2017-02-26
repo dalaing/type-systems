@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment.Case.Rules.Infer (
     CaseInferContext
   , caseInferRules
@@ -18,6 +19,7 @@ import Bound (instantiate)
 import Bound.Scope (bindings)
 import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.State (MonadState)
+import Control.Monad.Writer (MonadWriter)
 import Control.Lens (review, preview, (%~))
 import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 
@@ -30,9 +32,10 @@ import Ast.Term.Var
 import Context.Term
 
 import Fragment.Case.Ast.Error
+import Fragment.Case.Ast.Warning
 import Fragment.Case.Ast.Term
 
-inferTmCase :: CaseInferContext e s r m ty pt tm a => (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmCase :: CaseInferContext e w s r m ty pt tm a => (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmCase inferFn checkFn tm = do
   (tmC, alts) <- preview _TmCase tm
   return $ do
@@ -56,10 +59,10 @@ inferTmCase inferFn checkFn tm = do
     tys <- mapM (go tyC) alts
     expectAllEq tys
 
-type CaseInferContext e s r m ty pt tm a = (Ord a, AstBound ty pt tm, InferContext e s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsExpectedPattern e ty pt tm a, AsDuplicatedPatternVariables e a, AsUnusedPatternVariables e a, AsExpectedAllEq e ty a, AsTmCase ty pt tm)
+type CaseInferContext e w s r m ty pt tm a = (Ord a, AstBound ty pt tm, InferContext e w s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsExpectedPattern e ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsExpectedAllEq e ty a, AsTmCase ty pt tm)
 
-caseInferRules :: CaseInferContext e s r m ty pt tm a
-                => InferInput e s r m ty pt tm a
+caseInferRules :: CaseInferContext e w s r m ty pt tm a
+               => InferInput e w s r m ty pt tm a
 caseInferRules =
   InferInput
     [ InferPCheck inferTmCase ]

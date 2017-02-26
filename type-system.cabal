@@ -22,6 +22,7 @@ library
                      , Ast.Type.Var
                      , Ast.Error
                      , Ast.Error.Common
+                     , Ast.Warning
                      , Ast.Pattern
                      , Ast.Term
                      , Ast.Term.Var
@@ -115,6 +116,7 @@ library
                      , Fragment.Case
                      , Fragment.Case.Ast
                      , Fragment.Case.Ast.Error
+                     , Fragment.Case.Ast.Warning
                      , Fragment.Case.Ast.Term
                      , Fragment.Case.Rules
                      , Fragment.Case.Rules.Infer

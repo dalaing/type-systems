@@ -30,21 +30,21 @@ import Ast.Pattern
 import Ast.Term
 import Ast.Error.Common
 
-data InferRule e s r m ty pt tm a =
+data InferRule e w s r m ty pt tm a =
     InferBase (Term ty pt tm a -> Maybe (m (Type ty a)))
   | InferPCheck ((Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a)))
   | InferRecurse ((Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a)))
 
 fixInferRule :: (Term ty pt tm a -> m (Type ty a))
              -> (Pattern pt a -> Type ty a -> m [Type ty a])
-             -> InferRule e s r m ty pt tm a
+             -> InferRule e w s r m ty pt tm a
              -> Term ty pt tm a
              -> Maybe (m (Type ty a))
 fixInferRule _ _ (InferBase f) = f
 fixInferRule inferFn checkFn (InferPCheck f) = f inferFn checkFn
 fixInferRule inferFn _ (InferRecurse f) = f inferFn
 
-mkInfer :: (MonadError e m, AsUnknownTypeError e) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> [InferRule e s r m ty pt tm a] -> Term ty pt tm a -> m (Type ty a)
+mkInfer :: (MonadError e m, AsUnknownTypeError e) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> [InferRule e w s r m ty pt tm a] -> Term ty pt tm a -> m (Type ty a)
 mkInfer pc rules =
   let
     go tm =
@@ -83,13 +83,13 @@ mkPCheck rules x y =
   in
     go x y
 
-data InferInput e s r m ty pt tm a =
+data InferInput e w s r m ty pt tm a =
   InferInput {
-    iiInferRules :: [InferRule e s r m ty pt tm a]
+    iiInferRules :: [InferRule e w s r m ty pt tm a]
   , iiPCheckRules :: [PCheckRule e m pt ty a]
   }
 
-instance Monoid (InferInput e s r m ty pt tm a) where
+instance Monoid (InferInput e w s r m ty pt tm a) where
   mempty =
     InferInput mempty mempty
   mappend (InferInput i1 c1) (InferInput i2 c2) =
@@ -97,17 +97,17 @@ instance Monoid (InferInput e s r m ty pt tm a) where
       (mappend i1 i2)
       (mappend c1 c2)
 
-data InferOutput e s r m ty pt tm a =
+data InferOutput e w s r m ty pt tm a =
   InferOutput {
     ioInfer :: Term ty pt tm a -> m (Type ty a)
   , ioCheck :: Term ty pt tm a -> Type ty a -> m ()
   }
 
-type InferContext e s r m (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
+type InferContext e w s r m (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsUnknownTypeError e)
 
-prepareInfer :: InferContext e s r m ty pt tm a
-             => InferInput e s r m ty pt tm a
-             -> InferOutput e s r m ty pt tm a
+prepareInfer :: InferContext e w s r m ty pt tm a
+             => InferInput e w s r m ty pt tm a
+             -> InferOutput e w s r m ty pt tm a
 prepareInfer ii =
   let
     i = mkInfer pc . iiInferRules $ ii

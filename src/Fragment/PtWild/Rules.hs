@@ -21,10 +21,11 @@ import Fragment.PtWild.Rules.Eval
 data RPtWild
 
 instance RulesIn RPtWild where
-  type RuleInferContext e s r m ty pt tm a RPtWild = PtWildInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RPtWild = PtWildInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RPtWild = PtWildEvalContext ty pt tm a
   type TypeList RPtWild = '[]
   type ErrorList ty pt tm a RPtWild = '[]
+  type WarningList ty pt tm a RPtWild = '[]
   type PatternList RPtWild = '[PtFWild]
   type TermList RPtWild = '[]
 

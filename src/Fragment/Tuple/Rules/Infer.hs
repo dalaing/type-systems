@@ -49,10 +49,10 @@ checkTuple checkFn p ty = do
     ms <- zipWithM checkFn pts tys
     return $ mconcat ms
 
-type TupleInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsTyTuple ty, AsExpectedTyTuple e ty a, AsTupleOutOfBounds e, AsPtTuple pt, AsTmTuple ty pt tm)
+type TupleInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyTuple ty, AsExpectedTyTuple e ty a, AsTupleOutOfBounds e, AsPtTuple pt, AsTmTuple ty pt tm)
 
-tupleInferRules :: TupleInferContext e s r m ty pt tm a
-                => InferInput e s r m ty pt tm a
+tupleInferRules :: TupleInferContext e w s r m ty pt tm a
+                => InferInput e w s r m ty pt tm a
 tupleInferRules =
   InferInput
     [ InferRecurse inferTmTuple

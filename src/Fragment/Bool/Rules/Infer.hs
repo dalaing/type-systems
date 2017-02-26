@@ -64,10 +64,10 @@ checkBool p ty = do
     expect (ExpectedType tyB) (ActualType ty)
     return []
 
-type BoolInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)
+type BoolInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)
 
-boolInferRules :: BoolInferContext e s r m ty pt tm a
-              => InferInput e s r m ty pt tm a
+boolInferRules :: BoolInferContext e w s r m ty pt tm a
+              => InferInput e w s r m ty pt tm a
 boolInferRules =
   InferInput
     [ InferBase inferBool

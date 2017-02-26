@@ -66,10 +66,10 @@ inferTmAppTy inferFn tm = do
     s <- expectTyAll tyF
     return $ instantiate1 tyX s
 
-type SystemFInferContext e s r m ty pt tm a = (Ord a, InferContext e s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ty a, AsTySystemF ty, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsExpectedTyAll e ty a, AsTmSystemF ty pt tm)
+type SystemFInferContext e w s r m ty pt tm a = (Ord a, InferContext e w s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ty a, AsTySystemF ty, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsExpectedTyAll e ty a, AsTmSystemF ty pt tm)
 
-systemFInferRules :: SystemFInferContext e s r m ty pt tm a
-                  => InferInput e s r m ty pt tm a
+systemFInferRules :: SystemFInferContext e w s r m ty pt tm a
+                  => InferInput e w s r m ty pt tm a
 systemFInferRules =
   InferInput
     [ InferRecurse inferTmLam

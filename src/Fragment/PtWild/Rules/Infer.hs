@@ -24,10 +24,10 @@ checkWild p _ = do
   return $
     return []
 
-type PtWildInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsPtWild pt)
+type PtWildInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsPtWild pt)
 
-ptWildInferRules :: PtWildInferContext e s r m ty pt tm a
-                => InferInput e s r m ty pt tm a
+ptWildInferRules :: PtWildInferContext e w s r m ty pt tm a
+                => InferInput e w s r m ty pt tm a
 ptWildInferRules =
   InferInput
     []

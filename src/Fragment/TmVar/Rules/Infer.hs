@@ -25,10 +25,10 @@ inferTmVar tm = do
   v <- preview _TmVar tm
   return $ lookupTerm v
 
-type TmVarInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, Ord a, MonadReader r m, HasTermContext r ty a, MonadError e m, AsUnboundTermVariable e a)
+type TmVarInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, Ord a, MonadReader r m, HasTermContext r ty a, MonadError e m, AsUnboundTermVariable e a)
 
-tmVarInferRules :: TmVarInferContext e s r m ty pt tm a
-                => InferInput e s r m ty pt tm a
+tmVarInferRules :: TmVarInferContext e w s r m ty pt tm a
+                => InferInput e w s r m ty pt tm a
 tmVarInferRules =
   InferInput
     [ InferBase inferTmVar ]

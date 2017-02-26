@@ -20,12 +20,9 @@ module Fragment.Case.Ast.Error (
   , ErrDuplicatedPatternVariables(..)
   , AsDuplicatedPatternVariables(..)
   , checkForDuplicatedPatternVariables
-  , ErrUnusedPatternVariables(..)
-  , AsUnusedPatternVariables(..)
-  , checkForUnusedPatternVariables
   ) where
 
-import Data.List (group, sort, (\\))
+import Data.List (group, sort)
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
@@ -91,31 +88,3 @@ checkForDuplicatedPatternVariables xs =
     case N.nonEmpty dups of
       Nothing -> return ()
       Just ns -> throwing _DuplicatedPatternVariables ns
-
-data ErrUnusedPatternVariables a = ErrUnusedPatternVariables (N.NonEmpty a)
-  deriving (Eq, Ord, Show)
-
-makePrisms ''ErrUnusedPatternVariables
-
-class AsUnusedPatternVariables e a where -- | e -> a where
-  _UnusedPatternVariables :: Prism' e (N.NonEmpty a)
-
-instance AsUnusedPatternVariables (ErrUnusedPatternVariables a) a where
-  _UnusedPatternVariables = _ErrUnusedPatternVariables
-
-instance {-# OVERLAPPABLE #-} AsUnusedPatternVariables (ErrSum xs) a => AsUnusedPatternVariables (ErrSum (x ': xs)) a where
-  _UnusedPatternVariables = _ErrNext . _UnusedPatternVariables
-
-instance {-# OVERLAPPING #-} AsUnusedPatternVariables (ErrSum (ErrUnusedPatternVariables a ': xs)) a where
-  _UnusedPatternVariables = _ErrNow . _UnusedPatternVariables
-
-checkForUnusedPatternVariables :: (MonadError e m, AsUnusedPatternVariables e a) => [a] -> [Int] -> m ()
-checkForUnusedPatternVariables vs is =
-  let
-    n = length vs
-    unusedI = [0..(n - 1)] \\ is
-    unusedV = map (vs !!) unusedI
-  in
-    case N.nonEmpty unusedV of
-      Nothing -> return ()
-      Just ns -> throwing _UnusedPatternVariables ns

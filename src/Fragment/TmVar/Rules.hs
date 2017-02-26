@@ -22,10 +22,11 @@ import Fragment.TmVar.Rules.Infer
 data RTmVar
 
 instance RulesIn RTmVar where
-  type RuleInferContext e s r m ty pt tm a RTmVar = TmVarInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RTmVar = TmVarInferContext e w s r m ty pt tm a
   type RuleEvalContext ty tm pt a RTmVar = (() :: Constraint)
   type TypeList RTmVar = '[]
   type ErrorList ty tm pt a RTmVar = '[ErrUnboundTermVariable a]
+  type WarningList ty tm pt a RTmVar = '[]
   type PatternList RTmVar = '[]
   type TermList RTmVar = '[]
 

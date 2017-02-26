@@ -23,10 +23,11 @@ import Fragment.Case.Rules.Eval
 data RCase
 
 instance RulesIn RCase where
-  type RuleInferContext e s r m ty pt tm a RCase = CaseInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RCase = CaseInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RCase = CaseEvalContext ty pt tm a
   type TypeList RCase = '[]
-  type ErrorList ty pt tm a RCase = '[ErrExpectedAllEq ty a, ErrUnboundTermVariable a, ErrExpectedPattern ty pt tm a, ErrDuplicatedPatternVariables a, ErrUnusedPatternVariables a]
+  type ErrorList ty pt tm a RCase = '[ErrExpectedAllEq ty a, ErrUnboundTermVariable a, ErrExpectedPattern ty pt tm a, ErrDuplicatedPatternVariables a]
+  type WarningList ty pt tm a RCase = '[WarnUnusedPatternVariables a]
   type PatternList RCase = '[]
   type TermList RCase = '[TmFCase]
 

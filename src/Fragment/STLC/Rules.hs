@@ -21,10 +21,11 @@ import Fragment.STLC.Rules.Eval
 data RSTLC
 
 instance RulesIn RSTLC where
-  type RuleInferContext e s r m ty pt tm a RSTLC = STLCInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RSTLC = STLCInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RSTLC = STLCEvalContext ty pt tm a
   type TypeList RSTLC = '[TyFSTLC]
   type ErrorList ty pt tm a RSTLC = '[ErrExpectedTyArr ty a]
+  type WarningList ty pt tm a RSTLC = '[]
   type PatternList RSTLC = '[]
   type TermList RSTLC = '[TmFSTLC]
 

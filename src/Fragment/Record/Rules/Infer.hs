@@ -50,10 +50,10 @@ checkRecord checkFn p ty = do
           checkFn lp typ
     fmap mconcat . traverse f $ ps
 
-type RecordInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsTyRecord ty, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ty pt tm)
+type RecordInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyRecord ty, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ty pt tm)
 
-recordInferRules :: RecordInferContext e s r m ty pt tm a
-                => InferInput e s r m ty pt tm a
+recordInferRules :: RecordInferContext e w s r m ty pt tm a
+                => InferInput e w s r m ty pt tm a
 recordInferRules =
   InferInput
     [ InferRecurse inferTmRecord

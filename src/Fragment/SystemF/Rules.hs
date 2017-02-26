@@ -21,10 +21,11 @@ import Fragment.SystemF.Rules.Eval
 data RSystemF
 
 instance RulesIn RSystemF where
-  type RuleInferContext e s r m ty pt tm a RSystemF = SystemFInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RSystemF = SystemFInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RSystemF = SystemFEvalContext ty pt tm a
   type TypeList RSystemF = '[TyFSystemF]
   type ErrorList ty pt tm a RSystemF = '[ErrExpectedTyArr ty a, ErrExpectedTyAll ty a]
+  type WarningList ty pt tm a RSystemF = '[]
   type PatternList RSystemF = '[]
   type TermList RSystemF = '[TmFSystemF]
 

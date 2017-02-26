@@ -55,10 +55,10 @@ checkPair checkFn p ty = do
     (ty1, ty2) <- expectTyPair ty
     mappend <$> checkFn p1 ty1 <*> checkFn p2 ty2
 
-type PairInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsTyPair ty, AsExpectedTyPair e ty a, AsPtPair pt, AsTmPair ty pt tm)
+type PairInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyPair ty, AsExpectedTyPair e ty a, AsPtPair pt, AsTmPair ty pt tm)
 
-pairInferRules :: PairInferContext e s r m ty pt tm a
-              => InferInput e s r m ty pt tm a
+pairInferRules :: PairInferContext e w s r m ty pt tm a
+              => InferInput e w s r m ty pt tm a
 pairInferRules =
   InferInput
     [ InferRecurse inferTmPair

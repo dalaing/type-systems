@@ -44,10 +44,10 @@ checkVariant checkFn p ty = do
     tyV <- lookupVariant vs lV
     checkFn pV tyV
 
-type VariantInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsTyVariant ty, AsExpectedTyVariant e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsPtVariant pt, AsTmVariant ty pt tm)
+type VariantInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyVariant ty, AsExpectedTyVariant e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsPtVariant pt, AsTmVariant ty pt tm)
 
-variantInferRules :: VariantInferContext e s r m ty pt tm a
-                => InferInput e s r m ty pt tm a
+variantInferRules :: VariantInferContext e w s r m ty pt tm a
+                => InferInput e w s r m ty pt tm a
 variantInferRules =
   InferInput
     [ InferRecurse inferTmVariant ]

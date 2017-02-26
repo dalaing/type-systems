@@ -25,10 +25,11 @@ import Fragment.If.Rules.Eval
 data RIf
 
 instance RulesIn RIf where
-  type RuleInferContext e s r m ty pt tm a RIf = IfInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RIf = IfInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RIf = IfEvalContext ty pt tm a
   type TypeList RIf = '[TyFBool]
   type ErrorList ty pt tm a RIf = '[ErrUnexpected ty a, ErrExpectedEq ty a]
+  type WarningList ty pt tm a RIf = '[]
   type PatternList RIf = '[]
   type TermList RIf = '[TmFBool, TmFIf]
 

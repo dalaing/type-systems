@@ -49,10 +49,10 @@ inferTmApp inferFn tm = do
     expectEq tyArg tyX
     return tyRet
 
-type STLCInferContext e s r m ty pt tm a = (Ord a, InferContext e s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsTySTLC ty, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsTmSTLC ty pt tm)
+type STLCInferContext e w s r m ty pt tm a = (Ord a, InferContext e w s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsTySTLC ty, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsTmSTLC ty pt tm)
 
-stlcInferRules :: STLCInferContext e s r m ty pt tm a
-               => InferInput e s r m ty pt tm a
+stlcInferRules :: STLCInferContext e w s r m ty pt tm a
+               => InferInput e w s r m ty pt tm a
 stlcInferRules =
   InferInput
     [ InferRecurse inferTmLam

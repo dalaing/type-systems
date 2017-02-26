@@ -21,10 +21,11 @@ import Fragment.Variant.Rules.Eval
 data RVariant
 
 instance RulesIn RVariant where
-  type RuleInferContext e s r m ty pt tm a RVariant = VariantInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RVariant = VariantInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RVariant = VariantEvalContext ty pt tm a
   type TypeList RVariant = '[TyFVariant]
   type ErrorList ty pt tm a RVariant = '[ErrExpectedTyVariant ty a, ErrVariantNotFound]
+  type WarningList ty pt tm a RVariant = '[]
   type PatternList RVariant = '[PtFVariant]
   type TermList RVariant = '[TmFVariant]
 

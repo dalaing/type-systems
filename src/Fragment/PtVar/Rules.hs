@@ -20,10 +20,11 @@ import Fragment.PtVar.Rules.Eval
 data RPtVar
 
 instance RulesIn RPtVar where
-  type RuleInferContext e s r m ty pt tm a RPtVar = PtVarInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RPtVar = PtVarInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RPtVar = PtVarEvalContext ty pt tm a
   type TypeList RPtVar = '[]
   type ErrorList ty pt tm a RPtVar = '[]
+  type WarningList ty pt tm a RPtVar = '[]
   type PatternList RPtVar = '[]
   type TermList RPtVar = '[]
 

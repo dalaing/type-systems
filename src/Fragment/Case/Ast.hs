@@ -10,4 +10,5 @@ module Fragment.Case.Ast (
   ) where
 
 import Fragment.Case.Ast.Error as X
+import Fragment.Case.Ast.Warning as X
 import Fragment.Case.Ast.Term as X

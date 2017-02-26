@@ -21,10 +21,11 @@ import Fragment.Pair.Rules.Eval
 data RPair
 
 instance RulesIn RPair where
-  type RuleInferContext e s r m ty pt tm a RPair = PairInferContext e s r m ty pt tm a
+  type RuleInferContext e w s r m ty pt tm a RPair = PairInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RPair = PairEvalContext ty pt tm a
   type TypeList RPair = '[TyFPair]
   type ErrorList ty pt tm a RPair = '[ErrExpectedTyPair ty a]
+  type WarningList ty pt tm a RPair = '[]
   type PatternList RPair = '[PtFPair]
   type TermList RPair = '[TmFPair]
 

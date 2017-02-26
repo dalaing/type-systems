@@ -21,6 +21,7 @@ module Language.TheLot (
 import Data.Proxy
 
 import Control.Monad.Reader
+import Control.Monad.Writer
 import Control.Monad.Except
 import Control.Monad.State
 
@@ -71,12 +72,14 @@ type TermF = RTermF Rules
 type LTerm = Term TypeF PatternF TermF String
 type LType = Type TypeF String
 type LError = RError TypeF PatternF TermF String Rules
+type LWarning = RWarning TypeF PatternF TermF String Rules
 
-type M e s r = StateT s (ReaderT r (Except e))
+type M e w s r = StateT s (ReaderT r (ExceptT e (Writer [w])))
 
-runM :: s -> r -> M e s r a -> Either e a
+runM :: s -> r -> M e w s r a -> (Either e a, [w])
 runM s r m =
-  runExcept .
+  runWriter .
+  runExceptT .
   flip runReaderT r .
   flip evalStateT s $
   m
@@ -89,12 +92,12 @@ runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
   eoEval $ evalStrictOutput rules
 
-runInfer :: LTerm -> Either LError LType
+runInfer :: LTerm -> (Either LError LType, [LWarning])
 runInfer =
   runM (0 :: Int) emptyTermContext .
   ioInfer (inferOutput rules)
 
-runCheck :: LTerm -> LType -> Either LError ()
+runCheck :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheck tm ty =
   runM (0 :: Int) emptyTermContext $
   (ioCheck $ inferOutput rules) tm ty

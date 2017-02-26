@@ -64,10 +64,10 @@ checkInt p ty = do
     expect (ExpectedType tyI) (ActualType ty)
     return []
 
-type IntInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsTyInt ty, AsPtInt pt, AsTmInt ty pt tm)
+type IntInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyInt ty, AsPtInt pt, AsTmInt ty pt tm)
 
-intInferRules :: IntInferContext e s r m ty pt tm a
-              => InferInput e s r m ty pt tm a
+intInferRules :: IntInferContext e w s r m ty pt tm a
+              => InferInput e w s r m ty pt tm a
 intInferRules =
   InferInput
     [ InferBase inferInt

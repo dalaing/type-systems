@@ -34,9 +34,9 @@ inferTmIf inferFn tm = do
     expectEq tyT tyF
     return tyT
 
-type IfInferContext e s r m ty pt tm a = (InferContext e s r m ty pt tm a, AsUnexpected e ty a, AsExpectedEq e ty a, AsTyBool ty, AsTmIf ty pt tm)
+type IfInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsUnexpected e ty a, AsExpectedEq e ty a, AsTyBool ty, AsTmIf ty pt tm)
 
-ifInferRules :: IfInferContext e s r m ty pt tm a
-             => InferInput e s r m ty pt tm a
+ifInferRules :: IfInferContext e w s r m ty pt tm a
+             => InferInput e w s r m ty pt tm a
 ifInferRules =
   InferInput [ InferRecurse inferTmIf ] []

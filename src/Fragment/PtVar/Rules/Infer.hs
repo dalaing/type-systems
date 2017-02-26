@@ -24,10 +24,10 @@ checkVar p ty = do
   return $
     return [ty]
 
-type PtVarInferContext e s r m ty pt tm a = InferContext e s r m ty pt tm a
+type PtVarInferContext e w s r m ty pt tm a = InferContext e w s r m ty pt tm a
 
-ptVarInferRules :: PtVarInferContext e s r m ty pt tm a
-                => InferInput e s r m ty pt tm a
+ptVarInferRules :: PtVarInferContext e w s r m ty pt tm a
+                => InferInput e w s r m ty pt tm a
 ptVarInferRules =
   InferInput
     []
