@@ -13,7 +13,5 @@ import Control.Lens (review)
 
 import Ast.Pattern
 
-import Fragment.PtWild.Ast.Pattern
-
 ptWild :: AsPtWild pt => Pattern pt a
 ptWild = review _PtWild ()

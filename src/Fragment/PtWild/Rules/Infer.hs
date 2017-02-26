@@ -18,8 +18,6 @@ import Rules.Infer
 import Ast.Pattern
 import Ast.Type
 
-import Fragment.PtWild.Ast.Pattern
-
 checkWild :: (Monad m, AsPtWild pt) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
 checkWild p _ = do
   _ <- preview _PtWild p

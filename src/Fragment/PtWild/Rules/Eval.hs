@@ -18,8 +18,6 @@ import Rules.Eval
 import Ast.Pattern
 import Ast.Term
 
-import Fragment.PtWild.Ast.Pattern
-
 matchWild :: AsPtWild pt => Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
 matchWild p _ = do
   _ <- preview _PtWild p

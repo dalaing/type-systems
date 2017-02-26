@@ -13,8 +13,8 @@ module Fragment.PtWild.Rules (
   ) where
 
 import Rules
+import Ast.Pattern
 
-import Fragment.PtWild.Ast
 import Fragment.PtWild.Rules.Infer
 import Fragment.PtWild.Rules.Eval
 

@@ -9,6 +9,5 @@ module Fragment.PtWild (
     module X
   ) where
 
-import Fragment.PtWild.Ast as X
 import Fragment.PtWild.Rules as X
 import Fragment.PtWild.Helpers as X

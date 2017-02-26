@@ -5,6 +5,9 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
@@ -20,15 +23,18 @@ module Ast.Pattern (
   , PtSum(..)
   , _PtNow
   , _PtNext
+  , PtFWild
+  , AsPtWild(..)
   ) where
 
 import Control.Monad (ap)
 import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), showsUnaryWith)
 import Data.Traversable (fmapDefault, foldMapDefault)
 
+import Bound (Bound(..))
 import Control.Lens.Prism (Prism', prism)
 import Control.Lens.TH (makePrisms)
-import Bound (Bound(..))
+import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
 import Data.Bitransversable
 import Data.Functor.Rec
@@ -176,3 +182,43 @@ instance (ShowRec x, ShowRec (PtSum xs)) => ShowRec (PtSum (x ': xs)) where
     showsUnaryWith (liftShowsPrecRec sR slR s sl) "PtSum" m a
   liftShowsPrecRec sR slR s sl m (PtNext n) =
     liftShowsPrecRec sR slR s sl m n
+
+data PtFWild (f :: * -> *) a =
+    PtWildF
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+makePrisms ''PtFWild
+
+deriveEq1 ''PtFWild
+deriveOrd1 ''PtFWild
+deriveShow1 ''PtFWild
+
+instance EqRec PtFWild where
+  liftEqRec _ _ PtWildF PtWildF = True
+
+instance OrdRec PtFWild where
+  liftCompareRec _ _ PtWildF PtWildF = EQ
+
+instance ShowRec PtFWild where
+  liftShowsPrecRec _ _ _ _ n PtWildF = showsPrec n PtWildF
+
+instance Bound PtFWild where
+  PtWildF >>>= _ = PtWildF
+
+instance Bitransversable PtFWild where
+  bitransverse _ _ PtWildF = pure PtWildF
+
+class AsPtWild pt where
+  _PtWildP :: Prism' (pt k a) (PtFWild k a)
+
+  _PtWild :: Prism' (Pattern pt a) ()
+  _PtWild = _PtTree . _PtWildP . _PtWildF
+
+instance AsPtWild PtFWild where
+  _PtWildP = id
+
+instance {-# OVERLAPPABLE #-} AsPtWild (PtSum xs) => AsPtWild (PtSum (x ': xs)) where
+  _PtWildP = _PtNext . _PtWildP
+
+instance {-# OVERLAPPING #-} AsPtWild (PtSum (PtFWild ': xs)) where
+  _PtWildP = _PtNow . _PtWildP

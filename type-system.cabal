@@ -13,18 +13,11 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:
-                     --  Fragment
-                     -- , Fragment.Ast
-                     -- , Fragment.Ast2
-                     -- Fragment.Var
-                     -- , Error
-                     Util.Prisms
+  exposed-modules:     Util.Prisms
                      , Util.NonEmpty
                      , Data.Bitransversable
                      , Data.Functor.Rec
                      , Language.TheLot
-                     -- new stuff starts here
                      , Ast.Type
                      , Ast.Type.Var
                      , Ast.Error
@@ -37,15 +30,13 @@ library
                      , Rules
                      , Rules.Eval
                      , Rules.Infer
-                     --, Rules.Pattern
+                     -- , Rules.Pattern
                      , Fragment.PtVar
                      , Fragment.PtVar.Rules
                      , Fragment.PtVar.Rules.Infer
                      , Fragment.PtVar.Rules.Eval
                      , Fragment.PtVar.Helpers
                      , Fragment.PtWild
-                     , Fragment.PtWild.Ast
-                     , Fragment.PtWild.Ast.Pattern
                      , Fragment.PtWild.Rules
                      , Fragment.PtWild.Rules.Infer
                      , Fragment.PtWild.Rules.Eval
