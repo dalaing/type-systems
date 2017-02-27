@@ -13,6 +13,7 @@ module Context.Term (
   , emptyTermContext
   , HasTermContext(..)
   , AsUnboundTermVariable(..)
+  , lookupBindings
   , lookupTerm
   , insertTerm
   ) where
@@ -24,6 +25,7 @@ import Control.Lens (Lens', view)
 import Control.Monad.Error.Lens (throwing)
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import Ast.Type
 
@@ -39,6 +41,11 @@ class HasTermContext l ty a | l -> ty, l -> a where
 
 instance HasTermContext (TermContext ty a) ty a where
   termContext = id
+
+lookupBindings :: (MonadReader r m, HasTermContext r ty a) => m (S.Set a)
+lookupBindings = do
+  TermContext m <- view termContext
+  return $ M.keysSet m
 
 lookupTerm :: (Ord a, MonadReader r m, MonadError e m, HasTermContext r ty a, AsUnboundTermVariable e a) => a -> m (Type ty a)
 lookupTerm v = do

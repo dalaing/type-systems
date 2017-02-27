@@ -44,8 +44,12 @@ inferTmCase inferFn checkFn tm = do
 
           let vp = toList p'
           checkForDuplicatedPatternVariables vp
-          -- TODO possibly turn this into a warning
-          checkForUnusedPatternVariables vp (bindings s)
+          let scopeBindings = bindings s
+          checkForUnusedPatternVariables vp scopeBindings
+          contextBindings <- lookupBindings
+          -- this won't fire at the moment, because bound is taking care of shadowing for us
+          -- we'll need to track a bit more info about the original form of the AST before this works
+          checkForShadowingPatternVariables vp contextBindings
 
           vs <- replicateM (length p') freshTmVar
           tys <- checkFn p' ty
@@ -59,7 +63,7 @@ inferTmCase inferFn checkFn tm = do
     tys <- mapM (go tyC) alts
     expectAllEq tys
 
-type CaseInferContext e w s r m ty pt tm a = (Ord a, AstBound ty pt tm, InferContext e w s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsExpectedPattern e ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsExpectedAllEq e ty a, AsTmCase ty pt tm)
+type CaseInferContext e w s r m ty pt tm a = (Ord a, AstBound ty pt tm, InferContext e w s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsExpectedPattern e ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsShadowingPatternVariables w a, AsExpectedAllEq e ty a, AsTmCase ty pt tm)
 
 caseInferRules :: CaseInferContext e w s r m ty pt tm a
                => InferInput e w s r m ty pt tm a

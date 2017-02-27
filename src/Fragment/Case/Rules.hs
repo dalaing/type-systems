@@ -27,7 +27,7 @@ instance RulesIn RCase where
   type RuleEvalContext ty pt tm a RCase = CaseEvalContext ty pt tm a
   type TypeList RCase = '[]
   type ErrorList ty pt tm a RCase = '[ErrExpectedAllEq ty a, ErrUnboundTermVariable a, ErrExpectedPattern ty pt tm a, ErrDuplicatedPatternVariables a]
-  type WarningList ty pt tm a RCase = '[WarnUnusedPatternVariables a]
+  type WarningList ty pt tm a RCase = '[WarnUnusedPatternVariables a, WarnShadowingPatternVariables a]
   type PatternList RCase = '[]
   type TermList RCase = '[TmFCase]
 
