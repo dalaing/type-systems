@@ -69,5 +69,6 @@ caseInferRules :: CaseInferContext e w s r m ty pt tm a
                => InferInput e w s r m ty pt tm a
 caseInferRules =
   InferInput
+    []
     [ InferPCheck inferTmCase ]
     []

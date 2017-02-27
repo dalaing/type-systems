@@ -25,6 +25,12 @@ import Fragment.Int.Ast.Type
 import Fragment.Int.Ast.Pattern
 import Fragment.Int.Ast.Term
 
+equivInt :: AsTyInt ty => Type ty a -> Type ty a -> Maybe Bool
+equivInt ty1 ty2 = do
+  _ <- preview _TyInt ty1
+  _ <- preview _TyInt ty2
+  return True
+
 inferInt :: (Monad m, AsTyInt ty, AsTmInt ty pt tm)
          => Term ty pt tm a
          -> Maybe (m (Type ty a))
@@ -70,6 +76,7 @@ intInferRules :: IntInferContext e w s r m ty pt tm a
               => InferInput e w s r m ty pt tm a
 intInferRules =
   InferInput
+    [ EquivBase equivInt ]
     [ InferBase inferInt
     , InferRecurse inferAdd
     , InferRecurse inferMul

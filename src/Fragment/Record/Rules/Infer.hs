@@ -11,6 +11,8 @@ module Fragment.Record.Rules.Infer (
   , recordInferRules
   ) where
 
+import Data.List (sortOn)
+
 import Control.Monad.Except (MonadError)
 import Control.Lens (review, preview)
 
@@ -23,6 +25,13 @@ import Fragment.Record.Ast.Type
 import Fragment.Record.Ast.Error
 import Fragment.Record.Ast.Pattern
 import Fragment.Record.Ast.Term
+
+equivRecord :: AsTyRecord ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivRecord equivFn ty1 ty2 = do
+  rs1 <- preview _TyRecord ty1
+  rs2 <- preview _TyRecord ty2
+  let f = fmap snd . sortOn fst
+  return . and $ zipWith equivFn (f rs1) (f rs2)
 
 inferTmRecord :: (Monad m, AsTyRecord ty, AsTmRecord ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmRecord inferFn tm = do
@@ -56,6 +65,7 @@ recordInferRules :: RecordInferContext e w s r m ty pt tm a
                 => InferInput e w s r m ty pt tm a
 recordInferRules =
   InferInput
+    [ EquivRecurse equivRecord ]
     [ InferRecurse inferTmRecord
     , InferRecurse inferTmRecordIx
     ]

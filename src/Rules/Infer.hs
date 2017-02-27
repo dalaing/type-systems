@@ -8,7 +8,8 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Rules.Infer (
-    InferRule(..)
+    EquivRule(..)
+  , InferRule(..)
   , PCheckRule(..)
   , mkCheck
   , InferInput(..)
@@ -29,6 +30,29 @@ import Ast.Type
 import Ast.Pattern
 import Ast.Term
 import Ast.Error.Common
+
+data EquivRule ty a =
+    EquivBase (Type ty a -> Type ty a -> Maybe Bool)
+  | EquivRecurse ((Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool)
+
+fixEquivRule :: (Type ty a -> Type ty a -> Bool)
+             -> EquivRule ty a
+             -> Type ty a
+             -> Type ty a
+             -> Maybe Bool
+fixEquivRule _ (EquivBase f) = f
+fixEquivRule equivFn (EquivRecurse f) = f equivFn
+
+mkEquiv :: [EquivRule ty a] -> Type ty a -> Type ty a -> Bool
+mkEquiv rules x y =
+  let
+    go ty1 ty2 =
+      fromMaybe False .
+      asum .
+      fmap (\r -> fixEquivRule go r ty1 ty2) $
+      rules
+  in
+    go x y
 
 data InferRule e w s r m ty pt tm a =
     InferBase (Term ty pt tm a -> Maybe (m (Type ty a)))
@@ -85,15 +109,17 @@ mkPCheck rules x y =
 
 data InferInput e w s r m ty pt tm a =
   InferInput {
-    iiInferRules :: [InferRule e w s r m ty pt tm a]
+    iiEquivRules :: [EquivRule ty a]
+  , iiInferRules :: [InferRule e w s r m ty pt tm a]
   , iiPCheckRules :: [PCheckRule e m pt ty a]
   }
 
 instance Monoid (InferInput e w s r m ty pt tm a) where
   mempty =
-    InferInput mempty mempty
-  mappend (InferInput i1 c1) (InferInput i2 c2) =
+    InferInput mempty mempty mempty
+  mappend (InferInput e1 i1 c1) (InferInput e2 i2 c2) =
     InferInput
+      (mappend e1 e2)
       (mappend i1 i2)
       (mappend c1 c2)
 

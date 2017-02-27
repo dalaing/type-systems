@@ -39,4 +39,4 @@ type IfInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, A
 ifInferRules :: IfInferContext e w s r m ty pt tm a
              => InferInput e w s r m ty pt tm a
 ifInferRules =
-  InferInput [ InferRecurse inferTmIf ] []
+  InferInput [] [ InferRecurse inferTmIf ] []

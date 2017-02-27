@@ -31,6 +31,18 @@ import Fragment.SystemF.Ast.Type
 import Fragment.SystemF.Ast.Error
 import Fragment.SystemF.Ast.Term
 
+equivArr :: AsTySystemF ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivArr equivFn ty1 ty2 = do
+  (p1a, p1b) <- preview _TyArr ty1
+  (p2a, p2b) <- preview _TyArr ty2
+  return $ equivFn p1a p2a && equivFn p1b p2b
+
+equivAll :: (Eq a, EqRec ty, AsTySystemF ty) => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivAll equivFn ty1 ty2 = do
+  s1 <- preview _TyAll ty1
+  s2 <- preview _TyAll ty2
+  return $ liftEqRec equivFn (==) s1 s2
+
 inferTmLam :: (Ord a, AstBound ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySystemF ty, AsTmSystemF ty pt tm, HasTermContext r ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmLam inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
@@ -72,6 +84,9 @@ systemFInferRules :: SystemFInferContext e w s r m ty pt tm a
                   => InferInput e w s r m ty pt tm a
 systemFInferRules =
   InferInput
+    [ EquivRecurse equivArr
+    , EquivRecurse equivAll
+    ]
     [ InferRecurse inferTmLam
     , InferRecurse inferTmLamTy
     , InferRecurse inferTmApp

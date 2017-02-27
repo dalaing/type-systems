@@ -26,6 +26,12 @@ import Fragment.Tuple.Ast.Error
 import Fragment.Tuple.Ast.Pattern
 import Fragment.Tuple.Ast.Term
 
+equivTuple :: AsTyTuple ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivTuple equivFn ty1 ty2 = do
+  t1 <- preview _TyTuple ty1
+  t2 <- preview _TyTuple ty2
+  return . and $ zipWith equivFn t1 t2
+
 inferTmTuple :: (Monad m, AsTyTuple ty, AsTmTuple ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmTuple inferFn tm = do
   tms <- preview _TmTuple tm
@@ -55,6 +61,7 @@ tupleInferRules :: TupleInferContext e w s r m ty pt tm a
                 => InferInput e w s r m ty pt tm a
 tupleInferRules =
   InferInput
+    [ EquivRecurse equivTuple ]
     [ InferRecurse inferTmTuple
     , InferRecurse inferTmTupleIx
     ]

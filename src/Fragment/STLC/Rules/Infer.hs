@@ -30,6 +30,12 @@ import Fragment.STLC.Ast.Type
 import Fragment.STLC.Ast.Error
 import Fragment.STLC.Ast.Term
 
+equivArr :: AsTySTLC ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivArr equivFn ty1 ty2 = do
+  (p1a, p1b) <- preview _TyArr ty1
+  (p2a, p2b) <- preview _TyArr ty2
+  return $ equivFn p1a p2a && equivFn p1b p2b
+
 inferTmLam :: (Ord a, AstBound ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmSTLC ty pt tm, HasTermContext r ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
 inferTmLam inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
@@ -55,6 +61,7 @@ stlcInferRules :: STLCInferContext e w s r m ty pt tm a
                => InferInput e w s r m ty pt tm a
 stlcInferRules =
   InferInput
+    [ EquivRecurse equivArr ]
     [ InferRecurse inferTmLam
     , InferRecurse inferTmApp
     ]
