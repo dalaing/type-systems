@@ -43,11 +43,18 @@ stepTmAppTy1 evalFn tm = do
   f' <- evalFn f
   return $ review _TmAppTy (f', x)
 
-stepTmLamApp :: (Bound ty, Bound pt, Bound (tm ty pt)) => AsTmSystemF ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
-stepTmLamApp tm = do
+stepTmLamAppLazy :: (AstBound ty pt tm, AsTmSystemF ty pt tm) => Term ty pt tm a -> Maybe (Term ty pt tm a)
+stepTmLamAppLazy tm = do
   (tmF, tmX) <- preview _TmApp tm
   (_, s) <- preview _TmLam tmF
   return . review _Wrapped . instantiate1 (review _Unwrapped tmX) $ s
+
+stepTmLamAppStrict :: (AstBound ty pt tm, AsTmSystemF ty pt tm) => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
+stepTmLamAppStrict valueFn tm = do
+  (tmF, tmX) <- preview _TmApp tm
+  (_, s) <- preview _TmLam tmF
+  vX <- valueFn tmX
+  return . review _Wrapped . instantiate1 (review _Unwrapped vX) $ s
 
 stepTmLamTyAppTy :: (Bound ty, Bound pt, Bound (tm ty pt)) => AsTmSystemF ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmLamTyAppTy tm = do
@@ -73,7 +80,7 @@ systemFEvalRulesLazy =
   ]
   [ EvalStep stepTmApp1
   , EvalStep stepTmAppTy1
-  , EvalBase stepTmLamApp
+  , EvalBase stepTmLamAppLazy
   , EvalBase stepTmLamTyAppTy
   ]
   []
@@ -87,7 +94,7 @@ systemFEvalRulesStrict =
   ]
   [ EvalStep stepTmApp1
   , EvalStep stepTmAppTy1
-  , EvalBase stepTmLamApp
+  , EvalValue stepTmLamAppStrict
   , EvalBase stepTmLamTyAppTy
   , EvalValueStep stepTmApp2
   ]

@@ -32,11 +32,18 @@ stepTmApp1 evalFn tm = do
   f' <- evalFn f
   return $ review _TmApp (f', x)
 
-stepTmLamApp :: AstBound ty pt tm => AsTmSTLC ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
-stepTmLamApp tm = do
+stepTmLamAppLazy :: (AstBound ty pt tm, AsTmSTLC ty pt tm) => Term ty pt tm a -> Maybe (Term ty pt tm a)
+stepTmLamAppLazy tm = do
   (tmF, tmX) <- preview _TmApp tm
   (_, s) <- preview _TmLam tmF
   return . review _Wrapped . instantiate1 (review _Unwrapped tmX) $ s
+
+stepTmLamAppStrict :: (AstBound ty pt tm, AsTmSTLC ty pt tm) => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
+stepTmLamAppStrict valueFn tm = do
+  (tmF, tmX) <- preview _TmApp tm
+  (_, s) <- preview _TmLam tmF
+  vX <- valueFn tmX
+  return . review _Wrapped . instantiate1 (review _Unwrapped vX) $ s
 
 stepTmApp2 :: AsTmSTLC ty pt tm => (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a)
 stepTmApp2 valueFn stepFn tm = do
@@ -53,7 +60,7 @@ stlcEvalRulesLazy =
   EvalInput
   [ ValueBase valTmLam ]
   [ EvalStep stepTmApp1
-  , EvalBase stepTmLamApp
+  , EvalBase stepTmLamAppLazy
   ]
   []
 
@@ -63,7 +70,7 @@ stlcEvalRulesStrict =
   EvalInput
   [ ValueBase valTmLam ]
   [ EvalStep stepTmApp1
-  , EvalBase stepTmLamApp
+  , EvalValue stepTmLamAppStrict
   , EvalValueStep stepTmApp2
   ]
   []
