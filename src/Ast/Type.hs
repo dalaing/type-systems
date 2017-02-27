@@ -26,9 +26,9 @@ import Control.Monad (ap)
 import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), showsUnaryWith)
 import Data.Traversable (fmapDefault, foldMapDefault)
 
+import Bound (Bound(..))
 import Control.Lens.Prism (Prism', prism)
 import Control.Lens.TH (makePrisms)
-import Bound (Bound(..))
 
 import Data.Bitransversable
 import Data.Functor.Rec

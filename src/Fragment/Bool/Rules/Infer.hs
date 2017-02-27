@@ -39,35 +39,37 @@ inferBool tm = do
   return . return . review _TyBool $ ()
 
 inferAnd :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsTmBool ty pt tm)
-         => (Term ty pt tm a -> m (Type ty a))
+         => (Type ty a -> Type ty a -> Bool)
+         -> (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
-inferAnd inferFn tm = do
+inferAnd tyEquiv inferFn tm = do
   (tm1, tm2) <- preview _TmAnd tm
   return $ do
     let ty = review _TyBool ()
-    mkCheck inferFn tm1 ty
-    mkCheck inferFn tm2 ty
+    mkCheck tyEquiv inferFn tm1 ty
+    mkCheck tyEquiv inferFn tm2 ty
     return ty
 
 inferOr :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsTmBool ty pt tm)
-         => (Term ty pt tm a -> m (Type ty a))
+         => (Type ty a -> Type ty a -> Bool)
+         -> (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
-inferOr inferFn tm = do
+inferOr tyEquiv inferFn tm = do
   (tm1, tm2) <- preview _TmOr tm
   return $ do
     let ty = review _TyBool ()
-    mkCheck inferFn tm1 ty
-    mkCheck inferFn tm2 ty
+    mkCheck tyEquiv inferFn tm1 ty
+    mkCheck tyEquiv inferFn tm2 ty
     return ty
 
-checkBool :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsPtBool pt, AsTyBool ty) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
-checkBool p ty = do
+checkBool :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsPtBool pt, AsTyBool ty) => (Type ty a -> Type ty a -> Bool) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkBool tyEquiv p ty = do
   _ <- preview _PtBool p
   return $ do
     let tyB = review _TyBool ()
-    expect (ExpectedType tyB) (ActualType ty)
+    expect tyEquiv (ExpectedType tyB) (ActualType ty)
     return []
 
 type BoolInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)
@@ -78,7 +80,7 @@ boolInferRules =
   InferInput
     [ EquivBase equivBool ]
     [ InferBase inferBool
-    , InferRecurse inferAnd
-    , InferRecurse inferOr
+    , InferTyEquivRecurse inferAnd
+    , InferTyEquivRecurse inferOr
     ]
-    [ PCheckBase checkBool ]
+    [ PCheckTyEquiv checkBool ]

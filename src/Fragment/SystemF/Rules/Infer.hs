@@ -52,14 +52,14 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq a, EqRec ty, MonadError e m, AsTySystemF ty, AsTmSystemF ty pt tm, AsExpectedTyArr e ty a, AsExpectedEq e ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
-inferTmApp inferFn tm = do
+inferTmApp :: (Eq a, EqRec ty, MonadError e m, AsTySystemF ty, AsTmSystemF ty pt tm, AsExpectedTyArr e ty a, AsExpectedEq e ty a) => (Type ty a -> Type ty a -> Bool) -> (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmApp tyEquiv inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
     tyF <- inferFn tmF
     (tyArg, tyRet) <- expectTyArr tyF
     tyX <- inferFn tmX
-    expectEq tyArg tyX
+    expectEq tyEquiv tyArg tyX
     return tyRet
 
 inferTmLamTy :: (Eq a, Bound ty, Bound pt, Bound (tm ty pt), MonadState s m, HasTyVarSupply s, ToTyVar a, AsTySystemF ty, AsTmSystemF ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
@@ -89,7 +89,7 @@ systemFInferRules =
     ]
     [ InferRecurse inferTmLam
     , InferRecurse inferTmLamTy
-    , InferRecurse inferTmApp
+    , InferTyEquivRecurse inferTmApp
     , InferRecurse inferTmAppTy
     ]
     []

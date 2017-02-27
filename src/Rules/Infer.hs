@@ -7,6 +7,7 @@ Portability : non-portable
 -}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Rules.Infer (
     EquivRule(..)
   , InferRule(..)
@@ -57,52 +58,59 @@ mkEquiv rules x y =
 data InferRule e w s r m ty pt tm a =
     InferBase (Term ty pt tm a -> Maybe (m (Type ty a)))
   | InferPCheck ((Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a)))
+  | InferTyEquivPCheck ((Type ty a -> Type ty a -> Bool) -> (Term ty pt tm a -> m (Type ty a)) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> Term ty pt tm a -> Maybe (m (Type ty a)))
   | InferRecurse ((Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a)))
+  | InferTyEquivRecurse ((Type ty a -> Type ty a -> Bool) -> (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a)))
 
-fixInferRule :: (Term ty pt tm a -> m (Type ty a))
+fixInferRule :: (Type ty a -> Type ty a -> Bool)
+             -> (Term ty pt tm a -> m (Type ty a))
              -> (Pattern pt a -> Type ty a -> m [Type ty a])
              -> InferRule e w s r m ty pt tm a
              -> Term ty pt tm a
              -> Maybe (m (Type ty a))
-fixInferRule _ _ (InferBase f) = f
-fixInferRule inferFn checkFn (InferPCheck f) = f inferFn checkFn
-fixInferRule inferFn _ (InferRecurse f) = f inferFn
+fixInferRule _ _ _ (InferBase f) = f
+fixInferRule _ inferFn checkFn (InferPCheck f) = f inferFn checkFn
+fixInferRule tyEquivFn inferFn checkFn (InferTyEquivPCheck f) = f tyEquivFn inferFn checkFn
+fixInferRule _ inferFn _ (InferRecurse f) = f inferFn
+fixInferRule tyEquivFn inferFn _ (InferTyEquivRecurse f) = f tyEquivFn inferFn
 
-mkInfer :: (MonadError e m, AsUnknownTypeError e) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> [InferRule e w s r m ty pt tm a] -> Term ty pt tm a -> m (Type ty a)
-mkInfer pc rules =
+mkInfer :: (MonadError e m, AsUnknownTypeError e) => (Type ty a -> Type ty a -> Bool) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> [InferRule e w s r m ty pt tm a] -> Term ty pt tm a -> m (Type ty a)
+mkInfer tyEquiv pc rules =
   let
     go tm =
       fromMaybe (throwing _UnknownTypeError ()) .
       asum .
-      fmap (\r -> fixInferRule go pc r tm) $
+      fmap (\r -> fixInferRule tyEquiv go pc r tm) $
       rules
   in
     go
 
-mkCheck :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Type ty a -> m ()
-mkCheck inferFn =
+mkCheck :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => (Type ty a -> Type ty a -> Bool) -> (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Type ty a -> m ()
+mkCheck tyEquiv inferFn =
   let
     go tm ty = do
       tyAc <- inferFn tm
-      expect (ExpectedType ty) (ActualType tyAc)
+      expect tyEquiv (ExpectedType ty) (ActualType tyAc)
   in
     go
 
 data PCheckRule e m pt ty a =
     PCheckBase (Pattern pt a -> Type ty a -> Maybe (m [Type ty a]))
+  | PCheckTyEquiv ((Type ty a -> Type ty a -> Bool) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a]))
   | PCheckRecurse ((Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a]))
 
-fixPCheckRule :: (Pattern pt a -> Type ty a -> m [Type ty a]) -> PCheckRule e m pt ty a -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
-fixPCheckRule _ (PCheckBase f) = f
-fixPCheckRule pPCheckFn (PCheckRecurse f) = f pPCheckFn
+fixPCheckRule :: (Type ty a -> Type ty a -> Bool) -> (Pattern pt a -> Type ty a -> m [Type ty a]) -> PCheckRule e m pt ty a -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+fixPCheckRule _ _ (PCheckBase f) = f
+fixPCheckRule tyEquivFn _ (PCheckTyEquiv f) = f tyEquivFn
+fixPCheckRule _ pPCheckFn (PCheckRecurse f) = f pPCheckFn
 
-mkPCheck :: (MonadError e m, AsUnknownTypeError e) => [PCheckRule e m pt ty a] -> Pattern pt a -> Type ty a -> m [Type ty a]
-mkPCheck rules x y =
+mkPCheck :: (MonadError e m, AsUnknownTypeError e) => (Type ty a -> Type ty a -> Bool) -> [PCheckRule e m pt ty a] -> Pattern pt a -> Type ty a -> m [Type ty a]
+mkPCheck tyEquivFn rules x y =
   let
     go p ty =
       fromMaybe (throwing _UnknownTypeError ()) .
       asum .
-      fmap (\r -> fixPCheckRule go r p ty) $
+      fmap (\r -> fixPCheckRule tyEquivFn go r p ty) $
       rules
   in
     go x y
@@ -136,8 +144,9 @@ prepareInfer :: InferContext e w s r m ty pt tm a
              -> InferOutput e w s r m ty pt tm a
 prepareInfer ii =
   let
-    i = mkInfer pc . iiInferRules $ ii
-    c = mkCheck i
-    pc = mkPCheck . iiPCheckRules $ ii
+    e = mkEquiv . iiEquivRules $ ii
+    i = mkInfer e pc . iiInferRules $ ii
+    c = mkCheck e i
+    pc = mkPCheck e . iiPCheckRules $ ii
   in
     InferOutput i c

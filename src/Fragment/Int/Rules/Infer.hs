@@ -39,35 +39,37 @@ inferInt tm = do
   return . return . review _TyInt $ ()
 
 inferAdd :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyInt ty, AsTmInt ty pt tm)
-         => (Term ty pt tm a -> m (Type ty a))
+         => (Type ty a -> Type ty a -> Bool)
+         -> (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
-inferAdd inferFn tm = do
+inferAdd tyEquiv inferFn tm = do
   (tm1, tm2) <- preview _TmAdd tm
   return $ do
     let ty = review _TyInt ()
-    mkCheck inferFn tm1 ty
-    mkCheck inferFn tm2 ty
+    mkCheck tyEquiv inferFn tm1 ty
+    mkCheck tyEquiv inferFn tm2 ty
     return ty
 
 inferMul :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsTyInt ty, AsTmInt ty pt tm)
-         => (Term ty pt tm a -> m (Type ty a))
+         => (Type ty a -> Type ty a -> Bool)
+         -> (Term ty pt tm a -> m (Type ty a))
          -> Term ty pt tm a
          -> Maybe (m (Type ty a))
-inferMul inferFn tm = do
+inferMul tyEquiv inferFn tm = do
   (tm1, tm2) <- preview _TmMul tm
   return $ do
     let ty = review _TyInt ()
-    mkCheck inferFn tm1 ty
-    mkCheck inferFn tm2 ty
+    mkCheck tyEquiv inferFn tm1 ty
+    mkCheck tyEquiv inferFn tm2 ty
     return ty
 
-checkInt :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsPtInt pt, AsTyInt ty) => Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
-checkInt p ty = do
+checkInt :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsPtInt pt, AsTyInt ty) => (Type ty a -> Type ty a -> Bool) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkInt tyEquiv p ty = do
   _ <- preview _PtInt p
   return $ do
     let tyI = review _TyInt ()
-    expect (ExpectedType tyI) (ActualType ty)
+    expect tyEquiv (ExpectedType tyI) (ActualType ty)
     return []
 
 type IntInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyInt ty, AsPtInt pt, AsTmInt ty pt tm)
@@ -78,7 +80,7 @@ intInferRules =
   InferInput
     [ EquivBase equivInt ]
     [ InferBase inferInt
-    , InferRecurse inferAdd
-    , InferRecurse inferMul
+    , InferTyEquivRecurse inferAdd
+    , InferTyEquivRecurse inferMul
     ]
-    [ PCheckBase checkInt ]
+    [ PCheckTyEquiv checkInt ]
