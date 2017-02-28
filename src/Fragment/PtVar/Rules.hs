@@ -14,7 +14,8 @@ module Fragment.PtVar.Rules (
 
 import Rules
 
-import Fragment.PtVar.Rules.Infer
+-- import Fragment.PtVar.Rules.Infer
+import Fragment.PtVar.Rules.Infer.Unification.Offline
 import Fragment.PtVar.Rules.Eval
 
 data RPtVar

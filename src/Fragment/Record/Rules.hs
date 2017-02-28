@@ -15,7 +15,8 @@ module Fragment.Record.Rules (
 import Rules
 
 import Fragment.Record.Ast
-import Fragment.Record.Rules.Infer
+-- import Fragment.Record.Rules.Infer
+import Fragment.Record.Rules.Infer.Unification.Offline
 import Fragment.Record.Rules.Eval
 
 data RRecord

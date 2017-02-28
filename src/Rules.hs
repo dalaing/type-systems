@@ -23,8 +23,11 @@ module Rules (
 import Data.Proxy
 import GHC.Exts (Constraint)
 
-import Rules.Infer
+-- import Rules.Infer
+import Rules.Infer.Unification
+import Rules.Infer.Unification.Offline
 import Rules.Eval
+
 import Ast.Type
 import Ast.Error
 import Ast.Error.Common
@@ -58,7 +61,7 @@ instance RulesIn '[] where
   type RuleInferContext e w s r m ty pt tm a '[] = (() :: Constraint)
   type RuleEvalContext ty pt tm a '[] = (() :: Constraint)
   type TypeList '[] = '[]
-  type ErrorList ty pt tm a '[] = '[ErrUnknownTypeError]
+  type ErrorList ty pt tm a '[] = '[ErrUnknownTypeError, ErrOccursError ty a, ErrUnificationMismatch ty a]
   type WarningList ty pt tm a '[] = '[]
   type PatternList '[] = '[]
   type TermList '[] = '[]

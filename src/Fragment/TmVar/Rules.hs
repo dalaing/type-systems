@@ -17,7 +17,8 @@ import GHC.Exts (Constraint)
 import Rules
 import Context.Term.Error
 
-import Fragment.TmVar.Rules.Infer
+-- import Fragment.TmVar.Rules.Infer
+import Fragment.TmVar.Rules.Infer.Unification.Offline
 
 data RTmVar
 

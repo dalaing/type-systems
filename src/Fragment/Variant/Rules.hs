@@ -15,7 +15,8 @@ module Fragment.Variant.Rules (
 import Rules
 
 import Fragment.Variant.Ast
-import Fragment.Variant.Rules.Infer
+-- import Fragment.Variant.Rules.Infer
+import Fragment.Variant.Rules.Infer.Unification.Offline
 import Fragment.Variant.Rules.Eval
 
 data RVariant

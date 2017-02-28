@@ -15,7 +15,8 @@ module Fragment.Pair.Rules (
 import Rules
 
 import Fragment.Pair.Ast
-import Fragment.Pair.Rules.Infer
+-- import Fragment.Pair.Rules.Infer
+import Fragment.Pair.Rules.Infer.Unification.Offline
 import Fragment.Pair.Rules.Eval
 
 data RPair

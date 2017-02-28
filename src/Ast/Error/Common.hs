@@ -18,27 +18,18 @@ module Ast.Error.Common (
   , ActualType(..)
   , ErrUnexpected
   , AsUnexpected(..)
-  , expect
   , ErrExpectedEq
   , AsExpectedEq(..)
-  , expectEq
   , ErrExpectedAllEq
   , AsExpectedAllEq(..)
-  , expectAllEq
   , ErrUnknownTypeError(..)
   , AsUnknownTypeError(..)
   ) where
 
-import Control.Monad (unless)
-
-import Control.Monad.Except (MonadError)
-import Control.Monad.Error.Lens (throwing)
 import Control.Lens.Prism (Prism')
 import Control.Lens.TH (makePrisms)
 
 import Data.List.NonEmpty (NonEmpty(..))
-
-import Data.Functor.Rec
 
 import Ast.Type
 import Ast.Error
@@ -66,11 +57,6 @@ instance {-# OVERLAPPABLE #-} AsUnexpected (ErrSum xs) ty a => AsUnexpected (Err
 instance {-# OVERLAPPING #-} AsUnexpected (ErrSum (ErrUnexpected ty a ': xs)) ty a where
   _Unexpected = _ErrNow . _Unexpected
 
-expect :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a) => (Type ty a -> Type ty a -> Bool) -> ExpectedType ty a -> ActualType ty a -> m ()
-expect tyEquiv e@(ExpectedType ty1) a@(ActualType ty2) =
-  unless (ty1 `tyEquiv` ty2) $
-    throwing _Unexpected (e, a)
-
 data ErrExpectedEq ty a = ErrExpectedEq (Type ty a) (Type ty a)
   deriving (Eq, Ord, Show)
 
@@ -88,11 +74,6 @@ instance {-# OVERLAPPABLE #-} AsExpectedEq (ErrSum xs) ty a => AsExpectedEq (Err
 instance {-# OVERLAPPING #-} AsExpectedEq (ErrSum (ErrExpectedEq ty a ': xs)) ty a where
   _ExpectedEq = _ErrNow . _ExpectedEq
 
-expectEq :: (Eq a, EqRec ty, MonadError e m, AsExpectedEq e ty a) => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> m ()
-expectEq tyEquiv ty1 ty2 =
-  unless (ty1 `tyEquiv` ty2) $
-    throwing _ExpectedEq (ty1, ty2)
-
 data ErrExpectedAllEq ty a = ErrExpectedAllEq (NonEmpty (Type ty a))
   deriving (Eq, Ord, Show)
 
@@ -109,11 +90,6 @@ instance {-# OVERLAPPABLE #-} AsExpectedAllEq (ErrSum xs) ty a => AsExpectedAllE
 
 instance {-# OVERLAPPING #-} AsExpectedAllEq (ErrSum (ErrExpectedAllEq ty a ': xs)) ty a where
   _ExpectedAllEq = _ErrNow . _ExpectedAllEq
-
-expectAllEq :: (Eq a, EqRec ty, MonadError e m, AsExpectedAllEq e ty a) => (Type ty a -> Type ty a -> Bool) -> NonEmpty (Type ty a) -> m (Type ty a)
-expectAllEq tyEquiv (ty :| tys)
-  | all (tyEquiv ty) tys = return ty
-  | otherwise = throwing _ExpectedAllEq (ty :| tys)
 
 data ErrUnknownTypeError = ErrUnknownTypeError
   deriving (Eq, Ord, Show)

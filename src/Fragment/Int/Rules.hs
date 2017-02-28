@@ -16,7 +16,8 @@ import Rules
 import Ast.Error.Common
 
 import Fragment.Int.Ast
-import Fragment.Int.Rules.Infer
+-- import Fragment.Int.Rules.Infer
+import Fragment.Int.Rules.Infer.Unification.Offline
 import Fragment.Int.Rules.Eval
 
 data RInt

@@ -30,7 +30,7 @@ import Ast.Term
 import Context.Term
 
 import Rules
-import Rules.Infer
+import Rules.Infer.Unification.Offline
 import Rules.Eval
 
 import Fragment.PtVar
@@ -44,7 +44,8 @@ import Fragment.Tuple
 import Fragment.Record
 import Fragment.Variant
 -- import Fragment.STLC
-import Fragment.SystemF
+import Fragment.HM
+-- import Fragment.SystemF
 import Fragment.Case
 
 type Rules =
@@ -55,11 +56,12 @@ type Rules =
    , RBool
    , RIf
    , RPair
-   , RTuple
-   , RRecord
-   , RVariant
+   -- , RTuple
+   -- , RRecord
+   -- , RVariant
    , RCase
-   , RSystemF
+   , RHM
+   -- , RSystemF
    ]
 
 rules :: Proxy Rules

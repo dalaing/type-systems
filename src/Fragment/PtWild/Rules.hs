@@ -15,7 +15,8 @@ module Fragment.PtWild.Rules (
 import Rules
 import Ast.Pattern
 
-import Fragment.PtWild.Rules.Infer
+-- import Fragment.PtWild.Rules.Infer
+import Fragment.PtWild.Rules.Infer.Unification.Offline
 import Fragment.PtWild.Rules.Eval
 
 data RPtWild

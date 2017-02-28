@@ -19,7 +19,8 @@ import Fragment.Bool.Ast.Type
 import Fragment.Bool.Ast.Term
 
 import Fragment.If.Ast
-import Fragment.If.Rules.Infer
+--import Fragment.If.Rules.Infer
+import Fragment.If.Rules.Infer.Unification.Offline
 import Fragment.If.Rules.Eval
 
 data RIf

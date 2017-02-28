@@ -15,7 +15,8 @@ module Fragment.STLC.Rules (
 import Rules
 
 import Fragment.STLC.Ast
-import Fragment.STLC.Rules.Infer
+-- import Fragment.STLC.Rules.Infer
+import Fragment.STLC.Rules.Infer.Unification.Offline
 import Fragment.STLC.Rules.Eval
 
 data RSTLC

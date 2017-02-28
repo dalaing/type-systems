@@ -15,7 +15,8 @@ module Fragment.SystemF.Rules (
 import Rules
 
 import Fragment.SystemF.Ast
-import Fragment.SystemF.Rules.Infer
+-- import Fragment.SystemF.Rules.Infer
+import Fragment.SystemF.Rules.Infer.Unification.Offline
 import Fragment.SystemF.Rules.Eval
 
 data RSystemF

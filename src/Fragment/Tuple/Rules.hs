@@ -15,7 +15,8 @@ module Fragment.Tuple.Rules (
 import Rules
 
 import Fragment.Tuple.Ast
-import Fragment.Tuple.Rules.Infer
+-- import Fragment.Tuple.Rules.Infer
+import Fragment.Tuple.Rules.Infer.Unification.Offline
 import Fragment.Tuple.Rules.Eval
 
 data RTuple
