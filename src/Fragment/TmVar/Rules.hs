@@ -17,13 +17,14 @@ import GHC.Exts (Constraint)
 import Rules
 import Context.Term.Error
 
--- import Fragment.TmVar.Rules.Infer
-import Fragment.TmVar.Rules.Infer.Unification.Offline
+import qualified Fragment.TmVar.Rules.Infer.SyntaxDirected as SD
+import qualified Fragment.TmVar.Rules.Infer.Unification.Offline as UO
 
 data RTmVar
 
 instance RulesIn RTmVar where
-  type RuleInferContext e w s r m ty pt tm a RTmVar = TmVarInferContext e w s r m ty pt tm a
+  type RuleInferSyntaxContext e w s r m ty pt tm a RTmVar = SD.TmVarInferContext e w s r m ty pt tm a
+  type RuleInferOfflineContext e w s r m ty pt tm a RTmVar = UO.TmVarInferContext e w s r m ty pt tm a
   type RuleEvalContext ty tm pt a RTmVar = (() :: Constraint)
   type TypeList RTmVar = '[]
   type ErrorList ty tm pt a RTmVar = '[ErrUnboundTermVariable a]
@@ -31,6 +32,7 @@ instance RulesIn RTmVar where
   type PatternList RTmVar = '[]
   type TermList RTmVar = '[]
 
-  inferInput _ = tmVarInferRules
+  inferSyntaxInput _ = SD.tmVarInferRules
+  inferOfflineInput _ = UO.tmVarInferRules
   evalLazyInput _ = mempty
   evalStrictInput _ = mempty

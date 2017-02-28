@@ -17,14 +17,15 @@ import Ast.Error.Common
 import Context.Term.Error
 
 import Fragment.Case.Ast
--- import Fragment.Case.Rules.Infer
-import Fragment.Case.Rules.Infer.Unification.Offline
+import qualified Fragment.Case.Rules.Infer.SyntaxDirected as SD
+import qualified Fragment.Case.Rules.Infer.Unification.Offline as UO
 import Fragment.Case.Rules.Eval
 
 data RCase
 
 instance RulesIn RCase where
-  type RuleInferContext e w s r m ty pt tm a RCase = CaseInferContext e w s r m ty pt tm a
+  type RuleInferSyntaxContext e w s r m ty pt tm a RCase = SD.CaseInferContext e w s r m ty pt tm a
+  type RuleInferOfflineContext e w s r m ty pt tm a RCase = UO.CaseInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RCase = CaseEvalContext ty pt tm a
   type TypeList RCase = '[]
   type ErrorList ty pt tm a RCase = '[ErrExpectedAllEq ty a, ErrUnboundTermVariable a, ErrExpectedPattern ty pt tm a, ErrDuplicatedPatternVariables a]
@@ -32,6 +33,7 @@ instance RulesIn RCase where
   type PatternList RCase = '[]
   type TermList RCase = '[TmFCase]
 
-  inferInput _ = caseInferRules
+  inferSyntaxInput _ = SD.caseInferRules
+  inferOfflineInput _ = UO.caseInferRules
   evalLazyInput _ = caseEvalRulesLazy
   evalStrictInput _ = caseEvalRulesStrict

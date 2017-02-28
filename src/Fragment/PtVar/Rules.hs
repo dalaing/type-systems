@@ -14,14 +14,15 @@ module Fragment.PtVar.Rules (
 
 import Rules
 
--- import Fragment.PtVar.Rules.Infer
-import Fragment.PtVar.Rules.Infer.Unification.Offline
+import qualified Fragment.PtVar.Rules.Infer.SyntaxDirected as SD
+import qualified Fragment.PtVar.Rules.Infer.Unification.Offline as UO
 import Fragment.PtVar.Rules.Eval
 
 data RPtVar
 
 instance RulesIn RPtVar where
-  type RuleInferContext e w s r m ty pt tm a RPtVar = PtVarInferContext e w s r m ty pt tm a
+  type RuleInferSyntaxContext e w s r m ty pt tm a RPtVar = SD.PtVarInferContext e w s r m ty pt tm a
+  type RuleInferOfflineContext e w s r m ty pt tm a RPtVar = UO.PtVarInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RPtVar = PtVarEvalContext ty pt tm a
   type TypeList RPtVar = '[]
   type ErrorList ty pt tm a RPtVar = '[]
@@ -29,6 +30,7 @@ instance RulesIn RPtVar where
   type PatternList RPtVar = '[]
   type TermList RPtVar = '[]
 
-  inferInput _ = ptVarInferRules
+  inferSyntaxInput _ = SD.ptVarInferRules
+  inferOfflineInput _ = UO.ptVarInferRules
   evalLazyInput _ = ptVarEvalRules
   evalStrictInput _ = ptVarEvalRules

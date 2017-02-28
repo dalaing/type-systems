@@ -16,14 +16,15 @@ import Rules
 import Ast.Error.Common
 
 import Fragment.Bool.Ast
--- import Fragment.Bool.Rules.Infer
-import Fragment.Bool.Rules.Infer.Unification.Offline
+import qualified Fragment.Bool.Rules.Infer.SyntaxDirected as SD
+import qualified Fragment.Bool.Rules.Infer.Unification.Offline as UO
 import Fragment.Bool.Rules.Eval
 
 data RBool
 
 instance RulesIn RBool where
-  type RuleInferContext e w s r m ty pt tm a RBool = BoolInferContext e w s r m ty pt tm a
+  type RuleInferSyntaxContext e w s r m ty pt tm a RBool = SD.BoolInferContext e w s r m ty pt tm a
+  type RuleInferOfflineContext e w s r m ty pt tm a RBool = UO.BoolInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RBool = BoolEvalContext ty pt tm a
   type TypeList RBool = '[TyFBool]
   type ErrorList ty pt tm a RBool = '[ErrUnexpected ty a]
@@ -31,7 +32,8 @@ instance RulesIn RBool where
   type PatternList RBool = '[PtFBool]
   type TermList RBool = '[TmFBool]
 
-  inferInput _ = boolInferRules
+  inferSyntaxInput _ = SD.boolInferRules
+  inferOfflineInput _ = UO.boolInferRules
   evalLazyInput _ = boolEvalRules
   evalStrictInput _ = boolEvalRules
 

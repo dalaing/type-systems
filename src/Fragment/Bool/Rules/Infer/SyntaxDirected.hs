@@ -6,7 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.Bool.Rules.Infer (
+module Fragment.Bool.Rules.Infer.SyntaxDirected (
     BoolInferContext
   , boolInferRules
   ) where

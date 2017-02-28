@@ -6,7 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.STLC.Rules.Infer (
+module Fragment.STLC.Rules.Infer.SyntaxDirected (
     STLCInferContext
   , stlcInferRules
   ) where

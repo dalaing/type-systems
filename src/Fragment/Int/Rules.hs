@@ -16,14 +16,15 @@ import Rules
 import Ast.Error.Common
 
 import Fragment.Int.Ast
--- import Fragment.Int.Rules.Infer
-import Fragment.Int.Rules.Infer.Unification.Offline
+import qualified Fragment.Int.Rules.Infer.SyntaxDirected as SD
+import qualified Fragment.Int.Rules.Infer.Unification.Offline as UO
 import Fragment.Int.Rules.Eval
 
 data RInt
 
 instance RulesIn RInt where
-  type RuleInferContext e w s r m ty pt tm a RInt = IntInferContext e w s r m ty pt tm a
+  type RuleInferSyntaxContext e w s r m ty pt tm a RInt = SD.IntInferContext e w s r m ty pt tm a
+  type RuleInferOfflineContext e w s r m ty pt tm a RInt = UO.IntInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RInt = IntEvalContext ty pt tm a
   type TypeList RInt = '[TyFInt]
   type ErrorList ty pt tm a RInt = '[ErrUnexpected ty a]
@@ -31,6 +32,7 @@ instance RulesIn RInt where
   type PatternList RInt = '[PtFInt]
   type TermList RInt = '[TmFInt]
 
-  inferInput _ = intInferRules
+  inferSyntaxInput _ = SD.intInferRules
+  inferOfflineInput _ = UO.intInferRules
   evalLazyInput _ = intEvalRules
   evalStrictInput _ = intEvalRules

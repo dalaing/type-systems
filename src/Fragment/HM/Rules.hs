@@ -12,17 +12,19 @@ module Fragment.HM.Rules (
     RHM
   ) where
 
+import GHC.Exts (Constraint)
+
 import Rules
 
 import Fragment.HM.Ast
--- import Fragment.HM.Rules.Infer
 import Fragment.HM.Rules.Infer.Unification.Offline
 import Fragment.HM.Rules.Eval
 
 data RHM
 
 instance RulesIn RHM where
-  type RuleInferContext e w s r m ty pt tm a RHM = HMInferContext e w s r m ty pt tm a
+  type RuleInferSyntaxContext e w s r m ty pt tm a RHM = (() :: Constraint)
+  type RuleInferOfflineContext e w s r m ty pt tm a RHM = HMInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RHM = HMEvalContext ty pt tm a
   type TypeList RHM = '[TyFHM]
   type ErrorList ty pt tm a RHM = '[ErrExpectedTyArr ty a]
@@ -30,6 +32,7 @@ instance RulesIn RHM where
   type PatternList RHM = '[]
   type TermList RHM = '[TmFHM]
 
-  inferInput _ = hmInferRules
+  inferSyntaxInput _ = mempty
+  inferOfflineInput _ = hmInferRules
   evalLazyInput _ = hmEvalRulesLazy
   evalStrictInput _ = hmEvalRulesStrict

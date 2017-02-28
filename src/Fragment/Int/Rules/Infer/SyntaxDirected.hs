@@ -6,7 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.Int.Rules.Infer (
+module Fragment.Int.Rules.Infer.SyntaxDirected (
     IntInferContext
   , intInferRules
   ) where

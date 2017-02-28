@@ -15,14 +15,15 @@ module Fragment.Record.Rules (
 import Rules
 
 import Fragment.Record.Ast
--- import Fragment.Record.Rules.Infer
-import Fragment.Record.Rules.Infer.Unification.Offline
+import qualified Fragment.Record.Rules.Infer.SyntaxDirected as SD
+import qualified Fragment.Record.Rules.Infer.Unification.Offline as UO
 import Fragment.Record.Rules.Eval
 
 data RRecord
 
 instance RulesIn RRecord where
-  type RuleInferContext e w s r m ty pt tm a RRecord = RecordInferContext e w s r m ty pt tm a
+  type RuleInferSyntaxContext e w s r m ty pt tm a RRecord = SD.RecordInferContext e w s r m ty pt tm a
+  type RuleInferOfflineContext e w s r m ty pt tm a RRecord = UO.RecordInferContext e w s r m ty pt tm a
   type RuleEvalContext ty pt tm a RRecord = RecordEvalContext ty pt tm a
   type TypeList RRecord = '[TyFRecord]
   type ErrorList ty pt tm a RRecord = '[ErrExpectedTyRecord ty a, ErrRecordNotFound]
@@ -30,6 +31,7 @@ instance RulesIn RRecord where
   type PatternList RRecord = '[PtFRecord]
   type TermList RRecord = '[TmFRecord]
 
-  inferInput _ = recordInferRules
+  inferSyntaxInput _ = SD.recordInferRules
+  inferOfflineInput _ = UO.recordInferRules
   evalLazyInput _ = recordEvalRulesLazy
   evalStrictInput _ = recordEvalRulesStrict

@@ -14,8 +14,14 @@ Portability : non-portable
 module Language.TheLot (
     runEvalStrict
   , runEvalLazy
-  , runInfer
-  , runCheck
+  , runStepStrict
+  , runStepLazy
+  , runValueStrict
+  , runValueLazy
+  , runInferSyntax
+  , runCheckSyntax
+  , runInferOffline
+  , runCheckOffline
   ) where
 
 import Data.Proxy
@@ -30,7 +36,8 @@ import Ast.Term
 import Context.Term
 
 import Rules
-import Rules.Infer.Unification.Offline
+import qualified Rules.Infer.SyntaxDirected as SD
+import qualified Rules.Infer.Unification.Offline as UO
 import Rules.Eval
 
 import Fragment.PtVar
@@ -56,9 +63,9 @@ type Rules =
    , RBool
    , RIf
    , RPair
-   -- , RTuple
-   -- , RRecord
-   -- , RVariant
+   , RTuple
+   , RRecord
+   , RVariant
    , RCase
    , RHM
    -- , RSystemF
@@ -94,17 +101,31 @@ runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
   eoEval $ evalStrictOutput rules
 
-runInfer :: LTerm -> (Either LError LType, [LWarning])
-runInfer =
+runInferSyntax :: LTerm -> (Either LError LType, [LWarning])
+runInferSyntax =
   runM (0 :: Int) emptyTermContext .
-  ioInfer (inferOutput rules)
+  SD.ioInfer (inferSyntaxOutput rules)
 
-runCheck :: LTerm -> LType -> (Either LError (), [LWarning])
-runCheck tm ty =
+runCheckSyntax :: LTerm -> LType -> (Either LError (), [LWarning])
+runCheckSyntax tm ty =
   runM (0 :: Int) emptyTermContext $
-  (ioCheck $ inferOutput rules) tm ty
+  (SD.ioCheck $ inferSyntaxOutput rules) tm ty
+
+runInferOffline :: LTerm -> (Either LError LType, [LWarning])
+runInferOffline =
+  runM (0 :: Int) emptyTermContext .
+  UO.ioInfer (inferOfflineOutput rules)
+
+runCheckOffline :: LTerm -> LType -> (Either LError (), [LWarning])
+runCheckOffline tm ty =
+  runM (0 :: Int) emptyTermContext $
+  (UO.ioCheck $ inferOfflineOutput rules) tm ty
 
 -- for debugging
+
+runStepStrict :: LTerm -> Maybe LTerm
+runStepStrict =
+  eoStep $ evalStrictOutput rules
 
 runStepLazy :: LTerm -> Maybe LTerm
 runStepLazy =
@@ -114,6 +135,7 @@ runValueStrict :: LTerm -> Maybe LTerm
 runValueStrict =
   eoValue $ evalStrictOutput rules
 
-runStepStrict :: LTerm -> Maybe LTerm
-runStepStrict =
-  eoStep $ evalStrictOutput rules
+runValueLazy :: LTerm -> Maybe LTerm
+runValueLazy =
+  eoValue $ evalLazyOutput rules
+

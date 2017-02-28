@@ -7,7 +7,7 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Fragment.Case.Rules.Infer (
+module Fragment.Case.Rules.Infer.SyntaxDirected (
     CaseInferContext
   , caseInferRules
   ) where

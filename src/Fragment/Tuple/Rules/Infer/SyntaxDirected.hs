@@ -6,7 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.Tuple.Rules.Infer (
+module Fragment.Tuple.Rules.Infer.SyntaxDirected (
     TupleInferContext
   , tupleInferRules
   ) where
