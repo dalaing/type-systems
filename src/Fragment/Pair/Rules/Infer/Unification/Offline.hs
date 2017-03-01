@@ -14,7 +14,7 @@ module Fragment.Pair.Rules.Infer.Unification.Offline (
 import Control.Monad.State (MonadState)
 import Control.Monad.Except (MonadError)
 import Control.Lens (review, preview)
-import Data.Equivalence.Monad (EquivT)
+import Data.Equivalence.Monad (EquivT, classDesc)
 
 import Rules.Infer.Unification
 import Rules.Infer.Unification.Offline
@@ -36,16 +36,20 @@ equivPair equivFn ty1 ty2 = do
   (p2a, p2b) <- preview _TyPair ty2
   return $ equivFn p1a p2a && equivFn p1b p2b
 
-unifyPair :: AsTyPair ty
+unifyPair :: (UnificationContext e m ty a, AsTyPair ty)
           => ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ())
-          -> Type ty a
-          -> Type ty a
+          -> UConstraint ty a
           -> Maybe (EquivT s (Type ty a) (Type ty a) m ())
-unifyPair unifyMany ty1 ty2 = do
+unifyPair unifyMany u = do
+  (ty1, ty2) <- preview _UCEq u
   (p1a, p1b) <- preview _TyPair ty1
   (p2a, p2b) <- preview _TyPair ty2
-  return $
-    unifyMany [p1a, p1b] [p2a, p2b]
+  return $ do
+    c1a <- classDesc p1a
+    c1b <- classDesc p1b
+    c2a <- classDesc p2a
+    c2b <- classDesc p2b
+    unifyMany [c1a, c1b] [c2a, c2b]
 
 inferTmPair :: (UnificationContext e m ty a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyPair ty, AsTmPair ty pt tm)
             => (Term ty pt tm a -> UnifyT ty a m (Type ty a))

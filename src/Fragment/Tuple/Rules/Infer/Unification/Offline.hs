@@ -16,7 +16,7 @@ import Control.Monad (zipWithM, replicateM)
 import Control.Monad.State (MonadState)
 import Control.Monad.Except (MonadError)
 import Control.Lens (review, preview)
-import Data.Equivalence.Monad (EquivT)
+import Data.Equivalence.Monad (EquivT, classDesc)
 
 import Rules.Infer.Unification
 import Rules.Infer.Unification.Offline
@@ -36,16 +36,18 @@ equivTuple equivFn ty1 ty2 = do
   t2 <- preview _TyTuple ty2
   return . and $ zipWith equivFn t1 t2
 
-unifyTuple :: AsTyTuple ty
+unifyTuple :: (UnificationContext e m ty a, AsTyTuple ty)
           => ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ())
-          -> Type ty a
-          -> Type ty a
+          -> UConstraint ty a
           -> Maybe (EquivT s (Type ty a) (Type ty a) m ())
-unifyTuple unifyMany ty1 ty2 = do
+unifyTuple unifyMany u = do
+  (ty1, ty2) <- preview _UCEq u
   tys1 <- preview _TyTuple ty1
   tys2 <- preview _TyTuple ty2
-  return $
-    unifyMany tys1 tys2
+  return $ do
+    cs1 <- traverse classDesc tys1
+    cs2 <- traverse classDesc tys2
+    unifyMany cs1 cs2
 
 inferTmTuple :: (UnificationContext e m ty a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyTuple ty, AsTmTuple ty pt tm)
              => (Term ty pt tm a -> UnifyT ty a m (Type ty a))

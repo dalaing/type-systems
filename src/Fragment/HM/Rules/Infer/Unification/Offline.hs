@@ -17,7 +17,7 @@ import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.Except (MonadError)
 import Control.Lens (review, preview, (%~))
 import Control.Lens.Wrapped (_Wrapped)
-import Data.Equivalence.Monad (EquivT)
+import Data.Equivalence.Monad (EquivT, classDesc)
 
 import Rules.Infer.Unification
 import Rules.Infer.Unification.Offline
@@ -39,16 +39,20 @@ equivArr equivFn ty1 ty2 = do
   (p2a, p2b) <- preview _TyArr ty2
   return $ equivFn p1a p2a && equivFn p1b p2b
 
-unifyArr :: AsTyHM ty
+unifyArr :: (UnificationContext e m ty a, AsTyHM ty)
           => ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ())
-          -> Type ty a
-          -> Type ty a
+          -> UConstraint ty a
           -> Maybe (EquivT s (Type ty a) (Type ty a) m ())
-unifyArr unifyMany ty1 ty2 = do
+unifyArr unifyMany u = do
+  (ty1, ty2) <- preview _UCEq u
   (p1a, p1b) <- preview _TyArr ty1
   (p2a, p2b) <- preview _TyArr ty2
-  return $
-    unifyMany [p1a, p1b] [p2a, p2b]
+  return $ do
+    c1a <- classDesc p1a
+    c1b <- classDesc p1b
+    c2a <- classDesc p2a
+    c2b <- classDesc p2b
+    unifyMany [c1a, c1b] [c2a, c2b]
 
 inferTmLam :: (Ord a, AstBound ty pt tm, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTyHM ty, AsTmHM ty pt tm, HasTermContext r ty a)
            => (Term ty pt tm a -> m (Type ty a))

@@ -70,16 +70,6 @@ class AsUConstraint w ty a | w -> ty, w -> a where
 instance AsUConstraint (UConstraint ty a) ty a where
   _UConstraint = id
 
-data UnificationRule m ty a =
-  UnificationMany (forall s. ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ()) -> Type ty a -> Type ty a -> Maybe (EquivT s (Type ty a) (Type ty a) m ()))
-
-fixUnificationRule :: ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ())
-                   -> UnificationRule m ty a
-                   -> Type ty a
-                   -> Type ty a
-                   -> Maybe (EquivT s (Type ty a) (Type ty a) m ())
-fixUnificationRule manyFn (UnificationMany f) = f manyFn
-
 data ErrOccursError ty a =
   ErrOccursError a (Type ty a)
   deriving (Eq, Ord, Show)
@@ -116,6 +106,18 @@ instance {-# OVERLAPPABLE #-} AsUnificationMismatch (ErrSum xs) ty a => AsUnific
 instance {-# OVERLAPPING #-} AsUnificationMismatch (ErrSum (ErrUnificationMismatch ty a ': xs)) ty a where
   _UnificationMismatch = _ErrNow . _UnificationMismatch
 
+data UnificationRule m ty a =
+    UnificationOne (forall s. (Type ty a -> Type ty a -> EquivT s (Type ty a) (Type ty a) m ()) -> UConstraint ty a -> Maybe (EquivT s (Type ty a) (Type ty a) m ()))
+  | UnificationMany (forall s. ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ()) -> UConstraint ty a -> Maybe (EquivT s (Type ty a) (Type ty a) m ()))
+
+fixUnificationRule :: (Type ty a -> Type ty a -> EquivT s (Type ty a) (Type ty a) m ())
+                   -> ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ())
+                   -> UnificationRule m ty a
+                   -> UConstraint ty a
+                   -> Maybe (EquivT s (Type ty a) (Type ty a) m ())
+fixUnificationRule oneFn _ (UnificationOne f) = f oneFn
+fixUnificationRule _ manyFn (UnificationMany f) = f manyFn
+
 mkUnifyMany :: (Ord a, OrdRec ty, Bitransversable ty, MonadError e m, AsOccursError e ty a, AsUnificationMismatch e ty a)
             => (UConstraint ty a -> EquivT s (Type ty a) (Type ty a) m ())
             -> [Type ty a]
@@ -133,29 +135,27 @@ mkUnify1 :: (Ord a, OrdRec ty, Bitransversable ty, MonadError e m, AsExpectedEq 
 mkUnify1 tyEquiv rules =
   let
     unifyMany = mkUnifyMany unify1
-    rule ty1 ty2 =
+    unify1 u =
+      fromMaybe (noRuleMatches u) .
       asum .
-      fmap (\r -> fixUnificationRule unifyMany r ty1 ty2) $
+      fmap (\r -> fixUnificationRule (\x y -> unify1 (UCEq x y)) unifyMany r u) $
       rules
-    unify1 (UCEq ty1 ty2) = do
+    noRuleMatches (UCEq ty1 ty2) = do
       c1 <- classDesc ty1
       c2 <- classDesc ty2
-      let
-        noRuleMatches =
-          case (preview _TyVar c1, preview _TyVar c2) of
-            (Just v1, _) -> do
-              when (v1 `elem` c2) $
-                throwing _OccursError (v1, c2)
-              equate c1 c2
-              return ()
-            (_, Just v2) -> do
-              when (v2 `elem` c1) $
-                throwing _OccursError (v2, c1)
-              equate c1 c2
-            (Nothing, Nothing) ->
-              unless (tyEquiv c1 c2) $
-                throwing _ExpectedEq (c1, c2)
-      fromMaybe noRuleMatches (rule c1 c2)
+      case (preview _TyVar c1, preview _TyVar c2) of
+        (Just v1, _) -> do
+          when (v1 `elem` c2) $
+            throwing _OccursError (v1, c2)
+          equate c1 c2
+          return ()
+        (_, Just v2) -> do
+          when (v2 `elem` c1) $
+            throwing _OccursError (v2, c1)
+          equate c1 c2
+        (Nothing, Nothing) ->
+          unless (tyEquiv c1 c2) $
+            throwing _ExpectedEq (c1, c2)
   in
     unify1
 
