@@ -18,15 +18,15 @@ import Rules.Eval
 import Ast.Pattern
 import Ast.Term
 
-matchVar :: Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+matchVar :: Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]
 matchVar p tm = do
   _ <- preview _PtVar p
   return [tm]
 
-type PtVarEvalContext ty pt tm a = EvalContext ty pt tm a
+type PtVarEvalContext ki ty pt tm a = EvalContext ki ty pt tm a
 
-ptVarEvalRules :: PtVarEvalContext ty pt tm a
-               => EvalInput ty pt tm a
+ptVarEvalRules :: PtVarEvalContext ki ty pt tm a
+               => EvalInput ki ty pt tm a
 ptVarEvalRules =
   EvalInput
     []

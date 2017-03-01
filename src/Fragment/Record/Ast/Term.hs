@@ -36,7 +36,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFRecord (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFRecord (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmRecordF [(T.Text, f a)]
   | TmRecordIxF (f a) T.Text
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -47,7 +47,7 @@ deriveEq1 ''TmFRecord
 deriveOrd1 ''TmFRecord
 deriveShow1 ''TmFRecord
 
-instance EqRec (TmFRecord ty pt) where
+instance EqRec (TmFRecord ki ty pt) where
   liftEqRec eR _ (TmRecordF xs) (TmRecordF ys) =
     let
       f (l1, x1) (l2, x2) = l1 == l2 && eR x1 x2
@@ -58,7 +58,7 @@ instance EqRec (TmFRecord ty pt) where
   liftEqRec _ _ _ _ =
     False
 
-instance OrdRec (TmFRecord ty pt) where
+instance OrdRec (TmFRecord ki ty pt) where
   liftCompareRec _ _ (TmRecordF []) (TmRecordF []) = EQ
   liftCompareRec _ _ (TmRecordF []) (TmRecordF (_ : _)) = LT
   liftCompareRec _ _ (TmRecordF (_ : _)) (TmRecordF []) = GT
@@ -75,7 +75,7 @@ instance OrdRec (TmFRecord ty pt) where
       EQ -> compare i1 i2
       z -> z
 
-instance ShowRec (TmFRecord ty pt) where
+instance ShowRec (TmFRecord ki ty pt) where
   liftShowsPrecRec sR _ _ _ n (TmRecordF xs) =
     let
       g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
@@ -87,28 +87,28 @@ instance ShowRec (TmFRecord ty pt) where
   liftShowsPrecRec sR _ _ _ n (TmRecordIxF x i) =
     showsBinaryWith sR showsPrec "TmRecordIxF" n x i
 
-instance Bound (TmFRecord ty pt) where
+instance Bound (TmFRecord ki ty pt) where
   TmRecordF tms >>>= f = TmRecordF (fmap (fmap (>>= f)) tms)
   TmRecordIxF tm t >>>= f = TmRecordIxF (tm >>= f) t
 
-instance Bitransversable (TmFRecord ty pt) where
+instance Bitransversable (TmFRecord ki ty pt) where
   bitransverse fT fL (TmRecordF rs) = TmRecordF <$> traverse (traverse (fT fL)) rs
   bitransverse fT fL (TmRecordIxF r t) = TmRecordIxF <$> fT fL r <*> pure t
 
-class AsTmRecord ty pt tm where
-  _TmRecordP :: Prism' (tm ty pt k a) (TmFRecord ty pt k a)
+class AsTmRecord ki ty pt tm where
+  _TmRecordP :: Prism' (tm ki ty pt f a) (TmFRecord ki ty pt f a)
 
-  _TmRecord :: Prism' (Term ty pt tm a) [(T.Text, Term ty pt tm a)]
+  _TmRecord :: Prism' (Term ki ty pt tm a) [(T.Text, Term ki ty pt tm a)]
   _TmRecord = _Wrapped . _ATerm . _TmRecordP . _TmRecordF . mapping (seconding _Unwrapped)
 
-  _TmRecordIx :: Prism' (Term ty pt tm a) (Term ty pt tm a, T.Text)
+  _TmRecordIx :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, T.Text)
   _TmRecordIx = _Wrapped . _ATerm . _TmRecordP . _TmRecordIxF . firsting _Unwrapped
 
-instance AsTmRecord ty pt TmFRecord where
+instance AsTmRecord ki ty pt TmFRecord where
   _TmRecordP = id
 
-instance {-# OVERLAPPABLE #-} AsTmRecord ty pt (TmSum xs) => AsTmRecord ty pt (TmSum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} AsTmRecord ki ty pt (TmSum xs) => AsTmRecord ki ty pt (TmSum (x ': xs)) where
   _TmRecordP = _TmNext . _TmRecordP
 
-instance {-# OVERLAPPING #-} AsTmRecord ty pt (TmSum (TmFRecord ': xs)) where
+instance {-# OVERLAPPING #-} AsTmRecord ki ty pt (TmSum (TmFRecord ': xs)) where
   _TmRecordP = _TmNow . _TmRecordP

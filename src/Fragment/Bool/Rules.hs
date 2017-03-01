@@ -23,12 +23,13 @@ import Fragment.Bool.Rules.Eval
 data RBool
 
 instance RulesIn RBool where
-  type RuleInferSyntaxContext e w s r m ty pt tm a RBool = SD.BoolInferContext e w s r m ty pt tm a
-  type RuleInferOfflineContext e w s r m ty pt tm a RBool = UO.BoolInferContext e w s r m ty pt tm a
-  type RuleEvalContext ty pt tm a RBool = BoolEvalContext ty pt tm a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RBool = SD.BoolInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RBool = UO.BoolInferContext e w s r m ki ty pt tm a
+  type RuleEvalContext ki ty pt tm a RBool = BoolEvalContext ki ty pt tm a
+  type KindList RBool = '[]
   type TypeList RBool = '[TyFBool]
-  type ErrorList ty pt tm a RBool = '[ErrUnexpected ty a]
-  type WarningList ty pt tm a RBool = '[]
+  type ErrorList ki ty pt tm a RBool = '[ErrUnexpected ki ty a]
+  type WarningList ki ty pt tm a RBool = '[]
   type PatternList RBool = '[PtFBool]
   type TermList RBool = '[TmFBool]
 

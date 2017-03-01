@@ -31,28 +31,28 @@ import Ast.Type
 
 import Context.Term.Error
 
-data TermContext ty a = TermContext (M.Map a (Type ty a))
+data TermContext ki ty a = TermContext (M.Map a (Type ki ty a))
 
-emptyTermContext :: TermContext ty a
+emptyTermContext :: TermContext ki ty a
 emptyTermContext = TermContext M.empty
+ 
+class HasTermContext l ki ty a | l -> ki, l -> ty, l -> a where
+  termContext :: Lens' l (TermContext ki ty a)
 
-class HasTermContext l ty a | l -> ty, l -> a where
-  termContext :: Lens' l (TermContext ty a)
-
-instance HasTermContext (TermContext ty a) ty a where
+instance HasTermContext (TermContext ki ty a) ki ty a where
   termContext = id
-
-lookupBindings :: (MonadReader r m, HasTermContext r ty a) => m (S.Set a)
+ 
+lookupBindings :: (MonadReader r m, HasTermContext r ki ty a) => m (S.Set a)
 lookupBindings = do
   TermContext m <- view termContext
   return $ M.keysSet m
 
-lookupTerm :: (Ord a, MonadReader r m, MonadError e m, HasTermContext r ty a, AsUnboundTermVariable e a) => a -> m (Type ty a)
+lookupTerm :: (Ord a, MonadReader r m, MonadError e m, HasTermContext r ki ty a, AsUnboundTermVariable e a) => a -> m (Type ki ty a)
 lookupTerm v = do
   TermContext m <- view termContext
   case M.lookup v m of
     Nothing -> throwing _UnboundTermVariable v
     Just ty -> return ty
 
-insertTerm :: Ord a => a -> Type ty a -> TermContext ty a -> TermContext ty a
+insertTerm :: Ord a => a -> Type ki ty a -> TermContext ki ty a -> TermContext ki ty a
 insertTerm v ty (TermContext m) = TermContext (M.insert v ty m)

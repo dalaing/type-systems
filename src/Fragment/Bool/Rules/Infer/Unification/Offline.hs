@@ -28,23 +28,23 @@ import Fragment.Bool.Ast.Type
 import Fragment.Bool.Ast.Pattern
 import Fragment.Bool.Ast.Term
 
-equivBool :: AsTyBool ty => Type ty a -> Type ty a -> Maybe Bool
+equivBool :: AsTyBool ki ty => Type ki ty a -> Type ki ty a -> Maybe Bool
 equivBool ty1 ty2 = do
   _ <- preview _TyBool ty1
   _ <- preview _TyBool ty2
   return True
 
-inferBool :: (Monad m, AsTyBool ty, AsTmBool ty pt tm)
-         => Term ty pt tm a
-         -> Maybe (UnifyT ty a m (Type ty a))
+inferBool :: (Monad m, AsTyBool ki ty, AsTmBool ki ty pt tm)
+         => Term ki ty pt tm a
+         -> Maybe (UnifyT ki ty a m (Type ki ty a))
 inferBool tm = do
   _ <- preview _TmBool tm
   return . return . review _TyBool $ ()
 
-inferAnd :: (Eq a, EqRec ty, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsTmBool ty pt tm)
-         => (Term ty pt tm a -> UnifyT ty a m (Type ty a))
-         -> Term ty pt tm a
-         -> Maybe (UnifyT ty a m (Type ty a))
+inferAnd :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ki ty a, AsTyBool ki ty, AsTmBool ki ty pt tm)
+         => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
+         -> Term ki ty pt tm a
+         -> Maybe (UnifyT ki ty a m (Type ki ty a))
 inferAnd inferFn tm = do
   (tm1, tm2) <- preview _TmAnd tm
   return $ do
@@ -57,10 +57,10 @@ inferAnd inferFn tm = do
     expectEq tyV ty
     return tyV
 
-inferOr :: (Eq a, EqRec ty, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ty a, AsTyBool ty, AsTmBool ty pt tm)
-         => (Term ty pt tm a -> UnifyT ty a m (Type ty a))
-         -> Term ty pt tm a
-         -> Maybe (UnifyT ty a m (Type ty a))
+inferOr :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ki ty a, AsTyBool ki ty, AsTmBool ki ty pt tm)
+         => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
+         -> Term ki ty pt tm a
+         -> Maybe (UnifyT ki ty a m (Type ki ty a))
 inferOr inferFn tm = do
   (tm1, tm2) <- preview _TmOr tm
   return $ do
@@ -73,10 +73,10 @@ inferOr inferFn tm = do
     expectEq tyV ty
     return tyV
 
-checkBool :: (Eq a, EqRec ty, MonadError e m, AsUnexpected e ty a, AsPtBool pt, AsTyBool ty)
+checkBool :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a, AsPtBool pt, AsTyBool ki ty)
           => Pattern pt a
-          -> Type ty a
-          -> Maybe (UnifyT ty a m [Type ty a])
+          -> Type ki ty a
+          -> Maybe (UnifyT ki ty a m [Type ki ty a])
 checkBool p ty = do
   _ <- preview _PtBool p
   return $ do
@@ -84,10 +84,10 @@ checkBool p ty = do
     expect (ExpectedType tyB) (ActualType ty)
     return []
 
-type BoolInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, MonadState s m, HasTyVarSupply s , ToTyVar a, AsTyBool ty, AsPtBool pt, AsTmBool ty pt tm)
+type BoolInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)
 
-boolInferRules :: BoolInferContext e w s r m ty pt tm a
-              => InferInput e w s r m ty pt tm a
+boolInferRules :: BoolInferContext e w s r m ki ty pt tm a
+              => InferInput e w s r m ki ty pt tm a
 boolInferRules =
   InferInput
     [ EquivBase equivBool ]

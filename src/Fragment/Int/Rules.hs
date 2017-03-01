@@ -23,12 +23,13 @@ import Fragment.Int.Rules.Eval
 data RInt
 
 instance RulesIn RInt where
-  type RuleInferSyntaxContext e w s r m ty pt tm a RInt = SD.IntInferContext e w s r m ty pt tm a
-  type RuleInferOfflineContext e w s r m ty pt tm a RInt = UO.IntInferContext e w s r m ty pt tm a
-  type RuleEvalContext ty pt tm a RInt = IntEvalContext ty pt tm a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RInt = SD.IntInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RInt = UO.IntInferContext e w s r m ki ty pt tm a
+  type RuleEvalContext ki ty pt tm a RInt = IntEvalContext ki ty pt tm a
+  type KindList RInt = '[]
   type TypeList RInt = '[TyFInt]
-  type ErrorList ty pt tm a RInt = '[ErrUnexpected ty a]
-  type WarningList ty pt tm a RInt = '[]
+  type ErrorList ki ty pt tm a RInt = '[ErrUnexpected ki ty a]
+  type WarningList ki ty pt tm a RInt = '[]
   type PatternList RInt = '[PtFInt]
   type TermList RInt = '[TmFInt]
 

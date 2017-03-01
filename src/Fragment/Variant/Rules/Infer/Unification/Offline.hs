@@ -30,17 +30,17 @@ import Fragment.Variant.Ast.Error
 import Fragment.Variant.Ast.Pattern
 import Fragment.Variant.Ast.Term
 
-equivVariant :: AsTyVariant ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivVariant :: AsTyVariant ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
 equivVariant equivFn ty1 ty2 = do
   vs1 <- preview _TyVariant ty1
   vs2 <- preview _TyVariant ty2
   let f = fmap snd . sortOn fst . N.toList
   return . and $ zipWith equivFn (f vs1) (f vs2)
 
-inferTmVariant :: (Eq a, EqRec ty, MonadError e m, AsExpectedTyVariant e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsTyVariant ty, AsTmVariant ty pt tm)
-               => (Term ty pt tm a -> UnifyT ty a m (Type ty a))
-               -> Term ty pt tm a
-               -> Maybe (UnifyT ty a m (Type ty a))
+inferTmVariant :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedEq e ki ty a, AsTyVariant ki ty, AsTmVariant ki ty pt tm)
+               => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
+               -> Term ki ty pt tm a
+               -> Maybe (UnifyT ki ty a m (Type ki ty a))
 inferTmVariant inferFn tm = do
   (l, tmV, ty) <- preview _TmVariant tm
   return $ do
@@ -50,7 +50,7 @@ inferTmVariant inferFn tm = do
     expectEq tyL tyV
     return ty
 
-checkVariant :: (MonadError e m, AsExpectedTyVariant e ty a, AsVariantNotFound e, AsPtVariant pt, AsTyVariant ty) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkVariant :: (MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsPtVariant pt, AsTyVariant ki ty) => (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Pattern pt a -> Type ki ty a -> Maybe (m [Type ki ty a])
 checkVariant checkFn p ty = do
   (lV, pV) <- preview _PtVariant p
   return $ do
@@ -58,10 +58,10 @@ checkVariant checkFn p ty = do
     tyV <- lookupVariant vs lV
     checkFn pV tyV
 
-type VariantInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyVariant ty, AsExpectedTyVariant e ty a, AsVariantNotFound e, AsExpectedEq e ty a, AsPtVariant pt, AsTmVariant ty pt tm)
+type VariantInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyVariant ki ty, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedEq e ki ty a, AsPtVariant pt, AsTmVariant ki ty pt tm)
 
-variantInferRules :: VariantInferContext e w s r m ty pt tm a
-                => InferInput e w s r m ty pt tm a
+variantInferRules :: VariantInferContext e w s r m ki ty pt tm a
+                => InferInput e w s r m ki ty pt tm a
 variantInferRules =
   InferInput
     [ EquivRecurse equivVariant ]

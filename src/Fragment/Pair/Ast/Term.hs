@@ -33,7 +33,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFPair (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFPair (k :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmPairF (f a) (f a)
   | TmFstF (f a)
   | TmSndF (f a)
@@ -45,7 +45,7 @@ deriveEq1 ''TmFPair
 deriveOrd1 ''TmFPair
 deriveShow1 ''TmFPair
 
-instance EqRec (TmFPair ty pt) where
+instance EqRec (TmFPair ki ty pt) where
   liftEqRec eR _ (TmPairF x1 y1) (TmPairF x2 y2) =
     eR x1 x2 && eR y1 y2
   liftEqRec eR _ (TmFstF x1) (TmFstF x2) =
@@ -55,7 +55,7 @@ instance EqRec (TmFPair ty pt) where
   liftEqRec _ _ _ _ =
     False
 
-instance OrdRec (TmFPair ty pt) where
+instance OrdRec (TmFPair ki ty pt) where
   liftCompareRec cR _ (TmPairF x1 y1) (TmPairF x2 y2) =
     case cR x1 x2 of
       EQ -> cR y1 y2
@@ -69,7 +69,7 @@ instance OrdRec (TmFPair ty pt) where
   liftCompareRec cR _ (TmSndF x1) (TmSndF x2) =
     cR x1 x2
 
-instance ShowRec (TmFPair ty pt) where
+instance ShowRec (TmFPair ki ty pt) where
   liftShowsPrecRec sR _ _ _ n (TmPairF x y) =
     showsBinaryWith sR sR "TmPairF" n x y
   liftShowsPrecRec sR _ _ _ n (TmFstF x) =
@@ -77,33 +77,33 @@ instance ShowRec (TmFPair ty pt) where
   liftShowsPrecRec sR _ _ _ n (TmSndF x) =
     showsUnaryWith sR "TmSndF" n x
 
-instance Bound (TmFPair ty pt) where
+instance Bound (TmFPair ki ty pt) where
   TmPairF x y >>>= f = TmPairF (x >>= f) (y >>= f)
   TmFstF x >>>= f = TmFstF (x >>= f)
   TmSndF x >>>= f = TmSndF (x >>= f)
 
-instance Bitransversable (TmFPair ty pt) where
+instance Bitransversable (TmFPair ki ty pt) where
   bitransverse fT fL (TmPairF x y) = TmPairF <$> fT fL x <*> fT fL y
   bitransverse fT fL (TmFstF x) = TmFstF <$> fT fL x
   bitransverse fT fL (TmSndF x) = TmSndF <$> fT fL x
 
-class AsTmPair ty pt tm where
-  _TmPairP :: Prism' (tm ty pt k a) (TmFPair ty pt k a)
+class AsTmPair ki ty pt tm where
+  _TmPairP :: Prism' (tm ki ty pt f a) (TmFPair ki ty pt f a)
 
-  _TmPair :: Prism' (Term ty pt tm a) (Term ty pt tm a, Term ty pt tm a)
+  _TmPair :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
   _TmPair = _Wrapped . _ATerm . _TmPairP . _TmPairF . bimapping _Unwrapped _Unwrapped
 
-  _TmFst :: Prism' (Term ty pt tm a) (Term ty pt tm a)
+  _TmFst :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a)
   _TmFst = _Wrapped . _ATerm . _TmPairP . _TmFstF . _Unwrapped
 
-  _TmSnd :: Prism' (Term ty pt tm a) (Term ty pt tm a)
+  _TmSnd :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a)
   _TmSnd = _Wrapped . _ATerm . _TmPairP . _TmSndF . _Unwrapped
 
-instance AsTmPair ty pt TmFPair where
+instance AsTmPair ki ty pt TmFPair where
   _TmPairP = id
 
-instance {-# OVERLAPPABLE #-} AsTmPair ty pt (TmSum xs) => AsTmPair ty pt (TmSum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} AsTmPair ki ty pt (TmSum xs) => AsTmPair ki ty pt (TmSum (x ': xs)) where
   _TmPairP = _TmNext . _TmPairP
 
-instance {-# OVERLAPPING #-} AsTmPair ty pt (TmSum (TmFPair ': xs)) where
+instance {-# OVERLAPPING #-} AsTmPair ki ty pt (TmSum (TmFPair ': xs)) where
   _TmPairP = _TmNow . _TmPairP

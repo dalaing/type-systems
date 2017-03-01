@@ -18,15 +18,15 @@ import Rules.Eval
 import Ast.Pattern
 import Ast.Term
 
-matchWild :: AsPtWild pt => Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+matchWild :: AsPtWild pt => Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]
 matchWild p _ = do
   _ <- preview _PtWild p
   return []
 
-type PtWildEvalContext ty pt tm a = (EvalContext ty pt tm a, AsPtWild pt)
+type PtWildEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsPtWild pt)
 
-ptWildEvalRules :: PtWildEvalContext ty pt tm a
-               => EvalInput ty pt tm a
+ptWildEvalRules :: PtWildEvalContext ki ty pt tm a
+               => EvalInput ki ty pt tm a
 ptWildEvalRules =
   EvalInput
     []

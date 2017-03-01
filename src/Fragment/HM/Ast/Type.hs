@@ -10,6 +10,7 @@ Portability : non-portable
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
@@ -30,7 +31,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFHM f a =
+data TyFHM (ki :: * -> *) f a =
   TyArrF (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -40,36 +41,36 @@ deriveShow1 ''TyFHM
 
 makePrisms ''TyFHM
 
-instance EqRec TyFHM where
+instance EqRec (TyFHM ki) where
   liftEqRec eR _ (TyArrF x1 y1) (TyArrF x2 y2) = eR x1 x2 && eR y1 y2
 
-instance OrdRec TyFHM where
+instance OrdRec (TyFHM ki) where
   liftCompareRec cR _ (TyArrF x1 y1) (TyArrF x2 y2) =
     case cR x1 x2 of
       EQ -> cR y1 y2
       x -> x
 
-instance ShowRec TyFHM where
+instance ShowRec (TyFHM ki) where
   liftShowsPrecRec sR _ _ _ n (TyArrF x y) =
     showsBinaryWith sR sR "TyArrF" n x y
 
-instance Bound TyFHM where
+instance Bound (TyFHM ki) where
   TyArrF x y >>>= f = TyArrF (x >>= f) (y >>= f)
 
-instance Bitransversable TyFHM where
+instance Bitransversable (TyFHM ki) where
   bitransverse fT fL (TyArrF x y) = TyArrF <$> fT fL x <*> fT fL y
 
-class AsTyHM ty where
-  _TyHMP :: Prism' (ty k a) (TyFHM k a)
+class AsTyHM ki ty where
+  _TyHMP :: Prism' (ty ki j a) (TyFHM ki j a)
 
-  _TyArr :: Prism' (Type ty a) (Type ty a, Type ty a)
+  _TyArr :: Prism' (Type ki ty a) (Type ki ty a, Type ki ty a)
   _TyArr = _TyTree . _TyHMP . _TyArrF
 
-instance AsTyHM TyFHM where
+instance AsTyHM ki TyFHM where
   _TyHMP = id
 
-instance {-# OVERLAPPABLE #-} AsTyHM (TySum xs) => AsTyHM (TySum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} AsTyHM ki (TySum xs) => AsTyHM ki (TySum (x ': xs)) where
   _TyHMP = _TyNext . _TyHMP
 
-instance {-# OVERLAPPING #-} AsTyHM (TySum (TyFHM ': xs)) where
+instance {-# OVERLAPPING #-} AsTyHM ki (TySum (TyFHM ': xs)) where
   _TyHMP = _TyNow . _TyHMP

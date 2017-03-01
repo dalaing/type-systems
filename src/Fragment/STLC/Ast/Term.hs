@@ -34,30 +34,30 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFSTLC (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data TmFSTLC (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
     TmLamF (k a) (Scope () k a)
   | TmAppF (k a) (k a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TmFSTLC
 
-instance (Eq1 k, Monad k) => Eq1 (TmFSTLC ty pt k) where
+instance (Eq1 f, Monad f) => Eq1 (TmFSTLC ki ty pt f) where
   liftEq = $(makeLiftEq ''TmFSTLC)
 
-instance (Ord1 k,  Monad k) => Ord1 (TmFSTLC ty pt k) where
+instance (Ord1 f,  Monad f) => Ord1 (TmFSTLC ki ty pt f) where
   liftCompare = $(makeLiftCompare ''TmFSTLC)
 
-instance (Show1 k) => Show1 (TmFSTLC ty pt k) where
+instance (Show1 f) => Show1 (TmFSTLC ki ty pt f) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFSTLC)
 
-instance EqRec (TmFSTLC ty pt) where
+instance EqRec (TmFSTLC ki ty pt) where
   liftEqRec eR e (TmLamF ty1 s1) (TmLamF ty2 s2) =
     eR ty1 ty2 && liftEqRec eR e s1 s2
   liftEqRec eR _ (TmAppF x1 y1) (TmAppF x2 y2) =
     eR x1 x2 && eR y1 y2
   liftEqRec _ _ _ _ = False
 
-instance OrdRec (TmFSTLC ty pt) where
+instance OrdRec (TmFSTLC ki ty pt) where
   liftCompareRec cR c (TmLamF ty1 s1) (TmLamF ty2 s2) =
     case cR ty1 ty2 of
       EQ -> liftCompareRec cR c s1 s2
@@ -69,37 +69,37 @@ instance OrdRec (TmFSTLC ty pt) where
       EQ -> cR y1 y2
       z -> z
 
-instance ShowRec (TmFSTLC ty pt) where
+instance ShowRec (TmFSTLC ki ty pt) where
   liftShowsPrecRec sR slR s sl n (TmLamF ty sc) =
     showsBinaryWith sR (liftShowsPrecRec sR slR s sl) "TmLamF" n ty sc
   liftShowsPrecRec sR _ _ _ n (TmAppF x y) =
     showsBinaryWith sR sR "TmAppF" n x y
 
-instance Bound (TmFSTLC ty pt) where
+instance Bound (TmFSTLC ki ty pt) where
   TmLamF ty s >>>= f = TmLamF (ty >>= f) (s >>>= f)
   TmAppF x y >>>= f = TmAppF (x >>= f) (y >>= f)
 
-instance Bitransversable (TmFSTLC ty pt) where
+instance Bitransversable (TmFSTLC ki ty pt) where
   bitransverse fT fL (TmLamF ty s) = TmLamF <$> fT fL ty <*> bitransverse fT fL s
   bitransverse fT fL (TmAppF x y) = TmAppF <$> fT fL x <*> fT fL y
 
-class (AstBound ty pt tm, AstTransversable ty pt tm) => AsTmSTLC ty pt tm where
-  _TmSTLCP :: Prism' (tm ty pt k a) (TmFSTLC ty pt k a)
+class (AstBound ki ty pt tm, AstTransversable ki ty pt tm) => AsTmSTLC ki ty pt tm where
+  _TmSTLCP :: Prism' (tm ki ty pt f a) (TmFSTLC ki ty pt f a)
 
-  _TmSTLCLink :: Prism' (Term ty pt tm a) (TmFSTLC ty pt (Ast ty pt tm) (AstVar a))
+  _TmSTLCLink :: Prism' (Term ki ty pt tm a) (TmFSTLC ki ty pt (Ast ki ty pt tm) (AstVar a))
   _TmSTLCLink = _Wrapped . _ATerm . _TmSTLCP
 
-  _TmLam :: Prism' (Term ty pt tm a) (Type ty a, Scope () (Ast ty pt tm) (AstVar a))
+  _TmLam :: Prism' (Term ki ty pt tm a) (Type ki ty a, Scope () (Ast ki ty pt tm) (AstVar a))
   _TmLam = _TmSTLCLink . _TmLamF . mkPair _Type id
 
-  _TmApp :: Prism' (Term ty pt tm a) (Term ty pt tm a, Term ty pt tm a)
+  _TmApp :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
   _TmApp = _TmSTLCLink . _TmAppF . mkPair _Unwrapped _Unwrapped
 
-instance (Bound ty, Bound pt, Bitransversable ty, Bitransversable pt) => AsTmSTLC ty pt TmFSTLC where
+instance (Bound (ty ki), Bound pt, Bitransversable (ty ki), Bitransversable pt) => AsTmSTLC ki ty pt TmFSTLC where
   _TmSTLCP = id
 
-instance {-# OVERLAPPABLE #-} (Bound (x ty pt), Bitransversable (x ty pt), AsTmSTLC ty pt (TmSum xs)) => AsTmSTLC ty pt (TmSum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} (Bound (x ki ty pt), Bitransversable (x ki ty pt), AsTmSTLC ki ty pt (TmSum xs)) => AsTmSTLC ki ty pt (TmSum (x ': xs)) where
   _TmSTLCP = _TmNext . _TmSTLCP
 
-instance {-# OVERLAPPING #-} (Bound ty, Bound pt, Bound (TmSum xs ty pt), Bitransversable ty, Bitransversable pt, Bitransversable (TmSum xs ty pt)) => AsTmSTLC ty pt (TmSum (TmFSTLC ': xs)) where
+instance {-# OVERLAPPING #-} (Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmSTLC ki ty pt (TmSum (TmFSTLC ': xs)) where
   _TmSTLCP = _TmNow . _TmSTLCP

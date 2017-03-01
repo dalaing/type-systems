@@ -22,12 +22,13 @@ import Fragment.Tuple.Rules.Eval
 data RTuple
 
 instance RulesIn RTuple where
-  type RuleInferSyntaxContext e w s r m ty pt tm a RTuple = SD.TupleInferContext e w s r m ty pt tm a
-  type RuleInferOfflineContext e w s r m ty pt tm a RTuple = UO.TupleInferContext e w s r m ty pt tm a
-  type RuleEvalContext ty pt tm a RTuple = TupleEvalContext ty pt tm a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RTuple = SD.TupleInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RTuple = UO.TupleInferContext e w s r m ki ty pt tm a
+  type RuleEvalContext ki ty pt tm a RTuple = TupleEvalContext ki ty pt tm a
+  type KindList RTuple = '[]
   type TypeList RTuple = '[TyFTuple]
-  type ErrorList ty pt tm a RTuple = '[ErrExpectedTyTuple ty a, ErrTupleOutOfBounds]
-  type WarningList ty pt tm a RTuple = '[]
+  type ErrorList ki ty pt tm a RTuple = '[ErrExpectedTyTuple ki ty a, ErrTupleOutOfBounds]
+  type WarningList ki ty pt tm a RTuple = '[]
   type PatternList RTuple = '[PtFTuple]
   type TermList RTuple = '[TmFTuple]
 

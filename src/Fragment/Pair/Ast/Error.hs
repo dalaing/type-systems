@@ -30,24 +30,24 @@ import Ast.Error
 
 import Fragment.Pair.Ast.Type
 
-data ErrExpectedTyPair ty a = ErrExpectedTyPair (Type ty a)
+data ErrExpectedTyPair ki ty a = ErrExpectedTyPair (Type ki ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyPair
 
-class AsExpectedTyPair e ty a where -- | e -> ty, e -> a where
-  _ExpectedTyPair :: Prism' e (Type ty a)
+class AsExpectedTyPair e ki ty a where -- | e -> ty, e -> a where
+  _ExpectedTyPair :: Prism' e (Type ki ty a)
 
-instance AsExpectedTyPair (ErrExpectedTyPair ty a) ty a where
+instance AsExpectedTyPair (ErrExpectedTyPair ki ty a) ki ty a where
   _ExpectedTyPair = _ErrExpectedTyPair
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyPair (ErrSum xs) ty a => AsExpectedTyPair (ErrSum (x ': xs)) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyPair (ErrSum xs) ki ty a => AsExpectedTyPair (ErrSum (x ': xs)) ki ty a where
   _ExpectedTyPair = _ErrNext . _ExpectedTyPair
 
-instance {-# OVERLAPPING #-} AsExpectedTyPair (ErrSum (ErrExpectedTyPair ty a ': xs)) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyPair (ErrSum (ErrExpectedTyPair ki ty a ': xs)) ki ty a where
   _ExpectedTyPair = _ErrNow . _ExpectedTyPair
 
-expectTyPair :: (MonadError e m, AsExpectedTyPair e ty a, AsTyPair ty) => Type ty a -> m (Type ty a, Type ty a)
+expectTyPair :: (MonadError e m, AsExpectedTyPair e ki ty a, AsTyPair ki ty) => Type ki ty a -> m (Type ki ty a, Type ki ty a)
 expectTyPair ty =
   case preview _TyPair ty of
     Just (ty1, ty2) -> return (ty1, ty2)

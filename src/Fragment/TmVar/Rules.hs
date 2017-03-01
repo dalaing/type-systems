@@ -23,12 +23,13 @@ import qualified Fragment.TmVar.Rules.Infer.Unification.Offline as UO
 data RTmVar
 
 instance RulesIn RTmVar where
-  type RuleInferSyntaxContext e w s r m ty pt tm a RTmVar = SD.TmVarInferContext e w s r m ty pt tm a
-  type RuleInferOfflineContext e w s r m ty pt tm a RTmVar = UO.TmVarInferContext e w s r m ty pt tm a
-  type RuleEvalContext ty tm pt a RTmVar = (() :: Constraint)
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RTmVar = SD.TmVarInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RTmVar = UO.TmVarInferContext e w s r m ki ty pt tm a
+  type RuleEvalContext ki ty tm pt a RTmVar = (() :: Constraint)
+  type KindList RTmVar = '[]
   type TypeList RTmVar = '[]
-  type ErrorList ty tm pt a RTmVar = '[ErrUnboundTermVariable a]
-  type WarningList ty tm pt a RTmVar = '[]
+  type ErrorList ki ty tm pt a RTmVar = '[ErrUnboundTermVariable a]
+  type WarningList ki ty tm pt a RTmVar = '[]
   type PatternList RTmVar = '[]
   type TermList RTmVar = '[]
 

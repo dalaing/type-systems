@@ -35,24 +35,24 @@ import Ast.Error
 
 import Fragment.Record.Ast.Type
 
-data ErrExpectedTyRecord ty a = ErrExpectedTyRecord (Type ty a)
+data ErrExpectedTyRecord ki ty a = ErrExpectedTyRecord (Type ki ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyRecord
 
-class AsExpectedTyRecord e ty a where -- | e -> ty, e -> a where
-  _ExpectedTyRecord :: Prism' e (Type ty a)
+class AsExpectedTyRecord e ki ty a where -- | e -> ty, e -> a where
+  _ExpectedTyRecord :: Prism' e (Type ki ty a)
 
-instance AsExpectedTyRecord (ErrExpectedTyRecord ty a) ty a where
+instance AsExpectedTyRecord (ErrExpectedTyRecord ki ty a) ki ty a where
   _ExpectedTyRecord = _ErrExpectedTyRecord
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyRecord (ErrSum xs) ty a => AsExpectedTyRecord (ErrSum (x ': xs)) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyRecord (ErrSum xs) ki ty a => AsExpectedTyRecord (ErrSum (x ': xs)) ki ty a where
   _ExpectedTyRecord = _ErrNext . _ExpectedTyRecord
 
-instance {-# OVERLAPPING #-} AsExpectedTyRecord (ErrSum (ErrExpectedTyRecord ty a ': xs)) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyRecord (ErrSum (ErrExpectedTyRecord ki ty a ': xs)) ki ty a where
   _ExpectedTyRecord = _ErrNow . _ExpectedTyRecord
 
-expectTyRecord :: (MonadError e m, AsExpectedTyRecord e ty a, AsTyRecord ty) => Type ty a -> m [(T.Text, Type ty a)]
+expectTyRecord :: (MonadError e m, AsExpectedTyRecord e ki ty a, AsTyRecord ki ty) => Type ki ty a -> m [(T.Text, Type ki ty a)]
 expectTyRecord ty =
   case preview _TyRecord ty of
     Just tys -> return tys

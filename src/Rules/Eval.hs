@@ -28,20 +28,20 @@ import GHC.Exts (Constraint)
 import Ast.Term
 import Ast.Pattern
 
-data ValueRule ty pt tm a =
-    ValueBase (Term ty pt tm a -> Maybe (Term ty pt tm a))
-  | ValueRecurse ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
+data ValueRule ki ty pt tm a =
+    ValueBase (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | ValueRecurse ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
 
-fixValueRule :: (Term ty pt tm a -> Maybe (Term ty pt tm a))
-             -> ValueRule ty pt tm a
-             -> Term ty pt tm a
-             -> Maybe (Term ty pt tm a )
+fixValueRule :: (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+             -> ValueRule ki ty pt tm a
+             -> Term ki ty pt tm a
+             -> Maybe (Term ki ty pt tm a )
 fixValueRule _ (ValueBase f) = f
 fixValueRule valueFn (ValueRecurse f) = f valueFn
 
-mkValue :: [ValueRule ty pt tm a]
-        -> Term ty pt tm a
-        -> Maybe (Term ty pt tm a)
+mkValue :: [ValueRule ki ty pt tm a]
+        -> Term ki ty pt tm a
+        -> Maybe (Term ki ty pt tm a)
 mkValue rules =
   let
     go tm = asum .
@@ -50,20 +50,20 @@ mkValue rules =
   in
     go
 
-data EvalRule ty pt tm a =
-    EvalBase (Term ty pt tm a -> Maybe (Term ty pt tm a))
-  | EvalValue ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
-  | EvalStep ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
-  | EvalMatch ((Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
-  | EvalValueMatch ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
-  | EvalValueStep ((Term ty pt tm a -> Maybe (Term ty pt tm a)) -> (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Maybe (Term ty pt tm a))
+data EvalRule ki ty pt tm a =
+    EvalBase (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | EvalValue ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | EvalStep ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | EvalMatch ((Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | EvalValueMatch ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | EvalValueStep ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
 
-fixEvalRule :: (Term ty pt tm a -> Maybe (Term ty pt tm a))
-            -> (Term ty pt tm a -> Maybe (Term ty pt tm a))
-            -> (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
-            -> EvalRule ty pt tm a
-            -> Term ty pt tm a
-            -> Maybe (Term ty pt tm a )
+fixEvalRule :: (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+            -> (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+            -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
+            -> EvalRule ki ty pt tm a
+            -> Term ki ty pt tm a
+            -> Maybe (Term ki ty pt tm a )
 fixEvalRule _ _ _ (EvalBase f) = f
 fixEvalRule valueFn _ _ (EvalValue f) = f valueFn
 fixEvalRule _ evalFn _ (EvalStep f) = f evalFn
@@ -71,11 +71,11 @@ fixEvalRule _ _ matchFn (EvalMatch f) = f matchFn
 fixEvalRule valueFn _ matchFn (EvalValueMatch f) = f valueFn matchFn
 fixEvalRule valueFn evalFn _ (EvalValueStep f) = f valueFn evalFn
 
-mkStep :: (Term ty pt tm a -> Maybe (Term ty pt tm a))
-       -> (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
-       -> [EvalRule ty pt tm a]
-       -> Term ty pt tm a
-       -> Maybe (Term ty pt tm a)
+mkStep :: (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+       -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
+       -> [EvalRule ki ty pt tm a]
+       -> Term ki ty pt tm a
+       -> Maybe (Term ki ty pt tm a)
 mkStep valueFn matchFn rules =
   let
     stepFn tm = asum .
@@ -84,7 +84,7 @@ mkStep valueFn matchFn rules =
   in
     stepFn
 
-mkEval :: (Term ty pt tm a -> Maybe (Term ty pt tm a)) -> Term ty pt tm a -> Term ty pt tm a
+mkEval :: (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Term ki ty pt tm a
 mkEval stepFn =
   let
     go tm = case stepFn tm of
@@ -93,17 +93,17 @@ mkEval stepFn =
   in
     go
 
-data MatchRule ty pt tm a =
-    MatchBase (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
-  | MatchEval ((Term ty pt tm a -> Term ty pt tm a) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
-  | MatchRecurse ((Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a])
+data MatchRule ki ty pt tm a =
+    MatchBase (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
+  | MatchEval ((Term ki ty pt tm a -> Term ki ty pt tm a) -> Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
+  | MatchRecurse ((Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
 
-fixMatchRule :: (Term ty pt tm a -> Term ty pt tm a) -> (Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]) -> MatchRule ty pt tm a -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+fixMatchRule :: (Term ki ty pt tm a -> Term ki ty pt tm a) -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> MatchRule ki ty pt tm a -> Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]
 fixMatchRule _ _ (MatchBase f) = f
 fixMatchRule evalFn _ (MatchEval f) = f evalFn
 fixMatchRule _ pMatchFn (MatchRecurse f) = f pMatchFn
 
-mkMatch :: (Term ty pt tm a -> Term ty pt tm a) -> [MatchRule ty pt tm a] -> Pattern pt a -> Term ty pt tm a -> Maybe [Term ty pt tm a]
+mkMatch :: (Term ki ty pt tm a -> Term ki ty pt tm a) -> [MatchRule ki ty pt tm a] -> Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]
 mkMatch innerEval rules x y =
   let
     go p tm =
@@ -113,14 +113,14 @@ mkMatch innerEval rules x y =
   in
     go x y
 
-data EvalInput ty pt tm a =
+data EvalInput ki ty pt tm a =
   EvalInput {
-    eiValueRules :: [ValueRule ty pt tm a]
-  , eiEvalRules :: [EvalRule ty pt tm a]
-  , eiMatchRules :: [MatchRule ty pt tm a]
+    eiValueRules :: [ValueRule ki ty pt tm a]
+  , eiEvalRules :: [EvalRule ki ty pt tm a]
+  , eiMatchRules :: [MatchRule ki ty pt tm a]
   }
 
-instance Monoid (EvalInput ty pt tm a) where
+instance Monoid (EvalInput ki ty pt tm a) where
   mempty =
     EvalInput mempty mempty mempty
   mappend (EvalInput v1 e1 m1) (EvalInput v2 e2 m2) =
@@ -129,19 +129,19 @@ instance Monoid (EvalInput ty pt tm a) where
       (mappend e1 e2)
       (mappend m1 m2)
 
-data EvalOutput ty pt tm a =
+data EvalOutput ki ty pt tm a =
   EvalOutput {
-    eoValue :: Term ty pt tm a -> Maybe (Term ty pt tm a)
-  , eoStep :: Term ty pt tm a -> Maybe (Term ty pt tm a)
-  , eoEval :: Term ty pt tm a -> Term ty pt tm a
+    eoValue :: Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
+  , eoStep :: Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
+  , eoEval :: Term ki ty pt tm a -> Term ki ty pt tm a
   }
 
-type EvalContext (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (() :: Constraint)
+type EvalContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (() :: Constraint)
 
-prepareEval :: EvalContext ty pt tm a
-            => (Term ty pt tm a -> Term ty pt tm a)
-            -> EvalInput ty pt tm a
-            -> EvalOutput ty pt tm a
+prepareEval :: EvalContext ki ty pt tm a
+            => (Term ki ty pt tm a -> Term ki ty pt tm a)
+            -> EvalInput ki ty pt tm a
+            -> EvalOutput ki ty pt tm a
 prepareEval innerMatchEval ei =
   let
     v = mkValue . eiValueRules $ ei
@@ -151,14 +151,14 @@ prepareEval innerMatchEval ei =
   in
     EvalOutput v s e
 
-prepareEvalStrict :: EvalContext ty pt tm a
-                  => EvalInput ty pt tm a
-                  -> EvalOutput ty pt tm a
+prepareEvalStrict :: EvalContext ki ty pt tm a
+                  => EvalInput ki ty pt tm a
+                  -> EvalOutput ki ty pt tm a
 prepareEvalStrict = prepareEval id
 
-prepareEvalLazy :: EvalContext ty pt tm a
-                => EvalInput ty pt tm a
-                -> EvalOutput ty pt tm a
+prepareEvalLazy :: EvalContext ki ty pt tm a
+                => EvalInput ki ty pt tm a
+                -> EvalOutput ki ty pt tm a
 prepareEvalLazy ei =
   let
     fo = prepareEval e ei

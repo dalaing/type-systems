@@ -33,7 +33,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFTuple (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFTuple (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmTupleF [f a]
   | TmTupleIxF (f a) Int
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -44,14 +44,14 @@ deriveEq1 ''TmFTuple
 deriveOrd1 ''TmFTuple
 deriveShow1 ''TmFTuple
 
-instance EqRec (TmFTuple ty pt) where
+instance EqRec (TmFTuple ki ty pt) where
   liftEqRec eR _ (TmTupleF xs) (TmTupleF ys) =
     and $ zipWith eR xs ys
   liftEqRec eR _ (TmTupleIxF x1 i1) (TmTupleIxF x2 i2) =
     eR x1 x2 && i1 == i2
   liftEqRec _ _ _ _ = False
 
-instance OrdRec (TmFTuple ty pt) where
+instance OrdRec (TmFTuple ki ty pt) where
   liftCompareRec _ _ (TmTupleF []) (TmTupleF []) = EQ
   liftCompareRec _ _ (TmTupleF []) (TmTupleF (_ : _)) = LT
   liftCompareRec _ _ (TmTupleF (_ : _)) (TmTupleF []) = GT
@@ -66,34 +66,34 @@ instance OrdRec (TmFTuple ty pt) where
       EQ -> compare i1 i2
       z -> z
 
-instance ShowRec (TmFTuple ty pt) where
+instance ShowRec (TmFTuple ki ty pt) where
   liftShowsPrecRec _ slR _ _ n (TmTupleF xs) =
     showsUnaryWith (const slR) "TmTupleF" n xs
   liftShowsPrecRec sR _ _ _ n (TmTupleIxF x i) =
     showsBinaryWith sR showsPrec "TmTupleIxF" n x i
 
-instance Bound (TmFTuple ty pt) where
+instance Bound (TmFTuple ki ty pt) where
   TmTupleF tms >>>= f = TmTupleF (fmap (>>= f) tms)
   TmTupleIxF tm i >>>= f = TmTupleIxF (tm >>= f) i
 
-instance Bitransversable (TmFTuple ty tp) where
+instance Bitransversable (TmFTuple ki ty pt) where
   bitransverse fT fL (TmTupleF tms) = TmTupleF <$> traverse (fT fL) tms
   bitransverse fT fL (TmTupleIxF tm i) = TmTupleIxF <$> fT fL tm <*> pure i
 
-class AsTmTuple ty pt tm where
-  _TmTupleP :: Prism' (tm ty pt k a) (TmFTuple ty pt k a)
+class AsTmTuple ki ty pt tm where
+  _TmTupleP :: Prism' (tm ki ty pt f a) (TmFTuple ki ty pt f a)
 
-  _TmTuple :: Prism' (Term ty pt tm a) [Term ty pt tm a]
+  _TmTuple :: Prism' (Term ki ty pt tm a) [Term ki ty pt tm a]
   _TmTuple = _Wrapped . _ATerm . _TmTupleP . _TmTupleF . mapping _Unwrapped
 
-  _TmTupleIx :: Prism' (Term ty pt tm a) (Term ty pt tm a, Int)
+  _TmTupleIx :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Int)
   _TmTupleIx = _Wrapped . _ATerm . _TmTupleP . _TmTupleIxF . bimapping _Unwrapped id
 
-instance AsTmTuple ty pt TmFTuple where
+instance AsTmTuple ki ty pt TmFTuple where
   _TmTupleP = id
 
-instance {-# OVERLAPPABLE #-} AsTmTuple ty pt (TmSum xs) => AsTmTuple ty pt (TmSum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} AsTmTuple ki ty pt (TmSum xs) => AsTmTuple ki ty pt (TmSum (x ': xs)) where
   _TmTupleP = _TmNext . _TmTupleP
 
-instance {-# OVERLAPPING #-} AsTmTuple ty pt (TmSum (TmFTuple ': xs)) where
+instance {-# OVERLAPPING #-} AsTmTuple ki ty pt (TmSum (TmFTuple ': xs)) where
   _TmTupleP = _TmNow . _TmTupleP

@@ -23,17 +23,17 @@ import Fragment.Pair.Ast.Type
 import Fragment.Pair.Ast.Pattern
 import Fragment.Pair.Ast.Term
 
-tyPair :: AsTyPair ty => Type ty a -> Type ty a -> Type ty a
+tyPair :: AsTyPair ki ty => Type ki ty a -> Type ki ty a -> Type ki ty a
 tyPair = curry $ review _TyPair
 
 ptPair :: AsPtPair pt => Pattern pt a -> Pattern pt a -> Pattern pt a
 ptPair = curry $ review _PtPair
 
-tmPair :: AsTmPair ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
+tmPair :: AsTmPair ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmPair = curry $ review _TmPair
 
-tmFst :: AsTmPair ty pt tm => Term ty pt tm a -> Term ty pt tm a
+tmFst :: AsTmPair ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a
 tmFst = review _TmFst
 
-tmSnd :: AsTmPair ty pt tm => Term ty pt tm a -> Term ty pt tm a
+tmSnd :: AsTmPair ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a
 tmSnd = review _TmSnd

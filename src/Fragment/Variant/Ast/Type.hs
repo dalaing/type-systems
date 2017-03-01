@@ -10,6 +10,7 @@ Portability : non-portable
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
@@ -36,7 +37,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.NonEmpty
 
-data TyFVariant f a =
+data TyFVariant (ki :: * -> *) f a =
   TyVariantF (NE (T.Text, f a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -46,14 +47,14 @@ deriveEq1 ''TyFVariant
 deriveOrd1 ''TyFVariant
 deriveShow1 ''TyFVariant
 
-instance EqRec TyFVariant where
+instance EqRec (TyFVariant ki) where
   liftEqRec eR _ (TyVariantF (NE vs1)) (TyVariantF (NE vs2)) =
     let
       f (l1, v1) (l2, v2) = l1 == l2 && eR v1 v2
     in
       and $ N.zipWith f vs1 vs2
 
-instance OrdRec TyFVariant where
+instance OrdRec (TyFVariant ki) where
   liftCompareRec cR _ (TyVariantF (NE vs1)) (TyVariantF (NE vs2)) =
     let
       f [] [] = EQ
@@ -68,7 +69,7 @@ instance OrdRec TyFVariant where
     in
       f (N.toList vs1) (N.toList vs2)
 
-instance ShowRec TyFVariant where
+instance ShowRec (TyFVariant ki) where
   liftShowsPrecRec sR _ _ _ n (TyVariantF (NE xs)) =
     let
       g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
@@ -78,23 +79,23 @@ instance ShowRec TyFVariant where
     in
       showsUnaryWith f "TyVariantF" n (N.toList xs)
 
-instance Bound TyFVariant where
+instance Bound (TyFVariant ki) where
   TyVariantF tys >>>= f = TyVariantF (fmap (fmap (>>= f)) tys)
 
-instance Bitransversable TyFVariant where
+instance Bitransversable (TyFVariant ki) where
   bitransverse fT fL (TyVariantF ps) = TyVariantF <$> traverse (traverse (fT fL)) ps
 
-class AsTyVariant ty where
-  _TyVariantP :: Prism' (ty k a) (TyFVariant k a)
+class AsTyVariant ki ty where
+  _TyVariantP :: Prism' (ty ki j a) (TyFVariant ki j a)
 
-  _TyVariant :: Prism' (Type ty a) (N.NonEmpty (T.Text, Type ty a))
+  _TyVariant :: Prism' (Type ki ty a) (N.NonEmpty (T.Text, Type ki ty a))
   _TyVariant = _TyTree . _TyVariantP . _TyVariantF . _Wrapped
 
-instance AsTyVariant TyFVariant where
+instance AsTyVariant ki TyFVariant where
   _TyVariantP = id
 
-instance {-# OVERLAPPABLE #-} AsTyVariant (TySum xs) => AsTyVariant (TySum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} AsTyVariant ki (TySum xs) => AsTyVariant ki (TySum (x ': xs)) where
   _TyVariantP = _TyNext . _TyVariantP
 
-instance {-# OVERLAPPING #-} AsTyVariant (TySum (TyFVariant ': xs)) where
+instance {-# OVERLAPPING #-} AsTyVariant ki (TySum (TyFVariant ': xs)) where
   _TyVariantP = _TyNow . _TyVariantP

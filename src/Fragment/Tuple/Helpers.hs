@@ -22,14 +22,14 @@ import Fragment.Tuple.Ast.Type
 import Fragment.Tuple.Ast.Pattern
 import Fragment.Tuple.Ast.Term
 
-tyTuple :: AsTyTuple ty => [Type ty a] -> Type ty a
+tyTuple :: AsTyTuple ki ty => [Type ki ty a] -> Type ki ty a
 tyTuple = review _TyTuple
 
 ptTuple :: AsPtTuple pt => [Pattern pt a] -> Pattern pt a
 ptTuple = review _PtTuple
 
-tmTuple :: AsTmTuple ty pt tm => [Term ty pt tm a] -> Term ty pt tm a
+tmTuple :: AsTmTuple ki ty pt tm => [Term ki ty pt tm a] -> Term ki ty pt tm a
 tmTuple = review _TmTuple
 
-tmTupleIx :: AsTmTuple ty pt tm => Term ty pt tm a -> Int -> Term ty pt tm a
+tmTupleIx :: AsTmTuple ki ty pt tm => Term ki ty pt tm a -> Int -> Term ki ty pt tm a
 tmTupleIx = curry $ review _TmTupleIx

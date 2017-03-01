@@ -26,21 +26,21 @@ import Fragment.Record.Ast.Error
 import Fragment.Record.Ast.Pattern
 import Fragment.Record.Ast.Term
 
-equivRecord :: AsTyRecord ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivRecord :: AsTyRecord ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
 equivRecord equivFn ty1 ty2 = do
   rs1 <- preview _TyRecord ty1
   rs2 <- preview _TyRecord ty2
   let f = fmap snd . sortOn fst
   return . and $ zipWith equivFn (f rs1) (f rs2)
 
-inferTmRecord :: (Monad m, AsTyRecord ty, AsTmRecord ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmRecord :: (Monad m, AsTyRecord ki ty, AsTmRecord ki ty pt tm) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmRecord inferFn tm = do
   tms <- preview _TmRecord tm
   return $ do
     tys <- traverse (traverse inferFn) tms
     return $ review _TyRecord tys
 
-inferTmRecordIx :: (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsTyRecord ty, AsTmRecord ty pt tm) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmRecordIx :: (MonadError e m, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsTyRecord ki ty, AsTmRecord ki ty pt tm) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmRecordIx inferFn tm = do
   (tmT, i) <- preview _TmRecordIx tm
   return $ do
@@ -48,7 +48,7 @@ inferTmRecordIx inferFn tm = do
     tys <- expectTyRecord tyT
     lookupRecord tys i
 
-checkRecord :: (MonadError e m, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsPtRecord pt, AsTyRecord ty) => (Pattern pt a -> Type ty a -> m [Type ty a]) -> Pattern pt a -> Type ty a -> Maybe (m [Type ty a])
+checkRecord :: (MonadError e m, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsPtRecord pt, AsTyRecord ki ty) => (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Pattern pt a -> Type ki ty a -> Maybe (m [Type ki ty a])
 checkRecord checkFn p ty = do
   ps <- preview _PtRecord p
   return $ do
@@ -59,10 +59,10 @@ checkRecord checkFn p ty = do
           checkFn lp typ
     fmap mconcat . traverse f $ ps
 
-type RecordInferContext e w s r m ty pt tm a = (InferContext e w s r m ty pt tm a, AsTyRecord ty, AsExpectedTyRecord e ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ty pt tm)
+type RecordInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyRecord ki ty, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ki ty pt tm)
 
-recordInferRules :: RecordInferContext e w s r m ty pt tm a
-                => InferInput e w s r m ty pt tm a
+recordInferRules :: RecordInferContext e w s r m ki ty pt tm a
+                => InferInput e w s r m ki ty pt tm a
 recordInferRules =
   InferInput
     [ EquivRecurse equivRecord ]

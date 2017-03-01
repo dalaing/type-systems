@@ -10,6 +10,7 @@ Portability : non-portable
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
@@ -33,7 +34,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFRecord f a =
+data TyFRecord (ki :: * -> *) f a =
   TyRecordF [(T.Text, f a)]
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -43,14 +44,14 @@ deriveEq1 ''TyFRecord
 deriveOrd1 ''TyFRecord
 deriveShow1 ''TyFRecord
 
-instance EqRec TyFRecord where
+instance EqRec (TyFRecord ki) where
   liftEqRec eR _ (TyRecordF xs) (TyRecordF ys) =
     let
       f (l1, x1) (l2, x2) = l1 == l2 && eR x1 x2
     in
       and $ zipWith f xs ys
 
-instance OrdRec TyFRecord where
+instance OrdRec (TyFRecord ki) where
   liftCompareRec _ _ (TyRecordF []) (TyRecordF []) = EQ
   liftCompareRec _ _ (TyRecordF []) (TyRecordF (_ : _)) = LT
   liftCompareRec _ _ (TyRecordF (_ : _)) (TyRecordF []) = GT
@@ -61,7 +62,7 @@ instance OrdRec TyFRecord where
         z -> z
       z -> z
 
-instance ShowRec TyFRecord where
+instance ShowRec (TyFRecord ki) where
   liftShowsPrecRec sR _ _ _ n (TyRecordF xs) =
     let
       g m (l, x) = showString ("(" ++ T.unpack l ++ ", ") .
@@ -71,23 +72,23 @@ instance ShowRec TyFRecord where
     in
       showsUnaryWith f "TyRecordF" n xs
 
-instance Bound TyFRecord where
+instance Bound (TyFRecord ki) where
   TyRecordF tys >>>= f = TyRecordF (fmap (fmap (>>= f)) tys)
 
-instance Bitransversable TyFRecord where
+instance Bitransversable (TyFRecord ki) where
   bitransverse fT fL (TyRecordF rs) = TyRecordF <$> traverse (traverse (fT fL)) rs
 
-class AsTyRecord ty where
-  _TyRecordP :: Prism' (ty k a) (TyFRecord k a)
+class AsTyRecord ki ty where
+  _TyRecordP :: Prism' (ty ki j a) (TyFRecord ki j a)
 
-  _TyRecord :: Prism' (Type ty a) [(T.Text, Type ty a)]
+  _TyRecord :: Prism' (Type ki ty a) [(T.Text, Type ki ty a)]
   _TyRecord = _TyTree . _TyRecordP . _TyRecordF
 
-instance AsTyRecord TyFRecord where
+instance AsTyRecord ki TyFRecord where
   _TyRecordP = id
 
-instance {-# OVERLAPPABLE #-} AsTyRecord (TySum xs) => AsTyRecord (TySum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} AsTyRecord ki (TySum xs) => AsTyRecord ki (TySum (x ': xs)) where
   _TyRecordP = _TyNext . _TyRecordP
 
-instance {-# OVERLAPPING #-} AsTyRecord (TySum (TyFRecord ': xs)) where
+instance {-# OVERLAPPING #-} AsTyRecord ki (TySum (TyFRecord ': xs)) where
   _TyRecordP = _TyNow . _TyRecordP

@@ -15,5 +15,5 @@ import Ast.Term
 
 import Fragment.If.Ast.Term
 
-tmIf :: AsTmIf ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
+tmIf :: AsTmIf ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmIf b t f = review _TmIf (b, t, f)

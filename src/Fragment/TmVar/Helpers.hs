@@ -13,5 +13,5 @@ import Control.Lens (review)
 
 import Ast.Term
 
-tmVar :: a -> Term ty pt tm a
+tmVar :: a -> Term ki ty pt tm a
 tmVar = review _TmVar

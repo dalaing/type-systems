@@ -33,16 +33,16 @@ import Fragment.HM.Ast.Type
 import Fragment.HM.Ast.Error
 import Fragment.HM.Ast.Term
 
-equivArr :: AsTyHM ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivArr :: AsTyHM ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
 equivArr equivFn ty1 ty2 = do
   (p1a, p1b) <- preview _TyArr ty1
   (p2a, p2b) <- preview _TyArr ty2
   return $ equivFn p1a p2a && equivFn p1b p2b
 
-unifyArr :: (UnificationContext e m ty a, AsTyHM ty)
-          => ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ())
-          -> UConstraint ty a
-          -> Maybe (EquivT s (Type ty a) (Type ty a) m ())
+unifyArr :: (UnificationContext e m ki ty a, AsTyHM ki ty)
+          => ([Type ki ty a] -> [Type ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())
+          -> UConstraint ki ty a
+          -> Maybe (EquivT s (Type ki ty a) (Type ki ty a) m ())
 unifyArr unifyMany u = do
   (ty1, ty2) <- preview _UCEq u
   (p1a, p1b) <- preview _TyArr ty1
@@ -54,10 +54,10 @@ unifyArr unifyMany u = do
     c2b <- classDesc p2b
     unifyMany [c1a, c1b] [c2a, c2b]
 
-inferTmLam :: (Ord a, AstBound ty pt tm, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTyHM ty, AsTmHM ty pt tm, HasTermContext r ty a)
-           => (Term ty pt tm a -> m (Type ty a))
-           -> Term ty pt tm a
-           -> Maybe (m (Type ty a))
+inferTmLam :: (Ord a, AstBound ki ty pt tm, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTyHM ki ty, AsTmHM ki ty pt tm, HasTermContext r ki ty a)
+           => (Term ki ty pt tm a -> m (Type ki ty a))
+           -> Term ki ty pt tm a
+           -> Maybe (m (Type ki ty a))
 inferTmLam inferFn tm = do
   s <- preview _TmLam tm
   return $ do
@@ -67,10 +67,10 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyV) $ inferFn tmF
     return $ review _TyArr (tyV, tyRet)
 
-inferTmApp :: (Eq a, EqRec ty, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsTyHM ty, AsTmHM ty pt tm, AsExpectedTyArr e ty a, AsExpectedEq e ty a)
-           => (Term ty pt tm a -> UnifyT ty a m (Type ty a))
-           -> Term ty pt tm a
-           -> Maybe (UnifyT ty a m (Type ty a))
+inferTmApp :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsTyHM ki ty, AsTmHM ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedEq e ki ty a)
+           => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
+           -> Term ki ty pt tm a
+           -> Maybe (UnifyT ki ty a m (Type ki ty a))
 inferTmApp inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
@@ -81,10 +81,10 @@ inferTmApp inferFn tm = do
     expectEq tyF (review _TyArr (tyX, tyV))
     return tyV
 
-type HMInferContext e w s r m ty pt tm a = (Ord a, InferContext e w s r m ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsTyHM ty, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsTmHM ty pt tm)
+type HMInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTyHM ki ty, AsExpectedEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmHM ki ty pt tm)
 
-hmInferRules :: HMInferContext e w s r m ty pt tm a
-             => InferInput e w s r m ty pt tm a
+hmInferRules :: HMInferContext e w s r m ki ty pt tm a
+             => InferInput e w s r m ki ty pt tm a
 hmInferRules =
   InferInput
     [ EquivRecurse equivArr ]

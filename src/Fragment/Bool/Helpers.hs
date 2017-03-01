@@ -23,17 +23,17 @@ import Fragment.Bool.Ast.Type
 import Fragment.Bool.Ast.Pattern
 import Fragment.Bool.Ast.Term
 
-tyBool :: AsTyBool ty => Type ty a
+tyBool :: AsTyBool ki ty => Type ki ty a
 tyBool = review _TyBool ()
 
 ptBool :: AsPtBool pt => Bool -> Pattern pt a
 ptBool = review _PtBool
 
-tmBool :: AsTmBool ty pt tm => Bool -> Term ty pt tm a
+tmBool :: AsTmBool ki ty pt tm => Bool -> Term ki ty pt tm a
 tmBool = review _TmBool
 
-tmAnd :: AsTmBool ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
+tmAnd :: AsTmBool ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmAnd = curry $ review _TmAnd
 
-tmOr :: AsTmBool ty pt tm => Term ty pt tm a -> Term ty pt tm a -> Term ty pt tm a
+tmOr :: AsTmBool ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmOr = curry $ review _TmOr

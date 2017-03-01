@@ -58,80 +58,80 @@ import Data.Functor.Rec
 -- maybe wait until typeclasses and or HML
 -- - constraint resolution will get interesting with typeclasses
 -- - our general machinery will get more involved with HML and friends
-data UConstraint ty a =
-    UCEq (Type ty a) (Type ty a)
+data UConstraint ki ty a =
+    UCEq (Type ki ty a) (Type ki ty a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''UConstraint
 
-class AsUConstraint w ty a | w -> ty, w -> a where
-  _UConstraint :: Prism' w (UConstraint ty a)
+class AsUConstraint w ki ty a | w -> ty, w -> a where
+  _UConstraint :: Prism' w (UConstraint ki ty a)
 
-instance AsUConstraint (UConstraint ty a) ty a where
+instance AsUConstraint (UConstraint ki ty a) ki ty a where
   _UConstraint = id
 
-data ErrOccursError ty a =
-  ErrOccursError a (Type ty a)
+data ErrOccursError ki ty a =
+  ErrOccursError a (Type ki ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrOccursError
 
-class AsOccursError e ty a where -- | e -> ty, e -> a where
-  _OccursError :: Prism' e (a, Type ty a)
+class AsOccursError e ki ty a where -- | e -> ty, e -> a where
+  _OccursError :: Prism' e (a, Type ki ty a)
 
-instance AsOccursError (ErrOccursError ty a) ty a where
+instance AsOccursError (ErrOccursError ki ty a) ki ty a where
   _OccursError = _ErrOccursError
 
-instance {-# OVERLAPPABLE #-} AsOccursError (ErrSum xs) ty a => AsOccursError (ErrSum (x ': xs)) ty a where
+instance {-# OVERLAPPABLE #-} AsOccursError (ErrSum xs) ki ty a => AsOccursError (ErrSum (x ': xs)) ki ty a where
   _OccursError = _ErrNext . _OccursError
 
-instance {-# OVERLAPPING #-} AsOccursError (ErrSum (ErrOccursError ty a ': xs)) ty a where
+instance {-# OVERLAPPING #-} AsOccursError (ErrSum (ErrOccursError ki ty a ': xs)) ki ty a where
   _OccursError = _ErrNow . _OccursError
 
-data ErrUnificationMismatch ty a =
-  ErrUnificationMismatch [Type ty a] [Type ty a]
+data ErrUnificationMismatch ki ty a =
+  ErrUnificationMismatch [Type ki ty a] [Type ki ty a]
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrUnificationMismatch
 
-class AsUnificationMismatch e ty a where -- | e -> ty, e -> a where
-  _UnificationMismatch :: Prism' e ([Type ty a], [Type ty a])
+class AsUnificationMismatch e ki ty a where -- | e -> ty, e -> a where
+  _UnificationMismatch :: Prism' e ([Type ki ty a], [Type ki ty a])
 
-instance AsUnificationMismatch (ErrUnificationMismatch ty a) ty a where
+instance AsUnificationMismatch (ErrUnificationMismatch ki ty a) ki ty a where
   _UnificationMismatch = _ErrUnificationMismatch
 
-instance {-# OVERLAPPABLE #-} AsUnificationMismatch (ErrSum xs) ty a => AsUnificationMismatch (ErrSum (x ': xs)) ty a where
+instance {-# OVERLAPPABLE #-} AsUnificationMismatch (ErrSum xs) ki ty a => AsUnificationMismatch (ErrSum (x ': xs)) ki ty a where
   _UnificationMismatch = _ErrNext . _UnificationMismatch
 
-instance {-# OVERLAPPING #-} AsUnificationMismatch (ErrSum (ErrUnificationMismatch ty a ': xs)) ty a where
+instance {-# OVERLAPPING #-} AsUnificationMismatch (ErrSum (ErrUnificationMismatch ki ty a ': xs)) ki ty a where
   _UnificationMismatch = _ErrNow . _UnificationMismatch
 
-data UnificationRule m ty a =
-    UnificationOne (forall s. (Type ty a -> Type ty a -> EquivT s (Type ty a) (Type ty a) m ()) -> UConstraint ty a -> Maybe (EquivT s (Type ty a) (Type ty a) m ()))
-  | UnificationMany (forall s. ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ()) -> UConstraint ty a -> Maybe (EquivT s (Type ty a) (Type ty a) m ()))
+data UnificationRule m ki ty a =
+    UnificationOne (forall s. (Type ki ty a -> Type ki ty a -> EquivT s (Type ki ty a) (Type ki ty a) m ()) -> UConstraint ki ty a -> Maybe (EquivT s (Type ki ty a) (Type ki ty a) m ()))
+  | UnificationMany (forall s. ([Type ki ty a] -> [Type ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ()) -> UConstraint ki ty a -> Maybe (EquivT s (Type ki ty a) (Type ki ty a) m ()))
 
-fixUnificationRule :: (Type ty a -> Type ty a -> EquivT s (Type ty a) (Type ty a) m ())
-                   -> ([Type ty a] -> [Type ty a] -> EquivT s (Type ty a) (Type ty a) m ())
-                   -> UnificationRule m ty a
-                   -> UConstraint ty a
-                   -> Maybe (EquivT s (Type ty a) (Type ty a) m ())
+fixUnificationRule :: (Type ki ty a -> Type ki ty a -> EquivT s (Type ki ty a) (Type ki ty a) m ())
+                   -> ([Type ki ty a] -> [Type ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())
+                   -> UnificationRule m ki ty a
+                   -> UConstraint ki ty a
+                   -> Maybe (EquivT s (Type ki ty a) (Type ki ty a) m ())
 fixUnificationRule oneFn _ (UnificationOne f) = f oneFn
 fixUnificationRule _ manyFn (UnificationMany f) = f manyFn
 
-mkUnifyMany :: (Ord a, OrdRec ty, Bitransversable ty, MonadError e m, AsOccursError e ty a, AsUnificationMismatch e ty a)
-            => (UConstraint ty a -> EquivT s (Type ty a) (Type ty a) m ())
-            -> [Type ty a]
-            -> [Type ty a]
-            -> EquivT s (Type ty a) (Type ty a) m ()
+mkUnifyMany :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+            => (UConstraint ki ty a -> EquivT s (Type ki ty a) (Type ki ty a) m ())
+            -> [Type ki ty a]
+            -> [Type ki ty a]
+            -> EquivT s (Type ki ty a) (Type ki ty a) m ()
 mkUnifyMany unify1 ty1 ty2
   | length ty1 == length ty2 = zipWithM_ (\x y -> unify1 (UCEq x y)) ty1 ty2
   | otherwise = throwing _UnificationMismatch (ty1, ty2)
 
-mkUnify1 :: (Ord a, OrdRec ty, Bitransversable ty, MonadError e m, AsExpectedEq e ty a, AsOccursError e ty a, AsUnificationMismatch e ty a)
-         => (Type ty a -> Type ty a -> Bool)
-         -> [UnificationRule m ty a]
-         -> UConstraint ty a
-         -> EquivT s (Type ty a) (Type ty a) m ()
+mkUnify1 :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+         => (Type ki ty a -> Type ki ty a -> Bool)
+         -> [UnificationRule m ki ty a]
+         -> UConstraint ki ty a
+         -> EquivT s (Type ki ty a) (Type ki ty a) m ()
 mkUnify1 tyEquiv rules =
   let
     unifyMany = mkUnifyMany unify1
@@ -159,7 +159,7 @@ mkUnify1 tyEquiv rules =
   in
     unify1
 
-combineType :: (Ord a, Bitransversable ty) => Type ty a -> Type ty a -> Type ty a
+combineType :: (Ord a, Bitransversable (ty ki)) => Type ki ty a -> Type ki ty a -> Type ki ty a
 combineType ty1 ty2 = case (preview _TyVar ty1, preview _TyVar ty2) of
   (Just _, Just _) -> ty1
   (Just _, _) -> ty2
@@ -170,25 +170,25 @@ combineType ty1 ty2 = case (preview _TyVar ty1, preview _TyVar ty2) of
     GT -> ty2
 
 -- Does this belong in Ast.Type or Ast.Type.Var?
-newtype TypeSubstitution ty a = TypeSubstitution { unTS :: M.Map a (Type ty a) }
+newtype TypeSubstitution ki ty a = TypeSubstitution { unTS :: M.Map a (Type ki ty a) }
 
-tySubst :: (Ord a, Bound ty, Bitransversable ty) => TypeSubstitution ty a -> Type ty a -> Type ty a
+tySubst :: (Ord a, Bound (ty ki), Bitransversable (ty ki)) => TypeSubstitution ki ty a -> Type ki ty a -> Type ki ty a
 tySubst (TypeSubstitution m) ty =
   ty >>= \k ->
     fromMaybe (review _TyVar k) .
     M.lookup k $
     m
 
-instance (Ord a, Bound ty, Bitransversable ty) => Monoid (TypeSubstitution ty a) where
+instance (Ord a, Bound (ty ki), Bitransversable (ty ki)) => Monoid (TypeSubstitution ki ty a) where
   mempty = TypeSubstitution mempty
   mappend ts1@(TypeSubstitution m1) ts2@(TypeSubstitution m2) =
     TypeSubstitution $ M.unionWith combineType (fmap (tySubst ts2) m1) (fmap (tySubst ts1) m2)
 
-mkUnify' :: (Ord a, OrdRec ty, Bitransversable ty, MonadError e m, AsExpectedEq e ty a, AsOccursError e ty a, AsUnificationMismatch e ty a)
-        => (Type ty a -> Type ty a -> Bool)
-        -> [UnificationRule m ty a]
-        -> [UConstraint ty a]
-        -> EquivT s (Type ty a) (Type ty a) m ()
+mkUnify' :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+        => (Type ki ty a -> Type ki ty a -> Bool)
+        -> [UnificationRule m ki ty a]
+        -> [UConstraint ki ty a]
+        -> EquivT s (Type ki ty a) (Type ki ty a) m ()
 mkUnify' tyEquiv rules =
   let
     unify1 = mkUnify1 tyEquiv rules
@@ -199,10 +199,10 @@ mkUnify' tyEquiv rules =
   in
     unify
 
-mkGatherTypeSubstitution :: (Ord a, OrdRec ty, Bound ty, Bitransversable ty, MonadError e m, AsExpectedEq e ty a, AsOccursError e ty a, AsUnificationMismatch e ty a)
-         => (forall s. [UConstraint ty a] -> EquivT s (Type ty a) (Type ty a) m ())
-         -> [UConstraint ty a]
-         -> m (TypeSubstitution ty a)
+mkGatherTypeSubstitution :: (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+         => (forall s. [UConstraint ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())
+         -> [UConstraint ki ty a]
+         -> m (TypeSubstitution ki ty a)
 mkGatherTypeSubstitution unify cs =
   runEquivT id combineType $ do
     unify cs
@@ -213,12 +213,12 @@ mkGatherTypeSubstitution unify cs =
 -- probably want a version that has a substitution map stored in a writer monad, updates on calls to unify
 -- - this would be particularly useful for the online version of HM
 
-type UnificationContext e m ty a = (Ord a, OrdRec ty, Bound ty, Bitransversable ty, MonadError e m, AsExpectedEq e ty a, AsOccursError e ty a, AsUnificationMismatch e ty a)
+type UnificationContext e m ki ty a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
 
-mkUnify :: UnificationContext e m ty a
-        => (Type ty a -> Type ty a -> Bool)
-        -> [UnificationRule m ty a]
-        -> [UConstraint ty a]
-        -> m (TypeSubstitution ty a)
+mkUnify :: UnificationContext e m ki ty a
+        => (Type ki ty a -> Type ki ty a -> Bool)
+        -> [UnificationRule m ki ty a]
+        -> [UConstraint ki ty a]
+        -> m (TypeSubstitution ki ty a)
 mkUnify tyEquiv rules =
   mkGatherTypeSubstitution (mkUnify' tyEquiv rules)

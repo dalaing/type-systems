@@ -24,14 +24,14 @@ import Fragment.Record.Ast.Type
 import Fragment.Record.Ast.Pattern
 import Fragment.Record.Ast.Term
 
-tyRecord :: AsTyRecord ty => [(T.Text, Type ty a)] -> Type ty a
+tyRecord :: AsTyRecord ki ty => [(T.Text, Type ki ty a)] -> Type ki ty a
 tyRecord = review _TyRecord
 
 ptRecord :: AsPtRecord pt => [(T.Text, Pattern pt a)] -> Pattern pt a
 ptRecord = review _PtRecord
 
-tmRecord :: AsTmRecord ty pt tm => [(T.Text, Term ty pt tm a)] -> Term ty pt tm a
+tmRecord :: AsTmRecord ki ty pt tm => [(T.Text, Term ki ty pt tm a)] -> Term ki ty pt tm a
 tmRecord = review _TmRecord
 
-tmRecordIx :: AsTmRecord ty pt tm => Term ty pt tm a -> T.Text -> Term ty pt tm a
+tmRecordIx :: AsTmRecord ki ty pt tm => Term ki ty pt tm a -> T.Text -> Term ki ty pt tm a
 tmRecordIx = curry $ review _TmRecordIx

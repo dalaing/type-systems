@@ -30,13 +30,13 @@ import Fragment.STLC.Ast.Type
 import Fragment.STLC.Ast.Error
 import Fragment.STLC.Ast.Term
 
-equivArr :: AsTySTLC ty => (Type ty a -> Type ty a -> Bool) -> Type ty a -> Type ty a -> Maybe Bool
+equivArr :: AsTySTLC ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
 equivArr equivFn ty1 ty2 = do
   (p1a, p1b) <- preview _TyArr ty1
   (p2a, p2b) <- preview _TyArr ty2
   return $ equivFn p1a p2a && equivFn p1b p2b
 
-inferTmLam :: (Ord a, AstBound ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ty, AsTmSTLC ty pt tm, HasTermContext r ty a) => (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmLam :: (Ord a, AstBound ki ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ki ty, AsTmSTLC ki ty pt tm, HasTermContext r ki ty a) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmLam inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
   return $ do
@@ -45,7 +45,7 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq a, EqRec ty, MonadError e m, AsTySTLC ty, AsTmSTLC ty pt tm, AsExpectedTyArr e ty a, AsExpectedEq e ty a) => (Type ty a -> Type ty a -> Bool) -> (Term ty pt tm a -> m (Type ty a)) -> Term ty pt tm a -> Maybe (m (Type ty a))
+inferTmApp :: (Eq a, EqRec (ty ki), MonadError e m, AsTySTLC ki ty, AsTmSTLC ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmApp tyEquiv inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
@@ -55,10 +55,10 @@ inferTmApp tyEquiv inferFn tm = do
     expectEq tyEquiv tyArg tyX
     return tyRet
 
-type STLCInferContext e w s r m ty pt tm a = (Ord a, InferContext e w s r m ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ty a, AsTySTLC ty, AsExpectedEq e ty a, AsExpectedTyArr e ty a, AsTmSTLC ty pt tm)
+type STLCInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTySTLC ki ty, AsExpectedEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmSTLC ki ty pt tm)
 
-stlcInferRules :: STLCInferContext e w s r m ty pt tm a
-               => InferInput e w s r m ty pt tm a
+stlcInferRules :: STLCInferContext e w s r m ki ty pt tm a
+               => InferInput e w s r m ki ty pt tm a
 stlcInferRules =
   InferInput
     [ EquivRecurse equivArr ]

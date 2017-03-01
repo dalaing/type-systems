@@ -74,14 +74,15 @@ type Rules =
 rules :: Proxy Rules
 rules = Proxy
 
+type KindF = RKindF Rules
 type TypeF = RTypeF Rules
 type PatternF = RPatternF Rules
 type TermF = RTermF Rules
 
-type LTerm = Term TypeF PatternF TermF String
-type LType = Type TypeF String
-type LError = RError TypeF PatternF TermF String Rules
-type LWarning = RWarning TypeF PatternF TermF String Rules
+type LTerm = Term KindF TypeF PatternF TermF String
+type LType = Type KindF TypeF String
+type LError = RError KindF TypeF PatternF TermF String Rules
+type LWarning = RWarning KindF TypeF PatternF TermF String Rules
 
 type M e w s r = StateT s (ReaderT r (ExceptT e (Writer [w])))
 

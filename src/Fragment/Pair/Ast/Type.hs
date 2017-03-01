@@ -10,6 +10,7 @@ Portability : non-portable
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
@@ -30,7 +31,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFPair f a =
+data TyFPair (ki :: * -> *) f a =
   TyPairF (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -40,37 +41,37 @@ deriveEq1 ''TyFPair
 deriveOrd1 ''TyFPair
 deriveShow1 ''TyFPair
 
-instance EqRec TyFPair where
+instance EqRec (TyFPair ki) where
   liftEqRec eR _ (TyPairF x1 y1) (TyPairF x2 y2) =
     eR x1 x2 && eR y1 y2
 
-instance OrdRec TyFPair where
+instance OrdRec (TyFPair ki) where
   liftCompareRec cR _ (TyPairF x1 y1) (TyPairF x2 y2) =
     case cR x1 x2 of
       EQ -> cR y1 y2
       x -> x
 
-instance ShowRec TyFPair where
+instance ShowRec (TyFPair ki) where
   liftShowsPrecRec sR _ _ _ n (TyPairF x y) =
     showsBinaryWith sR sR "TyPairF" n x y
 
-instance Bound TyFPair where
+instance Bound (TyFPair ki) where
   TyPairF x y >>>= f = TyPairF (x >>= f) (y >>= f)
 
-instance Bitransversable TyFPair where
+instance Bitransversable (TyFPair ki) where
   bitransverse fT fL (TyPairF x y) = TyPairF <$> fT fL x <*> fT fL y
 
-class AsTyPair ty where
-  _TyPairP :: Prism' (ty k a) (TyFPair k a)
+class AsTyPair ki ty where
+  _TyPairP :: Prism' (ty ki j a) (TyFPair ki j a)
 
-  _TyPair :: Prism' (Type ty a) (Type ty a, Type ty a)
+  _TyPair :: Prism' (Type ki ty a) (Type ki ty a, Type ki ty a)
   _TyPair = _TyTree . _TyPairP . _TyPairF
 
-instance AsTyPair TyFPair where
+instance AsTyPair ki TyFPair where
   _TyPairP = id
 
-instance {-# OVERLAPPABLE #-} AsTyPair (TySum xs) => AsTyPair (TySum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} AsTyPair ki (TySum xs) => AsTyPair ki (TySum (x ': xs)) where
   _TyPairP = _TyNext . _TyPairP
 
-instance {-# OVERLAPPING #-} AsTyPair (TySum (TyFPair ': xs)) where
+instance {-# OVERLAPPING #-} AsTyPair ki (TySum (TyFPair ': xs)) where
   _TyPairP = _TyNow . _TyPairP

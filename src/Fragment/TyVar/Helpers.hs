@@ -13,5 +13,5 @@ import Control.Lens (review)
 
 import Ast.Type
 
-tyVar :: a -> Type ty a
+tyVar :: a -> Type ki ty a
 tyVar = review _TyVar

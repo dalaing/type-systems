@@ -22,12 +22,12 @@ import Fragment.Record.Rules.Eval
 data RRecord
 
 instance RulesIn RRecord where
-  type RuleInferSyntaxContext e w s r m ty pt tm a RRecord = SD.RecordInferContext e w s r m ty pt tm a
-  type RuleInferOfflineContext e w s r m ty pt tm a RRecord = UO.RecordInferContext e w s r m ty pt tm a
-  type RuleEvalContext ty pt tm a RRecord = RecordEvalContext ty pt tm a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RRecord = SD.RecordInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RRecord = UO.RecordInferContext e w s r m ki ty pt tm a
+  type RuleEvalContext ki ty pt tm a RRecord = RecordEvalContext ki ty pt tm a
   type TypeList RRecord = '[TyFRecord]
-  type ErrorList ty pt tm a RRecord = '[ErrExpectedTyRecord ty a, ErrRecordNotFound]
-  type WarningList ty pt tm a RRecord = '[]
+  type ErrorList ki ty pt tm a RRecord = '[ErrExpectedTyRecord ki ty a, ErrRecordNotFound]
+  type WarningList ki ty pt tm a RRecord = '[]
   type PatternList RRecord = '[PtFRecord]
   type TermList RRecord = '[TmFRecord]
 

@@ -36,24 +36,24 @@ import Ast.Error
 import Ast.Pattern
 import Ast.Term
 
-data ErrExpectedPattern ty pt tm a = ErrExpectedPattern (Ast ty pt tm (AstVar a))
+data ErrExpectedPattern ki ty pt tm a = ErrExpectedPattern (Ast ki ty pt tm (AstVar a))
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedPattern
 
-class AsExpectedPattern e ty pt tm a where -- | e -> ty, e -> pt, e -> tm, e -> a where
-  _ExpectedPattern :: Prism' e (Ast ty pt tm (AstVar a))
+class AsExpectedPattern e ki ty pt tm a where -- | e -> ty, e -> pt, e -> tm, e -> a where
+  _ExpectedPattern :: Prism' e (Ast ki ty pt tm (AstVar a))
 
-instance AsExpectedPattern (ErrExpectedPattern ty pt tm a) ty pt tm a where
+instance AsExpectedPattern (ErrExpectedPattern ki ty pt tm a) ki ty pt tm a where
   _ExpectedPattern = _ErrExpectedPattern
 
-instance {-# OVERLAPPABLE #-} AsExpectedPattern (ErrSum xs) ty pt tm a => AsExpectedPattern (ErrSum (x ': xs)) ty pt tm a where
+instance {-# OVERLAPPABLE #-} AsExpectedPattern (ErrSum xs) ki ty pt tm a => AsExpectedPattern (ErrSum (x ': xs)) ki ty pt tm a where
   _ExpectedPattern = _ErrNext . _ExpectedPattern
 
-instance {-# OVERLAPPING #-} AsExpectedPattern (ErrSum (ErrExpectedPattern ty pt tm a ': xs)) ty pt tm a where
+instance {-# OVERLAPPING #-} AsExpectedPattern (ErrSum (ErrExpectedPattern ki ty pt tm a ': xs)) ki ty pt tm a where
   _ExpectedPattern = _ErrNow . _ExpectedPattern
 
-expectPattern :: (MonadError e m, AsExpectedPattern e ty pt tm a, AstTransversable ty pt tm) => Ast ty pt tm (AstVar a) -> m (Pattern pt a)
+expectPattern :: (MonadError e m, AsExpectedPattern e ki ty pt tm a, AstTransversable ki ty pt tm) => Ast ki ty pt tm (AstVar a) -> m (Pattern pt a)
 expectPattern ast =
   case preview _Pattern ast of
     Just p -> return p

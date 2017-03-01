@@ -37,65 +37,65 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.NonEmpty
 
-data Alt (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data Alt (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
   Alt (k a) (Scope Int k a)
   deriving (Functor, Foldable, Traversable)
 
 makePrisms ''Alt
 
-instance (Eq1 tm, Monad tm) => Eq1 (Alt ty pt tm) where
+instance (Eq1 tm, Monad tm) => Eq1 (Alt ki ty pt tm) where
   liftEq = $(makeLiftEq ''Alt)
 
-instance (Ord1 tm, Monad tm) => Ord1 (Alt ty pt tm) where
+instance (Ord1 tm, Monad tm) => Ord1 (Alt ki ty pt tm) where
   liftCompare = $(makeLiftCompare ''Alt)
 
-instance (Show1 tm) => Show1 (Alt ty pt tm) where
+instance (Show1 tm) => Show1 (Alt ki ty pt tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''Alt)
 
-instance (Eq a, Eq1 tm, Monad tm) => Eq (Alt ty pt tm a) where (==) = eq1
-instance (Ord a, Ord1 tm, Monad tm) => Ord (Alt ty pt tm a) where compare = compare1
-instance (Show a, Show1 tm) => Show (Alt ty pt tm a) where showsPrec = showsPrec1
+instance (Eq a, Eq1 tm, Monad tm) => Eq (Alt ki ty pt tm a) where (==) = eq1
+instance (Ord a, Ord1 tm, Monad tm) => Ord (Alt ki ty pt tm a) where compare = compare1
+instance (Show a, Show1 tm) => Show (Alt ki ty pt tm a) where showsPrec = showsPrec1
 
-instance EqRec (Alt ty pt) where
+instance EqRec (Alt ki ty pt) where
   liftEqRec eR e (Alt pt1 tm1) (Alt pt2 tm2) =
     eR pt1 pt2 && liftEqRec eR e tm1 tm2
 
-instance OrdRec (Alt ty pt) where
+instance OrdRec (Alt ki ty pt) where
   liftCompareRec cR c (Alt pt1 tm1) (Alt pt2 tm2) =
     case cR pt1 pt2 of
       EQ -> liftCompareRec cR c tm1 tm2
       z -> z
 
-instance ShowRec (Alt ty pt) where
+instance ShowRec (Alt ki ty pt) where
   liftShowsPrecRec sR slR s sl n (Alt pt tm) =
     showsBinaryWith sR (liftShowsPrecRec sR slR s sl) "Alt" n pt tm
 
-instance Bound (Alt ty pt) where
+instance Bound (Alt ki ty pt) where
   Alt pt s >>>= f = Alt (pt >>= f) (s >>>= f)
 
-instance Bitransversable (Alt ty pt) where
+instance Bitransversable (Alt ki ty pt) where
   bitransverse fT fL (Alt pt s) = Alt <$> fT fL pt <*> bitransverse fT fL s
 
-data TmFCase (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
-    TmCaseF (f a) (NE (Alt ty pt f a))
+data TmFCase (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+    TmCaseF (f a) (NE (Alt ki ty pt f a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
 makePrisms ''TmFCase
 
-instance (Eq1 tm, Monad tm) => Eq1 (TmFCase ty pt tm) where
+instance (Eq1 tm, Monad tm) => Eq1 (TmFCase ki ty pt tm) where
   liftEq = $(makeLiftEq ''TmFCase)
 
-instance (Ord1 tm, Monad tm) => Ord1 (TmFCase ty pt tm) where
+instance (Ord1 tm, Monad tm) => Ord1 (TmFCase ki ty pt tm) where
   liftCompare = $(makeLiftCompare ''TmFCase)
 
-instance (Show1 tm) => Show1 (TmFCase ty pt tm) where
+instance (Show1 tm) => Show1 (TmFCase ki ty pt tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''TmFCase)
 
-instance EqRec (TmFCase ty pt) where
+instance EqRec (TmFCase ki ty pt) where
   liftEqRec eR e (TmCaseF tm1 (NE alts1)) (TmCaseF tm2 (NE alts2)) =
     eR tm1 tm2 && and (N.zipWith (liftEqRec eR e) alts1 alts2)
 
-instance OrdRec (TmFCase ty pt) where
+instance OrdRec (TmFCase ki ty pt) where
   liftCompareRec cR c (TmCaseF tm1 (NE alts1)) (TmCaseF tm2 (NE alts2)) =
     let
       f [] [] = EQ
@@ -110,27 +110,27 @@ instance OrdRec (TmFCase ty pt) where
         EQ -> f (N.toList alts1) (N.toList alts2)
         z -> z
 
-instance ShowRec (TmFCase ty pt) where
+instance ShowRec (TmFCase ki ty pt) where
   liftShowsPrecRec sR slR s sl n (TmCaseF tm (NE alts)) =
     showsBinaryWith sR (\_ -> liftShowListRec sR slR s sl) "TmCaseF" n tm (N.toList alts)
 
-instance Bound (TmFCase ty pt) where
+instance Bound (TmFCase ki ty pt) where
   TmCaseF tm alts >>>= f = TmCaseF (tm >>= f) (fmap (>>>= f) alts)
 
-instance Bitransversable (TmFCase ty tp) where
+instance Bitransversable (TmFCase ki ty tp) where
   bitransverse fT fL (TmCaseF tm alts) = TmCaseF <$> fT fL tm <*> traverse (bitransverse fT fL) alts
 
-class AstTransversable ty pt tm => AsTmCase ty pt tm where
-  _TmCaseP :: Prism' (tm ty pt k a) (TmFCase ty pt k a)
+class AstTransversable ki ty pt tm => AsTmCase ki ty pt tm where
+  _TmCaseP :: Prism' (tm ki ty pt f a) (TmFCase ki ty pt f a)
 
-  _TmCase :: Prism' (Term ty pt tm a) (Term ty pt tm a, N.NonEmpty (Alt ty pt (Ast ty pt tm) (AstVar a)))
+  _TmCase :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, N.NonEmpty (Alt ki ty pt (Ast ki ty pt tm) (AstVar a)))
   _TmCase = _Wrapped . _ATerm. _TmCaseP . _TmCaseF . bimapping _Unwrapped _Wrapped
 
-instance (Bitransversable ty, Bitransversable pt) => AsTmCase ty pt TmFCase where
+instance (Bitransversable (ty ki), Bitransversable pt) => AsTmCase ki ty pt TmFCase where
   _TmCaseP = id
 
-instance {-# OVERLAPPABLE #-} (Bitransversable (x ty pt), AsTmCase ty pt (TmSum xs)) => AsTmCase ty pt (TmSum (x ': xs)) where
+instance {-# OVERLAPPABLE #-} (Bitransversable (x ki ty pt), AsTmCase ki ty pt (TmSum xs)) => AsTmCase ki ty pt (TmSum (x ': xs)) where
   _TmCaseP = _TmNext . _TmCaseP
 
-instance {-# OVERLAPPING #-} (Bitransversable ty, Bitransversable pt, Bitransversable (TmSum xs ty pt)) => AsTmCase ty pt (TmSum (TmFCase ': xs)) where
+instance {-# OVERLAPPING #-} (Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmCase ki ty pt (TmSum (TmFCase ': xs)) where
   _TmCaseP = _TmNow . _TmCaseP

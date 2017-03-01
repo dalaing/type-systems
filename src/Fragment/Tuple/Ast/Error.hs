@@ -33,24 +33,24 @@ import Ast.Error
 
 import Fragment.Tuple.Ast.Type
 
-data ErrExpectedTyTuple ty a = ErrExpectedTyTuple (Type ty a)
+data ErrExpectedTyTuple ki ty a = ErrExpectedTyTuple (Type ki ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyTuple
 
-class AsExpectedTyTuple e ty a where -- | e -> ty, e -> a where
-  _ExpectedTyTuple :: Prism' e (Type ty a)
+class AsExpectedTyTuple e ki ty a where -- | e -> ty, e -> a where
+  _ExpectedTyTuple :: Prism' e (Type ki ty a)
 
-instance AsExpectedTyTuple (ErrExpectedTyTuple ty a) ty a where
+instance AsExpectedTyTuple (ErrExpectedTyTuple ki ty a) ki ty a where
   _ExpectedTyTuple = _ErrExpectedTyTuple
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyTuple (ErrSum xs) ty a => AsExpectedTyTuple (ErrSum (x ': xs)) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyTuple (ErrSum xs) ki ty a => AsExpectedTyTuple (ErrSum (x ': xs)) ki ty a where
   _ExpectedTyTuple = _ErrNext . _ExpectedTyTuple
 
-instance {-# OVERLAPPING #-} AsExpectedTyTuple (ErrSum (ErrExpectedTyTuple ty a ': xs)) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyTuple (ErrSum (ErrExpectedTyTuple ki ty a ': xs)) ki ty a where
   _ExpectedTyTuple = _ErrNow . _ExpectedTyTuple
 
-expectTyTuple :: (MonadError e m, AsExpectedTyTuple e ty a, AsTyTuple ty) => Type ty a -> m [Type ty a]
+expectTyTuple :: (MonadError e m, AsExpectedTyTuple e ki ty a, AsTyTuple ki ty) => Type ki ty a -> m [Type ki ty a]
 expectTyTuple ty =
   case preview _TyTuple ty of
     Just tys -> return tys

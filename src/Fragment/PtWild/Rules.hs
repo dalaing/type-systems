@@ -22,12 +22,12 @@ import Fragment.PtWild.Rules.Eval
 data RPtWild
 
 instance RulesIn RPtWild where
-  type RuleInferSyntaxContext e w s r m ty pt tm a RPtWild = SD.PtWildInferContext e w s r m ty pt tm a
-  type RuleInferOfflineContext e w s r m ty pt tm a RPtWild = UO.PtWildInferContext e w s r m ty pt tm a
-  type RuleEvalContext ty pt tm a RPtWild = PtWildEvalContext ty pt tm a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RPtWild = SD.PtWildInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RPtWild = UO.PtWildInferContext e w s r m ki ty pt tm a
+  type RuleEvalContext ki ty pt tm a RPtWild = PtWildEvalContext ki ty pt tm a
   type TypeList RPtWild = '[]
-  type ErrorList ty pt tm a RPtWild = '[]
-  type WarningList ty pt tm a RPtWild = '[]
+  type ErrorList ki ty pt tm a RPtWild = '[]
+  type WarningList ki ty pt tm a RPtWild = '[]
   type PatternList RPtWild = '[PtFWild]
   type TermList RPtWild = '[]
 

@@ -36,24 +36,24 @@ import Ast.Error
 
 import Fragment.Variant.Ast.Type
 
-data ErrExpectedTyVariant ty a = ErrExpectedTyVariant (Type ty a)
+data ErrExpectedTyVariant ki ty a = ErrExpectedTyVariant (Type ki ty a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedTyVariant
 
-class AsExpectedTyVariant e ty a where -- | e -> ty, e -> a where
-  _ExpectedTyVariant :: Prism' e (Type ty a)
+class AsExpectedTyVariant e ki ty a where -- | e -> ty, e -> a where
+  _ExpectedTyVariant :: Prism' e (Type ki ty a)
 
-instance AsExpectedTyVariant (ErrExpectedTyVariant ty a) ty a where
+instance AsExpectedTyVariant (ErrExpectedTyVariant ki ty a) ki ty a where
   _ExpectedTyVariant = _ErrExpectedTyVariant
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyVariant ((ErrSum xs)) ty a => AsExpectedTyVariant (ErrSum (x ': xs)) ty a where
+instance {-# OVERLAPPABLE #-} AsExpectedTyVariant ((ErrSum xs)) ki ty a => AsExpectedTyVariant (ErrSum (x ': xs)) ki ty a where
   _ExpectedTyVariant = _ErrNext . _ExpectedTyVariant
 
-instance {-# OVERLAPPING #-} AsExpectedTyVariant (ErrSum (ErrExpectedTyVariant ty a ': xs)) ty a where
+instance {-# OVERLAPPING #-} AsExpectedTyVariant (ErrSum (ErrExpectedTyVariant ki ty a ': xs)) ki ty a where
   _ExpectedTyVariant = _ErrNow . _ExpectedTyVariant
 
-expectTyVariant :: (MonadError e m, AsExpectedTyVariant e ty a, AsTyVariant ty) => Type ty a -> m (N.NonEmpty (T.Text, Type ty a))
+expectTyVariant :: (MonadError e m, AsExpectedTyVariant e ki ty a, AsTyVariant ki ty) => Type ki ty a -> m (N.NonEmpty (T.Text, Type ki ty a))
 expectTyVariant ty =
   case preview _TyVariant ty of
     Just tys -> return tys

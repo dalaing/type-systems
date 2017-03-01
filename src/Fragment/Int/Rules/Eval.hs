@@ -22,72 +22,72 @@ import Ast.Term
 import Fragment.Int.Ast.Pattern
 import Fragment.Int.Ast.Term
 
-valInt :: AsTmInt ty pt tm => Term ty pt tm a -> Maybe (Term ty pt tm a)
+valInt :: AsTmInt ki ty pt tm => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
 valInt tm = do
   _ <- preview _TmInt tm
   return tm
 
-stepAdd1 :: AsTmInt ty pt tm
-         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
-         -> Term ty pt tm a
-         -> Maybe (Term ty pt tm a)
+stepAdd1 :: AsTmInt ki ty pt tm
+         => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+         -> Term ki ty pt tm a
+         -> Maybe (Term ki ty pt tm a)
 stepAdd1 stepFn tm = do
   (tm1, tm2) <- preview _TmAdd tm
   tm1' <- stepFn tm1
   return . review _TmAdd $ (tm1', tm2)
 
-stepAdd2 :: AsTmInt ty pt tm
-         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
-         -> Term ty pt tm a
-         -> Maybe (Term ty pt tm a)
+stepAdd2 :: AsTmInt ki ty pt tm
+         => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+         -> Term ki ty pt tm a
+         -> Maybe (Term ki ty pt tm a)
 stepAdd2 stepFn tm = do
   (tm1, tm2) <- preview _TmAdd tm
   _ <- preview _TmInt tm1
   tm2' <- stepFn tm2
   return . review _TmAdd $ (tm1, tm2')
 
-stepAddInt :: AsTmInt ty pt tm
-           => Term ty pt tm a
-           -> Maybe (Term ty pt tm a)
+stepAddInt :: AsTmInt ki ty pt tm
+           => Term ki ty pt tm a
+           -> Maybe (Term ki ty pt tm a)
 stepAddInt tm = do
   (tm1, tm2) <- preview _TmAdd tm
   i1 <- preview _TmInt tm1
   i2 <- preview _TmInt tm2
   return . review _TmInt $ i1 + i2
 
-stepMul1 :: AsTmInt ty pt tm
-         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
-         -> Term ty pt tm a
-         -> Maybe (Term ty pt tm a)
+stepMul1 :: AsTmInt ki ty pt tm
+         => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+         -> Term ki ty pt tm a
+         -> Maybe (Term ki ty pt tm a)
 stepMul1 stepFn tm = do
   (tm1, tm2) <- preview _TmMul tm
   tm1' <- stepFn tm1
   return . review _TmMul $ (tm1', tm2)
 
-stepMul2 :: AsTmInt ty pt tm
-         => (Term ty pt tm a -> Maybe (Term ty pt tm a))
-         -> Term ty pt tm a
-         -> Maybe (Term ty pt tm a)
+stepMul2 :: AsTmInt ki ty pt tm
+         => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+         -> Term ki ty pt tm a
+         -> Maybe (Term ki ty pt tm a)
 stepMul2 stepFn tm = do
   (tm1, tm2) <- preview _TmMul tm
   _ <- preview _TmInt tm1
   tm2' <- stepFn tm2
   return . review _TmMul $ (tm1, tm2')
 
-stepMulInt :: AsTmInt ty pt tm
-           => Term ty pt tm a
-           -> Maybe (Term ty pt tm a)
+stepMulInt :: AsTmInt ki ty pt tm
+           => Term ki ty pt tm a
+           -> Maybe (Term ki ty pt tm a)
 stepMulInt tm = do
   (tm1, tm2) <- preview _TmMul tm
   i1 <- preview _TmInt tm1
   i2 <- preview _TmInt tm2
   return . review _TmInt $ i1 * i2
 
-matchInt :: (AsPtInt pt, AsTmInt ty pt tm)
-         => (Term ty pt tm a -> Term ty pt tm a)
+matchInt :: (AsPtInt pt, AsTmInt ki ty pt tm)
+         => (Term ki ty pt tm a -> Term ki ty pt tm a)
          -> Pattern pt a
-         -> Term ty pt tm a
-         -> Maybe [Term ty pt tm a]
+         -> Term ki ty pt tm a
+         -> Maybe [Term ki ty pt tm a]
 matchInt eval p tm = do
   i <- preview _PtInt p
   j <- preview _TmInt (eval tm)
@@ -95,10 +95,10 @@ matchInt eval p tm = do
   then return []
   else mzero
 
-type IntEvalContext ty pt tm a = (EvalContext ty pt tm a, AsPtInt pt, AsTmInt ty pt tm)
+type IntEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsPtInt pt, AsTmInt ki ty pt tm)
 
-intEvalRules :: IntEvalContext ty pt tm a
-             => EvalInput ty pt tm a
+intEvalRules :: IntEvalContext ki ty pt tm a
+             => EvalInput ki ty pt tm a
 intEvalRules =
   EvalInput
     [ValueBase valInt]

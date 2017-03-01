@@ -24,13 +24,13 @@ import Ast.Term
 
 import Fragment.Case.Ast.Term
 
-tmAlt :: (Eq a, AstBound ty pt tm, AstTransversable ty pt tm) => Pattern pt a -> Term ty pt tm a -> Alt ty pt (Ast ty pt tm) (AstVar a)
+tmAlt :: (Eq a, AstBound ki ty pt tm, AstTransversable ki ty pt tm) => Pattern pt a -> Term ki ty pt tm a -> Alt ki ty pt (Ast ki ty pt tm) (AstVar a)
 tmAlt p tm = Alt (review _Pattern p) s
   where
     vs = fmap ATmVar . toList $ p
     s = abstract (`elemIndex` vs) . review _Unwrapped $ tm
 
-tmCase :: AsTmCase ty pt tm => Term ty pt tm a -> [Alt ty pt (Ast ty pt tm) (AstVar a)] -> Term ty pt tm a
+tmCase :: AsTmCase ki ty pt tm => Term ki ty pt tm a -> [Alt ki ty pt (Ast ki ty pt tm) (AstVar a)] -> Term ki ty pt tm a
 tmCase tm alts =
   case N.nonEmpty alts of
     Nothing -> tm

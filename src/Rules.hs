@@ -28,6 +28,7 @@ import Rules.Infer.Unification
 import qualified Rules.Infer.Unification.Offline as UO
 import Rules.Eval
 
+import Ast.Kind
 import Ast.Type
 import Ast.Error
 import Ast.Error.Common
@@ -45,27 +46,29 @@ instance TLAppend xs ys => TLAppend (x ': xs) ys where
   type Append (x ': xs) ys = x ': (Append xs ys)
 
 class RulesIn (k :: j) where
-  type RuleInferSyntaxContext e w s r (m :: * -> *) (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
-  type RuleInferOfflineContext e w s r (m :: * -> *) (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
-  type RuleEvalContext (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
-  type TypeList k :: [(* -> *) -> * -> *]
-  type ErrorList (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
-  type WarningList (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
+  type RuleInferSyntaxContext e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
+  type RuleInferOfflineContext e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
+  type RuleEvalContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
+  type KindList k :: [* -> *]
+  type TypeList k :: [(* -> *) -> (* -> *) -> * -> *]
+  type ErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
+  type WarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
   type PatternList k :: [(* -> *) -> * -> *]
-  type TermList k :: [((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
+  type TermList k :: [(* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
 
-  inferSyntaxInput :: (SD.InferContext e w s r m ty pt tm a , RuleInferSyntaxContext e w s r m ty pt tm a k) => Proxy k -> SD.InferInput e w s r m ty pt tm a
-  inferOfflineInput :: (UO.InferContext e w s r m ty pt tm a , RuleInferOfflineContext e w s r m ty pt tm a k) => Proxy k -> UO.InferInput e w s r m ty pt tm a
-  evalLazyInput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalInput ty pt tm a
-  evalStrictInput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalInput ty pt tm a
+  inferSyntaxInput :: (SD.InferContext e w s r m ki ty pt tm a , RuleInferSyntaxContext e w s r m ki ty pt tm a k) => Proxy k -> SD.InferInput e w s r m ki ty pt tm a
+  inferOfflineInput :: (UO.InferContext e w s r m ki ty pt tm a , RuleInferOfflineContext e w s r m ki ty pt tm a k) => Proxy k -> UO.InferInput e w s r m ki ty pt tm a
+  evalLazyInput :: (EvalContext ki ty pt tm a, RuleEvalContext ki ty pt tm a k) => Proxy k -> EvalInput ki ty pt tm a
+  evalStrictInput :: (EvalContext ki ty pt tm a, RuleEvalContext ki ty pt tm a k) => Proxy k -> EvalInput ki ty pt tm a
 
 instance RulesIn '[] where
-  type RuleInferSyntaxContext e w s r m ty pt tm a '[] = (() :: Constraint)
-  type RuleInferOfflineContext e w s r m ty pt tm a '[] = (() :: Constraint)
-  type RuleEvalContext ty pt tm a '[] = (() :: Constraint)
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a '[] = (() :: Constraint)
+  type RuleInferOfflineContext e w s r m ki ty pt tm a '[] = (() :: Constraint)
+  type RuleEvalContext ki ty pt tm a '[] = (() :: Constraint)
+  type KindList '[] = '[]
   type TypeList '[] = '[]
-  type ErrorList ty pt tm a '[] = '[ErrUnknownTypeError, ErrOccursError ty a, ErrUnificationMismatch ty a]
-  type WarningList ty pt tm a '[] = '[]
+  type ErrorList ki ty pt tm a '[] = '[ErrUnknownTypeError, ErrOccursError ki ty a, ErrUnificationMismatch ki ty a]
+  type WarningList ki ty pt tm a '[] = '[]
   type PatternList '[] = '[]
   type TermList '[] = '[]
 
@@ -75,12 +78,13 @@ instance RulesIn '[] where
   evalStrictInput _ = mempty
 
 instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
-  type RuleInferSyntaxContext e w s r m ty pt tm a (k ': ks) = (RuleInferSyntaxContext e w s r m ty pt tm a k, RuleInferSyntaxContext e w s r m ty pt tm a ks)
-  type RuleInferOfflineContext e w s r m ty pt tm a (k ': ks) = (RuleInferOfflineContext e w s r m ty pt tm a k, RuleInferOfflineContext e w s r m ty pt tm a ks)
-  type RuleEvalContext ty pt tm a (k ': ks) = (RuleEvalContext ty pt tm a k, RuleEvalContext ty pt tm a ks)
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a (k ': ks) = (RuleInferSyntaxContext e w s r m ki ty pt tm a k, RuleInferSyntaxContext e w s r m ki ty pt tm a ks)
+  type RuleInferOfflineContext e w s r m ki ty pt tm a (k ': ks) = (RuleInferOfflineContext e w s r m ki ty pt tm a k, RuleInferOfflineContext e w s r m ki ty pt tm a ks)
+  type RuleEvalContext ki ty pt tm a (k ': ks) = (RuleEvalContext ki ty pt tm a k, RuleEvalContext ki ty pt tm a ks)
+  type KindList (k ': ks) = Append (KindList k) (KindList ks)
   type TypeList (k ': ks) = Append (TypeList k) (TypeList ks)
-  type ErrorList ty pt tm a (k ': ks) = Append (ErrorList ty pt tm a k) (ErrorList ty pt tm a ks)
-  type WarningList ty pt tm a (k ': ks) = Append (WarningList ty pt tm a k) (WarningList ty pt tm a ks)
+  type ErrorList ki ty pt tm a (k ': ks) = Append (ErrorList ki ty pt tm a k) (ErrorList ki ty pt tm a ks)
+  type WarningList ki ty pt tm a (k ': ks) = Append (WarningList ki ty pt tm a k) (WarningList ki ty pt tm a ks)
   type PatternList (k ': ks) = Append (PatternList k) (PatternList ks)
   type TermList (k ': ks) = Append (TermList k) (TermList ks)
 
@@ -91,32 +95,34 @@ instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
 
 class RulesOut (k :: j) where
 
-  type RTypeF k :: ((* -> *) -> * -> *)
+  type RKindF k :: * -> *
+  type RTypeF k :: ((* -> *) -> (* -> *) -> * -> *)
   type RPatternF k :: ((* -> *) -> * -> *)
-  type RTermF k :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)
+  type RTermF k :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)
 
   type RType k :: (* -> *)
-  type RError (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: *
-  type RWarning (ty :: (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: *
+  type RError (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: *
+  type RWarning (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: *
   type RPattern k :: (* -> *)
   type RTerm k :: (* -> *)
 
-  inferSyntaxOutput :: (SD.InferContext e w s r m ty pt tm a, RuleInferSyntaxContext e w s r m ty pt tm a k) => Proxy k -> SD.InferOutput e w s r m ty pt tm a
-  inferOfflineOutput :: (UO.InferContext e w s r m ty pt tm a, RuleInferOfflineContext e w s r m ty pt tm a k) => Proxy k -> UO.InferOutput e w s r m ty pt tm a
-  evalLazyOutput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalOutput ty pt tm a
-  evalStrictOutput :: (EvalContext ty pt tm a, RuleEvalContext ty pt tm a k) => Proxy k -> EvalOutput ty pt tm a
+  inferSyntaxOutput :: (SD.InferContext e w s r m ki ty pt tm a, RuleInferSyntaxContext e w s r m ki ty pt tm a k) => Proxy k -> SD.InferOutput e w s r m ki ty pt tm a
+  inferOfflineOutput :: (UO.InferContext e w s r m ki ty pt tm a, RuleInferOfflineContext e w s r m ki ty pt tm a k) => Proxy k -> UO.InferOutput e w s r m ki ty pt tm a
+  evalLazyOutput :: (EvalContext ki ty pt tm a, RuleEvalContext ki ty pt tm a k) => Proxy k -> EvalOutput ki ty pt tm a
+  evalStrictOutput :: (EvalContext ki ty pt tm a, RuleEvalContext ki ty pt tm a k) => Proxy k -> EvalOutput ki ty pt tm a
 
 instance RulesIn k => RulesOut (k :: j) where
 
+  type RKindF k = KiSum (KindList k)
   type RTypeF k = TySum (TypeList k)
   type RPatternF k = PtSum (PatternList k)
   type RTermF k = TmSum (TermList k)
 
-  type RType k = Type (RTypeF k)
-  type RError ty pt tm a k = ErrSum (ErrorList ty pt tm a k)
-  type RWarning ty pt tm a k = WarnSum (WarningList ty pt tm a k)
+  type RType k = Type (RKindF k) (RTypeF k)
+  type RError ki ty pt tm a k = ErrSum (ErrorList ki ty pt tm a k)
+  type RWarning ki ty pt tm a k = WarnSum (WarningList ki ty pt tm a k)
   type RPattern k = Pattern (RPatternF k)
-  type RTerm k = Term (RTypeF k) (RPatternF k) (RTermF k)
+  type RTerm k = Term (RKindF k) (RTypeF k) (RPatternF k) (RTermF k)
 
   inferSyntaxOutput = SD.prepareInfer . inferSyntaxInput
   inferOfflineOutput = UO.prepareInfer . inferOfflineInput
