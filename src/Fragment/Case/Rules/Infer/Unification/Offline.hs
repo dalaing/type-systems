@@ -20,6 +20,7 @@ import Bound.Scope (bindings)
 import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.State (MonadState)
 import Control.Monad.Writer (MonadWriter)
+import Control.Monad.Trans (lift)
 import Control.Lens (review, preview, (%~))
 import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 
@@ -49,11 +50,11 @@ inferTmCase inferFn checkFn tm = do
           let vp = toList p'
           checkForDuplicatedPatternVariables vp
           let scopeBindings = bindings s
-          -- checkForUnusedPatternVariables vp scopeBindings
+          lift $ checkForUnusedPatternVariables vp scopeBindings
           contextBindings <- lookupBindings
           -- this won't fire at the moment, because bound is taking care of shadowing for us
           -- we'll need to track a bit more info about the original form of the AST before this works
-          -- checkForShadowingPatternVariables vp contextBindings
+          lift $ checkForShadowingPatternVariables vp contextBindings
 
           vs <- replicateM (length p') freshTmVar
           tys <- checkFn p' ty
