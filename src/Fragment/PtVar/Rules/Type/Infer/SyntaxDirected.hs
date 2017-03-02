@@ -31,5 +31,4 @@ ptVarInferRules :: PtVarInferContext e w s r m ki ty pt tm a
 ptVarInferRules =
   InferInput
     []
-    []
     [ PCheckBase checkVar ]

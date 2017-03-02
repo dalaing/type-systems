@@ -35,8 +35,12 @@ import Fragment.Case.Ast.Error
 import Fragment.Case.Ast.Warning
 import Fragment.Case.Ast.Term
 
-inferTmCase :: CaseInferContext e w s r m ki ty pt tm a => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
-inferTmCase tyEquiv inferFn checkFn tm = do
+inferTmCase :: CaseInferContext e w s r m ki ty pt tm a
+            => (Term ki ty pt tm a -> m (Type ki ty a))
+            -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a])
+            -> Term ki ty pt tm a
+            -> Maybe (m (Type ki ty a))
+inferTmCase inferFn checkFn tm = do
   (tmC, alts) <- preview _TmCase tm
   return $ do
     let go ty (Alt p s) = do
@@ -61,7 +65,7 @@ inferTmCase tyEquiv inferFn checkFn tm = do
           local (termContext %~ setup) $ inferFn tm'
     tyC <- inferFn tmC
     tys <- mapM (go tyC) alts
-    expectTypeAllEq tyEquiv tys
+    expectTypeAllEq tys
 
 type CaseInferContext e w s r m ki ty pt tm a = (Ord a, AstBound ki ty pt tm, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsExpectedPattern e ki ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsShadowingPatternVariables w a, AsExpectedTypeAllEq e ki ty a, AsTmCase ki ty pt tm)
 
@@ -69,6 +73,5 @@ caseInferRules :: CaseInferContext e w s r m ki ty pt tm a
                => InferInput e w s r m ki ty pt tm a
 caseInferRules =
   InferInput
-    []
-    [ InferTyEquivPCheck inferTmCase ]
+    [ InferPCheck inferTmCase ]
     []

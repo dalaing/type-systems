@@ -32,6 +32,5 @@ tmVarInferRules :: TmVarInferContext e w s r m ki ty pt tm a
 tmVarInferRules =
   InferInput
     []
-    []
     [ InferBase inferTmVar ]
     []

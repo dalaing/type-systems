@@ -28,12 +28,6 @@ import Fragment.Bool.Ast.Type
 import Fragment.Bool.Ast.Pattern
 import Fragment.Bool.Ast.Term
 
-equivBool :: AsTyBool ki ty => Type ki ty a -> Type ki ty a -> Maybe Bool
-equivBool ty1 ty2 = do
-  _ <- preview _TyBool ty1
-  _ <- preview _TyBool ty2
-  return True
-
 inferBool :: (Monad m, AsTyBool ki ty, AsTmBool ki ty pt tm)
          => Term ki ty pt tm a
          -> Maybe (UnifyT ki ty a m (Type ki ty a))
@@ -90,7 +84,6 @@ boolInferRules :: BoolInferContext e w s r m ki ty pt tm a
               => InferInput e w s r m ki ty pt tm a
 boolInferRules =
   InferInput
-    [ EquivBase equivBool ]
     []
     [ InferBase inferBool
     , InferRecurse inferAnd

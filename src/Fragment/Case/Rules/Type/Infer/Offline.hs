@@ -75,6 +75,5 @@ caseInferRules :: CaseInferContext e w s r m ki ty pt tm a
 caseInferRules =
   InferInput
     []
-    []
     [ InferPCheck inferTmCase ]
     []

@@ -31,5 +31,4 @@ ptWildInferRules :: PtWildInferContext e w s r m ki ty pt tm a
 ptWildInferRules =
   InferInput
     []
-    []
     [ PCheckBase checkWild ]

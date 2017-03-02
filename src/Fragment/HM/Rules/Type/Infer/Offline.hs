@@ -33,12 +33,6 @@ import Fragment.HM.Ast.Type
 import Fragment.HM.Ast.Error
 import Fragment.HM.Ast.Term
 
-equivArr :: AsTyHM ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
-equivArr equivFn ty1 ty2 = do
-  (p1a, p1b) <- preview _TyArr ty1
-  (p2a, p2b) <- preview _TyArr ty2
-  return $ equivFn p1a p2a && equivFn p1b p2b
-
 unifyArr :: (UnificationContext e m ki ty a, AsTyHM ki ty)
           => ([Type ki ty a] -> [Type ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())
           -> UConstraint ki ty a
@@ -87,7 +81,6 @@ hmInferRules :: HMInferContext e w s r m ki ty pt tm a
              => InferInput e w s r m ki ty pt tm a
 hmInferRules =
   InferInput
-    [ EquivRecurse equivArr ]
     [ UnificationMany unifyArr ]
     [ InferRecurse inferTmLam
     , InferRecurse inferTmApp

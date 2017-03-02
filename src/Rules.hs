@@ -110,8 +110,8 @@ class RulesOut (k :: j) where
   type RPattern k :: (* -> *)
   type RTerm k :: (* -> *)
 
-  inferSyntaxOutput :: (SD.InferContext e w s r m ki ty pt tm a, RuleInferSyntaxContext e w s r m ki ty pt tm a k) => Proxy k -> SD.InferOutput e w s r m ki ty pt tm a
-  inferOfflineOutput :: (UO.InferContext e w s r m ki ty pt tm a, RuleInferOfflineContext e w s r m ki ty pt tm a k) => Proxy k -> UO.InferOutput e w s r m ki ty pt tm a
+  inferSyntaxOutput :: (SD.InferContext e w s r m ki ty pt tm a, RuleInferSyntaxContext e w s r m ki ty pt tm a k, RuleTypeContext ki ty a k) => Proxy k -> SD.InferOutput e w s r m ki ty pt tm a
+  inferOfflineOutput :: (UO.InferContext e w s r m ki ty pt tm a, RuleInferOfflineContext e w s r m ki ty pt tm a k, RuleTypeContext ki ty a k) => Proxy k -> UO.InferOutput e w s r m ki ty pt tm a
   typeOutput :: RuleTypeContext ki ty a k => Proxy k -> TypeOutput ki ty a
   termOutput :: (TermContext ki ty pt tm a, RuleTermContext ki ty pt tm a k) => Proxy k -> TermOutput ki ty pt tm a
 
@@ -128,7 +128,7 @@ instance RulesIn k => RulesOut (k :: j) where
   type RPattern k = Pattern (RPatternF k)
   type RTerm k = Term (RKindF k) (RTypeF k) (RPatternF k) (RTermF k)
 
-  inferSyntaxOutput = SD.prepareInfer . inferSyntaxInput
-  inferOfflineOutput = UO.prepareInfer . inferOfflineInput
+  inferSyntaxOutput p = SD.prepareInfer (toNormalizeType $ typeOutput p) . inferSyntaxInput $ p
+  inferOfflineOutput p = UO.prepareInfer (toNormalizeType $ typeOutput p) . inferOfflineInput $ p
   typeOutput = prepareType . typeInput
   termOutput = prepareTerm . termInput

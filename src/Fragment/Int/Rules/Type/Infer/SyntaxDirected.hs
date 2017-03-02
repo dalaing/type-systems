@@ -39,37 +39,38 @@ inferInt tm = do
   return . return . review _TyInt $ ()
 
 inferAdd :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsTyInt ki ty, AsTmInt ki ty pt tm)
-         => (Type ki ty a -> Type ki ty a -> Bool)
-         -> (Term ki ty pt tm a -> m (Type ki ty a))
+         => (Term ki ty pt tm a -> m (Type ki ty a))
          -> Term ki ty pt tm a
          -> Maybe (m (Type ki ty a))
-inferAdd tyEquiv inferFn tm = do
+inferAdd inferFn tm = do
   (tm1, tm2) <- preview _TmAdd tm
   return $ do
     let ty = review _TyInt ()
-    mkCheckType tyEquiv inferFn tm1 ty
-    mkCheckType tyEquiv inferFn tm2 ty
+    mkCheckType inferFn tm1 ty
+    mkCheckType inferFn tm2 ty
     return ty
 
 inferMul :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsTyInt ki ty, AsTmInt ki ty pt tm)
-         => (Type ki ty a -> Type ki ty a -> Bool)
-         -> (Term ki ty pt tm a -> m (Type ki ty a))
+         => (Term ki ty pt tm a -> m (Type ki ty a))
          -> Term ki ty pt tm a
          -> Maybe (m (Type ki ty a))
-inferMul tyEquiv inferFn tm = do
+inferMul inferFn tm = do
   (tm1, tm2) <- preview _TmMul tm
   return $ do
     let ty = review _TyInt ()
-    mkCheckType tyEquiv inferFn tm1 ty
-    mkCheckType tyEquiv inferFn tm2 ty
+    mkCheckType inferFn tm1 ty
+    mkCheckType inferFn tm2 ty
     return ty
 
-checkInt :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsPtInt pt, AsTyInt ki ty) => (Type ki ty a -> Type ki ty a -> Bool) -> Pattern pt a -> Type ki ty a -> Maybe (m [Type ki ty a])
-checkInt tyEquiv p ty = do
+checkInt :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsPtInt pt, AsTyInt ki ty)
+         => Pattern pt a
+         -> Type ki ty a
+         -> Maybe (m [Type ki ty a])
+checkInt p ty = do
   _ <- preview _PtInt p
   return $ do
     let tyI = review _TyInt ()
-    expectType tyEquiv (ExpectedType tyI) (ActualType ty)
+    expectType (ExpectedType tyI) (ActualType ty)
     return []
 
 type IntInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
@@ -78,9 +79,8 @@ intInferRules :: IntInferContext e w s r m ki ty pt tm a
               => InferInput e w s r m ki ty pt tm a
 intInferRules =
   InferInput
-    [ EquivBase equivInt ]
     [ InferBase inferInt
-    , InferTyEquivRecurse inferAdd
-    , InferTyEquivRecurse inferMul
+    , InferRecurse inferAdd
+    , InferRecurse inferMul
     ]
-    [ PCheckTyEquiv checkInt ]
+    [ PCheckBase checkInt ]

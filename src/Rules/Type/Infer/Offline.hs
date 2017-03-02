@@ -15,8 +15,7 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Rules.Type.Infer.Offline (
-    EquivRule(..)
-  , InferRule(..)
+    InferRule(..)
   , PCheckRule(..)
   , mkCheckType
   , UnifyT
@@ -51,29 +50,6 @@ import Ast.Error.Common
 
 import Rules.Infer.Unification
 
-data EquivRule ki ty a =
-    EquivBase (Type ki ty a -> Type ki ty a -> Maybe Bool)
-  | EquivRecurse ((Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool)
-
-fixEquivRule :: (Type ki ty a -> Type ki ty a -> Bool)
-             -> EquivRule ki ty a
-             -> Type ki ty a
-             -> Type ki ty a
-             -> Maybe Bool
-fixEquivRule _ (EquivBase f) = f
-fixEquivRule equivFn (EquivRecurse f) = f equivFn
-
-mkEquiv :: [EquivRule ki ty a] -> Type ki ty a -> Type ki ty a -> Bool
-mkEquiv rules x y =
-  let
-    go ty1 ty2 =
-      fromMaybe False .
-      asum .
-      fmap (\r -> fixEquivRule go r ty1 ty2) $
-      rules
-  in
-    go x y
-
 type UnifyT ki ty a = WriterT [UConstraint ki ty a]
 
 data InferRule e w s r m ki ty pt tm a =
@@ -91,13 +67,15 @@ fixInferRule inferFn checkFn (InferPCheck f) = f inferFn checkFn
 fixInferRule inferFn _ (InferRecurse f) = f inferFn
 
 mkInfer' :: (MonadError e m, AsUnknownTypeError e)
-        => (Pattern pt a -> Type ki ty a -> UnifyT ki ty a m [Type ki ty a])
+        => (Type ki ty a -> Type ki ty a)
+        -> (Pattern pt a -> Type ki ty a -> UnifyT ki ty a m [Type ki ty a])
         -> [InferRule e w s r m ki ty pt tm a]
         -> Term ki ty pt tm a
         -> UnifyT ki ty a m (Type ki ty a)
-mkInfer' pc rules =
+mkInfer' normalizeFn pc rules =
   let
     go tm =
+      fmap normalizeFn .
       fromMaybe (throwing _UnknownTypeError ()) .
       asum .
       fmap (\r -> fixInferRule go pc r tm) $
@@ -182,18 +160,16 @@ expectTypeAllEq n@(ty :| tys) = do
 
 data InferInput e w s r m ki ty pt tm a =
   InferInput {
-    iiEquivRules :: [EquivRule ki ty a]
-  , iiUnifyRules :: [UnificationRule m ki ty a]
+    iiUnifyRules :: [UnificationRule m ki ty a]
   , iiInferRules :: [InferRule e w s r m ki ty pt tm a]
   , iiPCheckRules :: [PCheckRule e m pt ki ty a]
   }
 
 instance Monoid (InferInput e w s r m ki ty pt tm a) where
   mempty =
-    InferInput mempty mempty mempty mempty
-  mappend (InferInput e1 u1 i1 c1) (InferInput e2 u2 i2 c2) =
+    InferInput mempty mempty mempty
+  mappend (InferInput u1 i1 c1) (InferInput u2 i2 c2) =
     InferInput
-      (mappend e1 e2)
       (mappend u1 u2)
       (mappend i1 i2)
       (mappend c1 c2)
@@ -207,14 +183,14 @@ data InferOutput e w s r m ki ty pt tm a =
 type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m ki ty a)
 
 prepareInfer :: InferContext e w s r m ki ty pt tm a
-             => InferInput e w s r m ki ty pt tm a
+             => (Type ki ty a -> Type ki ty a)
+             -> InferInput e w s r m ki ty pt tm a
              -> InferOutput e w s r m ki ty pt tm a
-prepareInfer ii =
+prepareInfer normalizeFn ii =
   let
-    e = mkEquiv . iiEquivRules $ ii
-    u = mkUnify e . iiUnifyRules $ ii
+    u = mkUnify normalizeFn . iiUnifyRules $ ii
     pc = mkPCheck . iiPCheckRules $ ii
-    i' = mkInfer' pc . iiInferRules $ ii
+    i' = mkInfer' normalizeFn pc . iiInferRules $ ii
     i = mkInfer i' u
     c = mkCheck' i' u
   in

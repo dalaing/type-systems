@@ -32,5 +32,4 @@ ptWildInferRules =
   InferInput
     []
     []
-    []
     [ PCheckBase checkWild ]

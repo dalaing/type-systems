@@ -31,18 +31,6 @@ import Fragment.SystemF.Ast.Type
 import Fragment.SystemF.Ast.Error
 import Fragment.SystemF.Ast.Term
 
-equivArr :: AsTySystemF ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
-equivArr equivFn ty1 ty2 = do
-  (p1a, p1b) <- preview _TyArr ty1
-  (p2a, p2b) <- preview _TyArr ty2
-  return $ equivFn p1a p2a && equivFn p1b p2b
-
-equivAll :: (Eq a, EqRec (ty ki), AsTySystemF ki ty) => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
-equivAll equivFn ty1 ty2 = do
-  s1 <- preview _TyAll ty1
-  s2 <- preview _TyAll ty2
-  return $ liftEqRec equivFn (==) s1 s2
-
 inferTmLam :: (Ord a, AstBound ki ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySystemF ki ty, AsTmSystemF ki ty pt tm, HasTermContext r ki ty a) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmLam inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
@@ -52,14 +40,17 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq a, EqRec (ty ki), MonadError e m, AsTySystemF ki ty, AsTmSystemF ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedTypeEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
-inferTmApp tyEquiv inferFn tm = do
+inferTmApp :: (Eq a, EqRec (ty ki), MonadError e m, AsTySystemF ki ty, AsTmSystemF ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedTypeEq e ki ty a)
+           => (Term ki ty pt tm a -> m (Type ki ty a))
+           -> Term ki ty pt tm a
+           -> Maybe (m (Type ki ty a))
+inferTmApp inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
     tyF <- inferFn tmF
     (tyArg, tyRet) <- expectTyArr tyF
     tyX <- inferFn tmX
-    expectTypeEq tyEquiv tyArg tyX
+    expectTypeEq tyArg tyX
     return tyRet
 
 inferTmLamTy :: (Eq a, Bound (ty ki), Bound pt, Bound (tm ki ty pt), MonadState s m, HasTyVarSupply s, ToTyVar a, AsTySystemF ki ty, AsTmSystemF ki ty pt tm) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
@@ -84,12 +75,9 @@ systemFInferRules :: SystemFInferContext e w s r m ki ty pt tm a
                   => InferInput e w s r m ki ty pt tm a
 systemFInferRules =
   InferInput
-    [ EquivRecurse equivArr
-    , EquivRecurse equivAll
-    ]
     [ InferRecurse inferTmLam
     , InferRecurse inferTmLamTy
-    , InferTyEquivRecurse inferTmApp
+    , InferRecurse inferTmApp
     , InferRecurse inferTmAppTy
     ]
     []

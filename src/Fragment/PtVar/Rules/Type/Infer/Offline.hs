@@ -32,5 +32,4 @@ ptVarInferRules =
   InferInput
     []
     []
-    []
     [ PCheckBase checkVar ]

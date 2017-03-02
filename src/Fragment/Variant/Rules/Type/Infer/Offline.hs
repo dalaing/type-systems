@@ -11,12 +11,8 @@ module Fragment.Variant.Rules.Type.Infer.Offline (
   , variantInferRules
   ) where
 
-import Data.List (sortOn)
-
 import Control.Monad.Except (MonadError)
 import Control.Lens (preview)
-
-import qualified Data.List.NonEmpty as N
 
 import Rules.Type.Infer.Offline
 import Ast.Type
@@ -29,13 +25,6 @@ import Fragment.Variant.Ast.Type
 import Fragment.Variant.Ast.Error
 import Fragment.Variant.Ast.Pattern
 import Fragment.Variant.Ast.Term
-
-equivVariant :: AsTyVariant ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
-equivVariant equivFn ty1 ty2 = do
-  vs1 <- preview _TyVariant ty1
-  vs2 <- preview _TyVariant ty2
-  let f = fmap snd . sortOn fst . N.toList
-  return . and $ zipWith equivFn (f vs1) (f vs2)
 
 inferTmVariant :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsTyVariant ki ty, AsTmVariant ki ty pt tm)
                => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
@@ -64,7 +53,6 @@ variantInferRules :: VariantInferContext e w s r m ki ty pt tm a
                 => InferInput e w s r m ki ty pt tm a
 variantInferRules =
   InferInput
-    [ EquivRecurse equivVariant ]
     []
     [ InferRecurse inferTmVariant ]
     [ PCheckRecurse checkVariant ]

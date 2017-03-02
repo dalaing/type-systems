@@ -128,11 +128,11 @@ mkUnifyMany unify1 ty1 ty2
   | otherwise = throwing _UnificationMismatch (ty1, ty2)
 
 mkUnify1 :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
-         => (Type ki ty a -> Type ki ty a -> Bool)
+         => (Type ki ty a -> Type ki ty a)
          -> [UnificationRule m ki ty a]
          -> UConstraint ki ty a
          -> EquivT s (Type ki ty a) (Type ki ty a) m ()
-mkUnify1 tyEquiv rules =
+mkUnify1 normalizeFn rules =
   let
     unifyMany = mkUnifyMany unify1
     unify1 u =
@@ -154,7 +154,7 @@ mkUnify1 tyEquiv rules =
             throwing _OccursError (v2, c1)
           equate c1 c2
         (Nothing, Nothing) ->
-          unless (tyEquiv c1 c2) $
+          unless (normalizeFn c1 == normalizeFn c2) $
             throwing _ExpectedTypeEq (c1, c2)
   in
     unify1
@@ -185,13 +185,13 @@ instance (Ord a, Bound (ty ki), Bitransversable (ty ki)) => Monoid (TypeSubstitu
     TypeSubstitution $ M.unionWith combineType (fmap (tySubst ts2) m1) (fmap (tySubst ts1) m2)
 
 mkUnify' :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
-        => (Type ki ty a -> Type ki ty a -> Bool)
+        => (Type ki ty a -> Type ki ty a)
         -> [UnificationRule m ki ty a]
         -> [UConstraint ki ty a]
         -> EquivT s (Type ki ty a) (Type ki ty a) m ()
-mkUnify' tyEquiv rules =
+mkUnify' normalizeFn rules =
   let
-    unify1 = mkUnify1 tyEquiv rules
+    unify1 = mkUnify1 normalizeFn rules
     unify [] = return ()
     unify (x : xs) = do
       unify1 x
@@ -216,9 +216,9 @@ mkGatherTypeSubstitution unify cs =
 type UnificationContext e m ki ty a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
 
 mkUnify :: UnificationContext e m ki ty a
-        => (Type ki ty a -> Type ki ty a -> Bool)
+        => (Type ki ty a -> Type ki ty a)
         -> [UnificationRule m ki ty a]
         -> [UConstraint ki ty a]
         -> m (TypeSubstitution ki ty a)
-mkUnify tyEquiv rules =
-  mkGatherTypeSubstitution (mkUnify' tyEquiv rules)
+mkUnify normalizeFn rules =
+  mkGatherTypeSubstitution (mkUnify' normalizeFn rules)

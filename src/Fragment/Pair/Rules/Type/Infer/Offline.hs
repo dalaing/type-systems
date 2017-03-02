@@ -24,17 +24,10 @@ import Ast.Error.Common
 import Ast.Pattern
 import Ast.Term
 
-
 import Fragment.Pair.Ast.Type
 import Fragment.Pair.Ast.Error
 import Fragment.Pair.Ast.Pattern
 import Fragment.Pair.Ast.Term
-
-equivPair :: AsTyPair ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
-equivPair equivFn ty1 ty2 = do
-  (p1a, p1b) <- preview _TyPair ty1
-  (p2a, p2b) <- preview _TyPair ty2
-  return $ equivFn p1a p2a && equivFn p1b p2b
 
 unifyPair :: (UnificationContext e m ki ty a, AsTyPair ki ty)
           => ([Type ki ty a] -> [Type ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())
@@ -108,7 +101,6 @@ pairInferRules :: PairInferContext e w s r m ki ty pt tm a
               => InferInput e w s r m ki ty pt tm a
 pairInferRules =
   InferInput
-    [ EquivRecurse equivPair ]
     [ UnificationMany unifyPair ]
     [ InferRecurse inferTmPair
     , InferRecurse inferTmFst

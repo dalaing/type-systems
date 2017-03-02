@@ -24,12 +24,6 @@ import Fragment.Pair.Ast.Error
 import Fragment.Pair.Ast.Pattern
 import Fragment.Pair.Ast.Term
 
-equivPair :: AsTyPair ki ty => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> Maybe Bool
-equivPair equivFn ty1 ty2 = do
-  (p1a, p1b) <- preview _TyPair ty1
-  (p2a, p2b) <- preview _TyPair ty2
-  return $ equivFn p1a p2a && equivFn p1b p2b
-
 inferTmPair :: (Monad m, AsTyPair ki ty, AsTmPair ki ty pt tm) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmPair inferFn tm = do
   (tm1, tm2) <- preview _TmPair tm
@@ -67,7 +61,6 @@ pairInferRules :: PairInferContext e w s r m ki ty pt tm a
               => InferInput e w s r m ki ty pt tm a
 pairInferRules =
   InferInput
-    [ EquivRecurse equivPair ]
     [ InferRecurse inferTmPair
     , InferRecurse inferTmFst
     , InferRecurse inferTmSnd
