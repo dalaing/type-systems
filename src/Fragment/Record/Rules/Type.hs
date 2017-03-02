@@ -11,6 +11,8 @@ module Fragment.Record.Rules.Type (
   , recordTypeRules
   ) where
 
+import Data.List (sortOn)
+
 import Control.Lens (review, preview)
 
 import Rules.Type
@@ -26,7 +28,7 @@ normalizeRecord :: RecordTypeContext ki ty a
                -> Maybe (Type ki ty a)
 normalizeRecord normalizeFn ty = do
   tys <- preview _TyRecord ty
-  return $ review _TyRecord (fmap (fmap normalizeFn) tys)
+  return $ review _TyRecord (sortOn fst . fmap (fmap normalizeFn) $ tys)
 
 recordTypeRules :: RecordTypeContext ki ty a
               => TypeInput ki ty a

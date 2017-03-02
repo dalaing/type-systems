@@ -21,8 +21,8 @@ import Fragment.Bool.Ast.Type
 import Fragment.Bool.Ast.Term
 
 import Fragment.If.Ast
-import qualified Fragment.If.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.If.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.If.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.If.Rules.Type.Infer.Offline as UO
 import Fragment.If.Rules.Term
 
 data RIf

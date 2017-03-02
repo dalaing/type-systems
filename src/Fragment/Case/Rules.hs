@@ -19,8 +19,8 @@ import Ast.Error.Common
 import Context.Term.Error
 
 import Fragment.Case.Ast
-import qualified Fragment.Case.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.Case.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.Case.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.Case.Rules.Type.Infer.Offline as UO
 import Fragment.Case.Rules.Term
 
 data RCase

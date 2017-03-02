@@ -15,8 +15,8 @@ module Fragment.Record.Rules (
 import Rules
 
 import Fragment.Record.Ast
-import qualified Fragment.Record.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.Record.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.Record.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.Record.Rules.Type.Infer.Offline as UO
 import Fragment.Record.Rules.Type
 import Fragment.Record.Rules.Term
 

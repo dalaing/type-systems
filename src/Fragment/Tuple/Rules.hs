@@ -15,8 +15,8 @@ module Fragment.Tuple.Rules (
 import Rules
 
 import Fragment.Tuple.Ast
-import qualified Fragment.Tuple.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.Tuple.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.Tuple.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.Tuple.Rules.Type.Infer.Offline as UO
 import Fragment.Tuple.Rules.Type
 import Fragment.Tuple.Rules.Term
 

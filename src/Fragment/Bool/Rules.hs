@@ -16,8 +16,8 @@ import Rules
 import Ast.Error.Common
 
 import Fragment.Bool.Ast
-import qualified Fragment.Bool.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.Bool.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.Bool.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.Bool.Rules.Type.Infer.Offline as UO
 import Fragment.Bool.Rules.Type
 import Fragment.Bool.Rules.Term
 

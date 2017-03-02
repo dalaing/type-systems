@@ -17,7 +17,7 @@ import GHC.Exts (Constraint)
 import Rules
 
 import Fragment.HM.Ast
-import Fragment.HM.Rules.Infer.Unification.Offline
+import Fragment.HM.Rules.Type.Infer.Offline
 import Fragment.HM.Rules.Type
 import Fragment.HM.Rules.Term
 

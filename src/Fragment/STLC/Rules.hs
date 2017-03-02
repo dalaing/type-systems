@@ -17,7 +17,7 @@ import GHC.Exts (Constraint)
 import Rules
 
 import Fragment.STLC.Ast
-import Fragment.STLC.Rules.Infer.SyntaxDirected
+import Fragment.STLC.Rules.Type.Infer.SyntaxDirected
 import Fragment.STLC.Rules.Type
 import Fragment.STLC.Rules.Term
 

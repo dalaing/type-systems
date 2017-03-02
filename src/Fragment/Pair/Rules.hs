@@ -15,8 +15,8 @@ module Fragment.Pair.Rules (
 import Rules
 
 import Fragment.Pair.Ast
-import qualified Fragment.Pair.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.Pair.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.Pair.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.Pair.Rules.Type.Infer.Offline as UO
 import Fragment.Pair.Rules.Type
 import Fragment.Pair.Rules.Term
 

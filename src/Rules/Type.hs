@@ -5,6 +5,7 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE RankNTypes #-}
 module Rules.Type (
     NormalizeTypeRule(..)
   , TypeInput(..)
@@ -17,33 +18,32 @@ import Data.Maybe (fromMaybe)
 
 import Ast.Type
 
-data NormalizeTypeRule ki ty a =
-    NormalizeTypeBase (Type ki ty a -> Maybe (Type ki ty a))
-  | NormalizeTypeRecurse ((Type ki ty a -> Type ki ty a) -> Type ki ty a -> Maybe (Type ki ty a))
+data NormalizeTypeRule ki ty =
+    NormalizeTypeBase (forall a. Type ki ty a -> Maybe (Type ki ty a))
+  | NormalizeTypeRecurse (forall a. (forall b. Type ki ty b -> Type ki ty b) -> Type ki ty a -> Maybe (Type ki ty a))
 
-fixNormalizeTypeRule :: (Type ki ty a -> Type ki ty a)
-                     -> NormalizeTypeRule ki ty a
+fixNormalizeTypeRule :: (forall b. Type ki ty b -> Type ki ty b)
+                     -> NormalizeTypeRule ki ty
                      -> Type ki ty a
                      -> Maybe (Type ki ty a)
 fixNormalizeTypeRule _ (NormalizeTypeBase f) = f
 fixNormalizeTypeRule normFn (NormalizeTypeRecurse f) = f normFn
 
-mkNormalizeType :: [NormalizeTypeRule ki ty a]
-                -> Type ki ty a
-                -> Type ki ty a
-mkNormalizeType rules x =
+mkNormalizeType :: [NormalizeTypeRule ki ty]
+                -> (forall a. Type ki ty a -> Type ki ty a)
+mkNormalizeType rules =
   let
     go ty =
       fromMaybe ty .
       asum .
-      fmap (\r -> fixNormalizeTypeRule go r ty) $
+      fmap (\r -> fixNormalizeTypeRule (mkNormalizeType rules) r ty) $
       rules
   in
-    go x
+    go
 
 data TypeInput ki ty a =
   TypeInput {
-    tiNormalizeTypeRules :: [NormalizeTypeRule ki ty a]
+    tiNormalizeTypeRules :: [NormalizeTypeRule ki ty]
   }
 
 instance Monoid (TypeInput ki ty a) where

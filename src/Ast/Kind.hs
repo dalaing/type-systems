@@ -23,6 +23,8 @@ module Ast.Kind (
   , KiSum(..)
   , _KiNow
   , _KiNext
+  , KiFBase
+  , AsKiBase(..)
   ) where
 
 import Control.Lens.Prism (Prism', prism)

@@ -17,8 +17,8 @@ import GHC.Exts (Constraint)
 import Rules
 import Ast.Pattern
 
-import qualified Fragment.PtWild.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.PtWild.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.PtWild.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.PtWild.Rules.Type.Infer.Offline as UO
 import Fragment.PtWild.Rules.Term
 
 data RPtWild

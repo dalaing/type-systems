@@ -36,8 +36,8 @@ import Ast.Term
 import Context.Term
 
 import Rules
-import qualified Rules.Infer.SyntaxDirected as SD
-import qualified Rules.Infer.Unification.Offline as UO
+import qualified Rules.Type.Infer.SyntaxDirected as SD
+import qualified Rules.Type.Infer.Offline as UO
 import Rules.Term
 
 import Fragment.PtVar
@@ -51,8 +51,8 @@ import Fragment.Tuple
 import Fragment.Record
 import Fragment.Variant
 -- import Fragment.STLC
-import Fragment.HM
--- import Fragment.SystemF
+-- import Fragment.HM
+import Fragment.SystemF
 import Fragment.Case
 
 type Rules =
@@ -67,8 +67,8 @@ type Rules =
    , RRecord
    , RVariant
    , RCase
-   , RHM
-   -- , RSystemF
+   -- , RHM
+   , RSystemF
    ]
 
 rules :: Proxy Rules

@@ -16,8 +16,8 @@ import GHC.Exts (Constraint)
 
 import Rules
 
-import qualified Fragment.PtVar.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.PtVar.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.PtVar.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.PtVar.Rules.Type.Infer.Offline as UO
 import Fragment.PtVar.Rules.Term
 
 data RPtVar

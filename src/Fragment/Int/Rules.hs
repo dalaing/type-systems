@@ -16,8 +16,9 @@ import Rules
 import Ast.Error.Common
 
 import Fragment.Int.Ast
-import qualified Fragment.Int.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.Int.Rules.Infer.Unification.Offline as UO
+import qualified Fragment.Int.Rules.Type.Infer.SyntaxDirected as SD
+import qualified Fragment.Int.Rules.Type.Infer.Offline as UO
+import Fragment.Int.Rules.Type
 import Fragment.Int.Rules.Term
 
 data RInt
@@ -25,6 +26,7 @@ data RInt
 instance RulesIn RInt where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RInt = SD.IntInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RInt = UO.IntInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RInt = IntTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RInt = IntTermContext ki ty pt tm a
   type KindList RInt = '[]
   type TypeList RInt = '[TyFInt]
@@ -35,4 +37,5 @@ instance RulesIn RInt where
 
   inferSyntaxInput _ = SD.intInferRules
   inferOfflineInput _ = UO.intInferRules
+  typeInput _ = intTypeRules
   termInput _ = intTermRules
