@@ -17,6 +17,7 @@ import Rules
 import Fragment.Record.Ast
 import qualified Fragment.Record.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.Record.Rules.Infer.Unification.Offline as UO
+import Fragment.Record.Rules.Type
 import Fragment.Record.Rules.Term
 
 data RRecord
@@ -24,6 +25,7 @@ data RRecord
 instance RulesIn RRecord where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RRecord = SD.RecordInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RRecord = UO.RecordInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RRecord = RecordTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RRecord = RecordTermContext ki ty pt tm a
   type KindList RRecord = '[]
   type TypeList RRecord = '[TyFRecord]
@@ -34,4 +36,5 @@ instance RulesIn RRecord where
 
   inferSyntaxInput _ = SD.recordInferRules
   inferOfflineInput _ = UO.recordInferRules
+  typeInput _ = recordTypeRules
   termInput _ = recordTermRules

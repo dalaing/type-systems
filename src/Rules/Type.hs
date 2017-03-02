@@ -1,0 +1,64 @@
+{-|
+Copyright   : (c) Dave Laing, 2017
+License     : BSD3
+Maintainer  : dave.laing.80@gmail.com
+Stability   : experimental
+Portability : non-portable
+-}
+module Rules.Type (
+    NormalizeTypeRule(..)
+  , TypeInput(..)
+  , TypeOutput(..)
+  , prepareType
+  ) where
+
+import Data.Foldable (asum)
+import Data.Maybe (fromMaybe)
+
+import Ast.Type
+
+data NormalizeTypeRule ki ty a =
+    NormalizeTypeBase (Type ki ty a -> Maybe (Type ki ty a))
+  | NormalizeTypeRecurse ((Type ki ty a -> Type ki ty a) -> Type ki ty a -> Maybe (Type ki ty a))
+
+fixNormalizeTypeRule :: (Type ki ty a -> Type ki ty a)
+                     -> NormalizeTypeRule ki ty a
+                     -> Type ki ty a
+                     -> Maybe (Type ki ty a)
+fixNormalizeTypeRule _ (NormalizeTypeBase f) = f
+fixNormalizeTypeRule normFn (NormalizeTypeRecurse f) = f normFn
+
+mkNormalizeType :: [NormalizeTypeRule ki ty a]
+                -> Type ki ty a
+                -> Type ki ty a
+mkNormalizeType rules x =
+  let
+    go ty =
+      fromMaybe ty .
+      asum .
+      fmap (\r -> fixNormalizeTypeRule go r ty) $
+      rules
+  in
+    go x
+
+data TypeInput ki ty a =
+  TypeInput {
+    tiNormalizeTypeRules :: [NormalizeTypeRule ki ty a]
+  }
+
+instance Monoid (TypeInput ki ty a) where
+  mempty =
+    TypeInput
+      mempty
+  mappend (TypeInput n1) (TypeInput n2) =
+    TypeInput
+      (mappend n1 n2)
+
+data TypeOutput ki ty a =
+  TypeOutput {
+    toNormalizeType :: Type ki ty a -> Type ki ty a
+  }
+
+prepareType :: TypeInput ki ty a -> TypeOutput ki ty a
+prepareType (TypeInput nt) =
+  TypeOutput (mkNormalizeType nt)

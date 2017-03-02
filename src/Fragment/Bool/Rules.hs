@@ -18,6 +18,7 @@ import Ast.Error.Common
 import Fragment.Bool.Ast
 import qualified Fragment.Bool.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.Bool.Rules.Infer.Unification.Offline as UO
+import Fragment.Bool.Rules.Type
 import Fragment.Bool.Rules.Term
 
 data RBool
@@ -25,6 +26,7 @@ data RBool
 instance RulesIn RBool where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RBool = SD.BoolInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RBool = UO.BoolInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RBool = BoolTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RBool = BoolTermContext ki ty pt tm a
   type KindList RBool = '[]
   type TypeList RBool = '[TyFBool]
@@ -35,5 +37,6 @@ instance RulesIn RBool where
 
   inferSyntaxInput _ = SD.boolInferRules
   inferOfflineInput _ = UO.boolInferRules
+  typeInput _ = boolTypeRules
   termInput _ = boolTermRules
 

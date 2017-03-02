@@ -18,6 +18,7 @@ import Rules
 
 import Fragment.HM.Ast
 import Fragment.HM.Rules.Infer.Unification.Offline
+import Fragment.HM.Rules.Type
 import Fragment.HM.Rules.Term
 
 data RHM
@@ -25,6 +26,7 @@ data RHM
 instance RulesIn RHM where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RHM = (() :: Constraint)
   type RuleInferOfflineContext e w s r m ki ty pt tm a RHM = HMInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RHM = HMTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RHM = HMTermContext ki ty pt tm a
   type KindList RHM = '[]
   type TypeList RHM = '[TyFHM]
@@ -35,4 +37,5 @@ instance RulesIn RHM where
 
   inferSyntaxInput _ = mempty
   inferOfflineInput _ = hmInferRules
+  typeInput _ = hmTypeRules
   termInput _ = hmTermRules

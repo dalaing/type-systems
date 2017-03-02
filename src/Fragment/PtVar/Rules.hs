@@ -12,6 +12,8 @@ module Fragment.PtVar.Rules (
     RPtVar
   ) where
 
+import GHC.Exts (Constraint)
+
 import Rules
 
 import qualified Fragment.PtVar.Rules.Infer.SyntaxDirected as SD
@@ -23,6 +25,7 @@ data RPtVar
 instance RulesIn RPtVar where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RPtVar = SD.PtVarInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RPtVar = UO.PtVarInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RPtVar = (() :: Constraint)
   type RuleTermContext ki ty pt tm a RPtVar = PtVarTermContext ki ty pt tm a
   type KindList RPtVar = '[]
   type TypeList RPtVar = '[]
@@ -33,4 +36,5 @@ instance RulesIn RPtVar where
 
   inferSyntaxInput _ = SD.ptVarInferRules
   inferOfflineInput _ = UO.ptVarInferRules
+  typeInput _ = mempty
   termInput _ = ptVarTermRules

@@ -25,6 +25,7 @@ data RTmVar
 instance RulesIn RTmVar where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RTmVar = SD.TmVarInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RTmVar = UO.TmVarInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RTmVar = (() :: Constraint)
   type RuleTermContext ki ty tm pt a RTmVar = (() :: Constraint)
   type KindList RTmVar = '[]
   type TypeList RTmVar = '[]
@@ -35,4 +36,5 @@ instance RulesIn RTmVar where
 
   inferSyntaxInput _ = SD.tmVarInferRules
   inferOfflineInput _ = UO.tmVarInferRules
+  typeInput _ = mempty
   termInput _ = mempty

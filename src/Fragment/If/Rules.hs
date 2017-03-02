@@ -12,6 +12,8 @@ module Fragment.If.Rules (
     RIf
   ) where
 
+import GHC.Exts (Constraint)
+
 import Rules
 import Ast.Error.Common
 
@@ -28,6 +30,7 @@ data RIf
 instance RulesIn RIf where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RIf = SD.IfInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RIf = UO.IfInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RIf = (() :: Constraint)
   type RuleTermContext ki ty pt tm a RIf = IfTermContext ki ty pt tm a
   type KindList RIf = '[]
   type TypeList RIf = '[TyFBool]
@@ -38,4 +41,5 @@ instance RulesIn RIf where
 
   inferSyntaxInput _ = SD.ifInferRules
   inferOfflineInput _ = UO.ifInferRules
+  typeInput _ = mempty
   termInput _ = ifTermRules

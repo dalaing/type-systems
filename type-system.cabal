@@ -35,6 +35,7 @@ library
                      , Context.Type.Error
                      , Rules
                      , Rules.Term
+                     , Rules.Type
                      , Rules.Infer
                      , Rules.Infer.SyntaxDirected
                      , Rules.Infer.Unification
@@ -69,6 +70,7 @@ library
                      , Fragment.Int.Rules
                      , Fragment.Int.Rules.Infer.SyntaxDirected
                      , Fragment.Int.Rules.Infer.Unification.Offline
+                     , Fragment.Int.Rules.Type
                      , Fragment.Int.Rules.Term
                      , Fragment.Int.Helpers
                      , Fragment.Bool
@@ -79,6 +81,7 @@ library
                      , Fragment.Bool.Rules
                      , Fragment.Bool.Rules.Infer.SyntaxDirected
                      , Fragment.Bool.Rules.Infer.Unification.Offline
+                     , Fragment.Bool.Rules.Type
                      , Fragment.Bool.Rules.Term
                      , Fragment.Bool.Helpers
                      , Fragment.If
@@ -98,6 +101,7 @@ library
                      , Fragment.Pair.Rules
                      , Fragment.Pair.Rules.Infer.SyntaxDirected
                      , Fragment.Pair.Rules.Infer.Unification.Offline
+                     , Fragment.Pair.Rules.Type
                      , Fragment.Pair.Rules.Term
                      , Fragment.Pair.Helpers
                      , Fragment.Tuple
@@ -109,6 +113,7 @@ library
                      , Fragment.Tuple.Rules
                      , Fragment.Tuple.Rules.Infer.SyntaxDirected
                      , Fragment.Tuple.Rules.Infer.Unification.Offline
+                     , Fragment.Tuple.Rules.Type
                      , Fragment.Tuple.Rules.Term
                      , Fragment.Tuple.Helpers
                      , Fragment.Record
@@ -120,6 +125,7 @@ library
                      , Fragment.Record.Rules
                      , Fragment.Record.Rules.Infer.SyntaxDirected
                      , Fragment.Record.Rules.Infer.Unification.Offline
+                     , Fragment.Record.Rules.Type
                      , Fragment.Record.Rules.Term
                      , Fragment.Record.Helpers
                      , Fragment.Variant
@@ -131,6 +137,7 @@ library
                      , Fragment.Variant.Rules
                      , Fragment.Variant.Rules.Infer.SyntaxDirected
                      , Fragment.Variant.Rules.Infer.Unification.Offline
+                     , Fragment.Variant.Rules.Type
                      , Fragment.Variant.Rules.Term
                      , Fragment.Variant.Helpers
                      , Fragment.Case
@@ -150,6 +157,7 @@ library
                      , Fragment.STLC.Ast.Term
                      , Fragment.STLC.Rules
                      , Fragment.STLC.Rules.Infer.SyntaxDirected
+                     , Fragment.STLC.Rules.Type
                      , Fragment.STLC.Rules.Term
                      , Fragment.STLC.Helpers
                      , Fragment.HM
@@ -159,6 +167,7 @@ library
                      , Fragment.HM.Ast.Term
                      , Fragment.HM.Rules
                      , Fragment.HM.Rules.Infer.Unification.Offline
+                     , Fragment.HM.Rules.Type
                      , Fragment.HM.Rules.Term
                      , Fragment.HM.Helpers
                      , Fragment.SystemF
@@ -168,13 +177,14 @@ library
                      , Fragment.SystemF.Ast.Term
                      , Fragment.SystemF.Rules
                      , Fragment.SystemF.Rules.Infer.SyntaxDirected
+                     , Fragment.SystemF.Rules.Type
                      , Fragment.SystemF.Rules.Term
                      , Fragment.SystemF.Helpers
-                     -- , Fragment.SystemFw.Ast
-                     -- , Fragment.SystemFw.Ast.Kind
-                     -- , Fragment.SystemFw.Ast.Type
-                     -- , Fragment.SystemFw.Ast.Error
-                     -- , Fragment.SystemFw.Ast.Term
+                     , Fragment.SystemFw.Ast
+                     , Fragment.SystemFw.Ast.Kind
+                     , Fragment.SystemFw.Ast.Type
+                     , Fragment.SystemFw.Ast.Error
+                     , Fragment.SystemFw.Ast.Term
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

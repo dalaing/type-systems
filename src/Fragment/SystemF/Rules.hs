@@ -12,18 +12,21 @@ module Fragment.SystemF.Rules (
     RSystemF
   ) where
 
+import GHC.Exts (Constraint)
+
 import Rules
 
 import Fragment.SystemF.Ast
-import qualified Fragment.SystemF.Rules.Infer.SyntaxDirected as SD
-import qualified Fragment.SystemF.Rules.Infer.Unification.Offline as UO
+import Fragment.SystemF.Rules.Infer.SyntaxDirected
+import Fragment.SystemF.Rules.Type
 import Fragment.SystemF.Rules.Term
 
 data RSystemF
 
 instance RulesIn RSystemF where
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RSystemF = SD.SystemFInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RSystemF = UO.SystemFInferContext e w s r m ki ty pt tm a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RSystemF = SystemFInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RSystemF = (() :: Constraint)
+  type RuleTypeContext ki ty a RSystemF = SystemFTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RSystemF = SystemFTermContext ki ty pt tm a
   type KindList RSystemF = '[]
   type TypeList RSystemF = '[TyFSystemF]
@@ -32,6 +35,7 @@ instance RulesIn RSystemF where
   type PatternList RSystemF = '[]
   type TermList RSystemF = '[TmFSystemF]
 
-  inferSyntaxInput _ = SD.systemFInferRules
-  inferOfflineInput _ = UO.systemFInferRules
+  inferSyntaxInput _ = systemFInferRules
+  inferOfflineInput _ = mempty
+  typeInput _ = systemFTypeRules
   termInput _ = systemFTermRules

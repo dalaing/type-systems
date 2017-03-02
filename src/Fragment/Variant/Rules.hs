@@ -17,6 +17,7 @@ import Rules
 import Fragment.Variant.Ast
 import qualified Fragment.Variant.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.Variant.Rules.Infer.Unification.Offline as UO
+import Fragment.Variant.Rules.Type
 import Fragment.Variant.Rules.Term
 
 data RVariant
@@ -24,6 +25,7 @@ data RVariant
 instance RulesIn RVariant where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RVariant = SD.VariantInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RVariant = UO.VariantInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RVariant = VariantTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RVariant = VariantTermContext ki ty pt tm a
   type KindList RVariant = '[]
   type TypeList RVariant = '[TyFVariant]
@@ -34,4 +36,5 @@ instance RulesIn RVariant where
 
   inferSyntaxInput _ = SD.variantInferRules
   inferOfflineInput _ = UO.variantInferRules
+  typeInput _ = variantTypeRules
   termInput _ = variantTermRules

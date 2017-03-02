@@ -17,6 +17,7 @@ import Rules
 import Fragment.Pair.Ast
 import qualified Fragment.Pair.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.Pair.Rules.Infer.Unification.Offline as UO
+import Fragment.Pair.Rules.Type
 import Fragment.Pair.Rules.Term
 
 data RPair
@@ -24,6 +25,7 @@ data RPair
 instance RulesIn RPair where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RPair = SD.PairInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RPair = UO.PairInferContext e w s r m ki ty pt tm a
+  type RuleTypeContext ki ty a RPair = PairTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RPair = PairTermContext ki ty pt tm a
   type KindList RPair = '[]
   type TypeList RPair = '[TyFPair]
@@ -34,4 +36,5 @@ instance RulesIn RPair where
 
   inferSyntaxInput _ = SD.pairInferRules
   inferOfflineInput _ = UO.pairInferRules
+  typeInput _ = pairTypeRules
   termInput _ = pairTermRules
