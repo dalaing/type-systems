@@ -51,7 +51,7 @@ inferTmCase inferFn checkFn tm = do
           checkForDuplicatedPatternVariables vp
           let scopeBindings = bindings s
           lift $ checkForUnusedPatternVariables vp scopeBindings
-          contextBindings <- lookupBindings
+          contextBindings <- lookupTermBindings
           -- this won't fire at the moment, because bound is taking care of shadowing for us
           -- we'll need to track a bit more info about the original form of the AST before this works
           lift $ checkForShadowingPatternVariables vp contextBindings
@@ -66,9 +66,9 @@ inferTmCase inferFn checkFn tm = do
           local (termContext %~ setup) $ inferFn tm'
     tyC <- inferFn tmC
     tys <- mapM (go tyC) alts
-    expectAllEq tys
+    expectTypeAllEq tys
 
-type CaseInferContext e w s r m ki ty pt tm a = (Ord a, AstBound ki ty pt tm, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsExpectedPattern e ki ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsShadowingPatternVariables w a, AsExpectedAllEq e ki ty a, AsTmCase ki ty pt tm)
+type CaseInferContext e w s r m ki ty pt tm a = (Ord a, AstBound ki ty pt tm, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsExpectedPattern e ki ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsShadowingPatternVariables w a, AsExpectedTypeAllEq e ki ty a, AsTmCase ki ty pt tm)
 
 caseInferRules :: CaseInferContext e w s r m ki ty pt tm a
                => InferInput e w s r m ki ty pt tm a

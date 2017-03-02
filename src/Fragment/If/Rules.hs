@@ -21,22 +21,21 @@ import Fragment.Bool.Ast.Term
 import Fragment.If.Ast
 import qualified Fragment.If.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.If.Rules.Infer.Unification.Offline as UO
-import Fragment.If.Rules.Eval
+import Fragment.If.Rules.Term
 
 data RIf
 
 instance RulesIn RIf where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RIf = SD.IfInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RIf = UO.IfInferContext e w s r m ki ty pt tm a
-  type RuleEvalContext ki ty pt tm a RIf = IfEvalContext ki ty pt tm a
+  type RuleTermContext ki ty pt tm a RIf = IfTermContext ki ty pt tm a
   type KindList RIf = '[]
   type TypeList RIf = '[TyFBool]
-  type ErrorList ki ty pt tm a RIf = '[ErrUnexpected ki ty a, ErrExpectedEq ki ty a]
+  type ErrorList ki ty pt tm a RIf = '[ErrUnexpectedType ki ty a, ErrExpectedTypeEq ki ty a]
   type WarningList ki ty pt tm a RIf = '[]
   type PatternList RIf = '[]
   type TermList RIf = '[TmFBool, TmFIf]
 
   inferSyntaxInput _ = SD.ifInferRules
   inferOfflineInput _ = UO.ifInferRules
-  evalLazyInput _ = ifEvalRules
-  evalStrictInput _ = ifEvalRules
+  termInput _ = ifTermRules

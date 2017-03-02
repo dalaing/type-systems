@@ -6,17 +6,16 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.SystemF.Rules.Eval (
-    SystemFEvalContext
-  , systemFEvalRulesLazy
-  , systemFEvalRulesStrict
+module Fragment.SystemF.Rules.Term (
+    SystemFTermContext
+  , systemFTermRules
   ) where
 
 import Bound (Bound, instantiate1)
 import Control.Lens (review, preview)
 import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 
-import Rules.Eval
+import Rules.Term
 import Ast.Term
 
 import Fragment.SystemF.Ast.Term
@@ -69,23 +68,9 @@ stepTmApp2 valueFn stepFn tm = do
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-type SystemFEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsTmSystemF ki ty pt tm)
+type SystemFTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmSystemF ki ty pt tm)
 
-systemFEvalRulesLazy :: SystemFEvalContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
-systemFEvalRulesLazy =
-  EvalInput
-  [ ValueBase valTmLam
-  , ValueBase valTmLamTy
-  ]
-  [ EvalStep stepTmApp1
-  , EvalStep stepTmAppTy1
-  , EvalBase stepTmLamAppLazy
-  , EvalBase stepTmLamTyAppTy
-  ]
-  []
-
-systemFEvalRulesStrict :: SystemFEvalContext ki ty pt tm a
+systemFEvalRulesStrict :: SystemFTermContext ki ty pt tm a
                        => EvalInput ki ty pt tm a
 systemFEvalRulesStrict =
   EvalInput
@@ -99,3 +84,23 @@ systemFEvalRulesStrict =
   , EvalValueStep stepTmApp2
   ]
   []
+
+systemFEvalRulesLazy :: SystemFTermContext ki ty pt tm a
+                  => EvalInput ki ty pt tm a
+systemFEvalRulesLazy =
+  EvalInput
+  [ ValueBase valTmLam
+  , ValueBase valTmLamTy
+  ]
+  [ EvalStep stepTmApp1
+  , EvalStep stepTmAppTy1
+  , EvalBase stepTmLamAppLazy
+  , EvalBase stepTmLamTyAppTy
+  ]
+  []
+
+systemFTermRules :: SystemFTermContext ki ty pt tm a
+                 => TermInput ki ty pt tm a
+systemFTermRules =
+  TermInput systemFEvalRulesStrict systemFEvalRulesLazy
+

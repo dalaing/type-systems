@@ -40,7 +40,7 @@ inferInt tm = do
   _ <- preview _TmInt tm
   return . return . review _TyInt $ ()
 
-inferAdd :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ki ty a, AsTyInt ki ty, AsTmInt ki ty pt tm)
+inferAdd :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedType e ki ty a, AsTyInt ki ty, AsTmInt ki ty pt tm)
          => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
          -> Term ki ty pt tm a
          -> Maybe (UnifyT ki ty a m (Type ki ty a))
@@ -51,12 +51,12 @@ inferAdd inferFn tm = do
     ty2 <- inferFn tm2
     tyV <- fmap (review _TyVar) freshTyVar
     let ty = review _TyInt ()
-    expectEq ty1 ty
-    expectEq ty2 ty
-    expectEq tyV ty
+    expectTypeEq ty1 ty
+    expectTypeEq ty2 ty
+    expectTypeEq tyV ty
     return tyV
 
-inferMul :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ki ty a, AsTyInt ki ty, AsTmInt ki ty pt tm)
+inferMul :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedType e ki ty a, AsTyInt ki ty, AsTmInt ki ty pt tm)
          => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
          -> Term ki ty pt tm a
          -> Maybe (UnifyT ki ty a m (Type ki ty a))
@@ -67,12 +67,12 @@ inferMul inferFn tm = do
     ty2 <- inferFn tm2
     tyV <- fmap (review _TyVar) freshTyVar
     let ty = review _TyInt ()
-    expectEq ty1 ty
-    expectEq ty2 ty
-    expectEq tyV ty
+    expectTypeEq ty1 ty
+    expectTypeEq ty2 ty
+    expectTypeEq tyV ty
     return tyV
 
-checkInt :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a, AsPtInt pt, AsTyInt ki ty)
+checkInt :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsPtInt pt, AsTyInt ki ty)
          => Pattern pt a
          -> Type ki ty a
          -> Maybe (UnifyT ki ty a m [Type ki ty a])
@@ -80,7 +80,7 @@ checkInt p ty = do
   _ <- preview _PtInt p
   return $ do
     let tyI = review _TyInt ()
-    expect (ExpectedType tyI) (ActualType ty)
+    expectType (ExpectedType tyI) (ActualType ty)
     return []
 
 type IntInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)

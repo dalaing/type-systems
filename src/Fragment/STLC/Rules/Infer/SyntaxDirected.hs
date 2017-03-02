@@ -45,17 +45,17 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq a, EqRec (ty ki), MonadError e m, AsTySTLC ki ty, AsTmSTLC ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
+inferTmApp :: (Eq a, EqRec (ty ki), MonadError e m, AsTySTLC ki ty, AsTmSTLC ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedTypeEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmApp tyEquiv inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
     tyF <- inferFn tmF
     (tyArg, tyRet) <- expectTyArr tyF
     tyX <- inferFn tmX
-    expectEq tyEquiv tyArg tyX
+    expectTypeEq tyEquiv tyArg tyX
     return tyRet
 
-type STLCInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTySTLC ki ty, AsExpectedEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmSTLC ki ty pt tm)
+type STLCInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTySTLC ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmSTLC ki ty pt tm)
 
 stlcInferRules :: STLCInferContext e w s r m ki ty pt tm a
                => InferInput e w s r m ki ty pt tm a

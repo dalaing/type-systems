@@ -11,10 +11,12 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Ast.Kind (
     Kind(..)
@@ -24,14 +26,14 @@ module Ast.Kind (
   ) where
 
 import Control.Lens.Prism (Prism', prism)
+import Control.Lens.Wrapped (_Wrapped)
+import Control.Lens.TH (makeWrapped, makePrisms)
 import Data.Functor.Classes
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
-data KiFArr k =
-  KiArrF k k
-  deriving (Eq, Ord, Show)
-
 newtype Kind k = Kind (k (Kind k))
+
+makeWrapped ''Kind
 
 instance Eq1 k => Eq (Kind k) where
   Kind x == Kind y = liftEq (==) x y
@@ -56,3 +58,27 @@ _KiNow = prism KiNow $ \x -> case x of
   KiNow y -> Right y
   _ -> Left x
 
+data KiFBase f =
+    KiBaseF
+  deriving (Eq, Ord, Show)
+
+makePrisms ''KiFBase
+
+deriveEq1 ''KiFBase
+deriveOrd1 ''KiFBase
+deriveShow1 ''KiFBase
+
+class AsKiBase ki where
+  _KiBaseP :: Prism' (ki j) (KiFBase j)
+
+  _KiBase :: Prism' (Kind ki) ()
+  _KiBase = _Wrapped . _KiBaseP . _KiBaseF
+
+instance AsKiBase KiFBase where
+  _KiBaseP = id
+
+instance {-# OVERLAPPABLE #-} AsKiBase (KiSum xs) => AsKiBase (KiSum (x ': xs)) where
+  _KiBaseP = _KiNext . _KiBaseP
+
+instance {-# OVERLAPPING #-} AsKiBase (KiSum (KiFBase ': xs)) where
+  _KiBaseP = _KiNow . _KiBaseP

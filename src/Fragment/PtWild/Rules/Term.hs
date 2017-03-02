@@ -6,14 +6,14 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.PtWild.Rules.Eval (
-    PtWildEvalContext
-  , ptWildEvalRules
+module Fragment.PtWild.Rules.Term (
+    PtWildTermContext
+  , ptWildTermRules
   ) where
 
 import Control.Lens (preview)
 
-import Rules.Eval
+import Rules.Term
 
 import Ast.Pattern
 import Ast.Term
@@ -23,12 +23,17 @@ matchWild p _ = do
   _ <- preview _PtWild p
   return []
 
-type PtWildEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsPtWild pt)
+type PtWildTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtWild pt)
 
-ptWildEvalRules :: PtWildEvalContext ki ty pt tm a
+ptWildEvalRules :: PtWildTermContext ki ty pt tm a
                => EvalInput ki ty pt tm a
 ptWildEvalRules =
   EvalInput
     []
     []
     [ MatchBase matchWild ]
+
+ptWildTermRules :: PtWildTermContext ki ty pt tm a
+                => TermInput ki ty pt tm a
+ptWildTermRules =
+  TermInput ptWildEvalRules ptWildEvalRules

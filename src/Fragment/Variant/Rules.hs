@@ -17,14 +17,14 @@ import Rules
 import Fragment.Variant.Ast
 import qualified Fragment.Variant.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.Variant.Rules.Infer.Unification.Offline as UO
-import Fragment.Variant.Rules.Eval
+import Fragment.Variant.Rules.Term
 
 data RVariant
 
 instance RulesIn RVariant where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RVariant = SD.VariantInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RVariant = UO.VariantInferContext e w s r m ki ty pt tm a
-  type RuleEvalContext ki ty pt tm a RVariant = VariantEvalContext ki ty pt tm a
+  type RuleTermContext ki ty pt tm a RVariant = VariantTermContext ki ty pt tm a
   type KindList RVariant = '[]
   type TypeList RVariant = '[TyFVariant]
   type ErrorList ki ty pt tm a RVariant = '[ErrExpectedTyVariant ki ty a, ErrVariantNotFound]
@@ -34,5 +34,4 @@ instance RulesIn RVariant where
 
   inferSyntaxInput _ = SD.variantInferRules
   inferOfflineInput _ = UO.variantInferRules
-  evalLazyInput _ = variantEvalRules
-  evalStrictInput _ = variantEvalRules
+  termInput _ = variantTermRules

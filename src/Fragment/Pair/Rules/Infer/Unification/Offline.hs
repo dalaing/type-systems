@@ -61,29 +61,29 @@ inferTmPair inferFn tm = do
     ty1 <- inferFn tm1
     ty2 <- inferFn tm2
     tyV <- fmap (review _TyVar) freshTyVar
-    expectEq (review _TyPair (ty1, ty2)) tyV
+    expectTypeEq (review _TyPair (ty1, ty2)) tyV
     return tyV
 
-inferTmFst :: (UnificationContext e m ki ty a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsExpectedEq e ki ty a, AsExpectedTyPair e ki ty a, AsTyPair ki ty, AsTmPair ki ty pt tm) => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a))
+inferTmFst :: (UnificationContext e m ki ty a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsExpectedTypeEq e ki ty a, AsExpectedTyPair e ki ty a, AsTyPair ki ty, AsTmPair ki ty pt tm) => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a))
 inferTmFst inferFn tm = do
   tmP <- preview _TmFst tm
   return $ do
     tyP <- inferFn tmP
     tyP1 <- fmap (review _TyVar) freshTyVar
     tyP2 <- fmap (review _TyVar) freshTyVar
-    expectEq tyP (review _TyPair (tyP1, tyP2))
+    expectTypeEq tyP (review _TyPair (tyP1, tyP2))
     -- would be nice to tag this with the expectTyPair error somehow
     -- ty1, _) <- expectTyPair tyP
     return tyP1
 
-inferTmSnd :: (UnificationContext e m ki ty a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsExpectedEq e ki ty a, AsExpectedTyPair e ki ty a, AsTyPair ki ty, AsTmPair ki ty pt tm) => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a))
+inferTmSnd :: (UnificationContext e m ki ty a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsExpectedTypeEq e ki ty a, AsExpectedTyPair e ki ty a, AsTyPair ki ty, AsTmPair ki ty pt tm) => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a))
 inferTmSnd inferFn tm = do
   tmP <- preview _TmSnd tm
   return $ do
     tyP <- inferFn tmP
     tyP1 <- fmap (review _TyVar) freshTyVar
     tyP2 <- fmap (review _TyVar) freshTyVar
-    expectEq tyP (review _TyPair (tyP1, tyP2))
+    expectTypeEq tyP (review _TyPair (tyP1, tyP2))
     -- would be nice to tag this with the expectTyPair error somehow
     -- (_, ty2) <- expectTyPair tyP
     return tyP2
@@ -98,7 +98,7 @@ checkPair checkFn p ty = do
   return $ do
     tyP1 <- fmap (review _TyVar) freshTyVar
     tyP2 <- fmap (review _TyVar) freshTyVar
-    expectEq ty (review _TyPair (tyP1, tyP2))
+    expectTypeEq ty (review _TyPair (tyP1, tyP2))
     --(ty1, ty2) <- expectTyPair ty
     mappend <$> checkFn p1 tyP1 <*> checkFn p2 tyP2
 

@@ -58,7 +58,7 @@ inferTmTuple inferFn tm = do
   return $ do
     tys <- traverse inferFn tms
     tyV <- fmap (review _TyVar) freshTyVar
-    expectEq (review _TyTuple tys) tyV
+    expectTypeEq (review _TyTuple tys) tyV
     return tyV
 
 inferTmTupleIx :: (UnificationContext e m ki ty a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsExpectedTyTuple e ki ty a, AsTupleOutOfBounds e, AsTyTuple ki ty, AsTmTuple ki ty pt tm)
@@ -71,7 +71,7 @@ inferTmTupleIx inferFn tm = do
     tyT <- inferFn tmT
     tys <- expectTyTuple tyT
     tyVs <- replicateM (length tys) (fmap (review _TyVar) freshTyVar)
-    expectEq tyT (review _TyTuple tyVs)
+    expectTypeEq tyT (review _TyTuple tyVs)
     lookupTuple tyVs i
     -- lookupTuple tys i
 

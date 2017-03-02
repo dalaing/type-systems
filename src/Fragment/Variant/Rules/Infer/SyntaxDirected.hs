@@ -37,14 +37,14 @@ equivVariant equivFn ty1 ty2 = do
   let f = fmap snd . sortOn fst . N.toList
   return . and $ zipWith equivFn (f vs1) (f vs2)
 
-inferTmVariant :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedEq e ki ty a, AsTyVariant ki ty, AsTmVariant ki ty pt tm) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
+inferTmVariant :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsTyVariant ki ty, AsTmVariant ki ty pt tm) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmVariant tyEquiv inferFn tm = do
   (l, tmV, ty) <- preview _TmVariant tm
   return $ do
     tyL <- inferFn tmV
     tys <- expectTyVariant ty
     tyV <- lookupVariant tys l
-    expectEq tyEquiv tyL tyV
+    expectTypeEq tyEquiv tyL tyV
     return ty
 
 checkVariant :: (MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsPtVariant pt, AsTyVariant ki ty) => (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Pattern pt a -> Type ki ty a -> Maybe (m [Type ki ty a])
@@ -55,7 +55,7 @@ checkVariant checkFn p ty = do
     tyV <- lookupVariant vs lV
     checkFn pV tyV
 
-type VariantInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyVariant ki ty, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedEq e ki ty a, AsPtVariant pt, AsTmVariant ki ty pt tm)
+type VariantInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyVariant ki ty, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsPtVariant pt, AsTmVariant ki ty pt tm)
 
 variantInferRules :: VariantInferContext e w s r m ki ty pt tm a
                 => InferInput e w s r m ki ty pt tm a

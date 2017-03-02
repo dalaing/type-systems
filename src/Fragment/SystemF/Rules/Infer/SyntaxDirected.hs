@@ -52,14 +52,14 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-inferTmApp :: (Eq a, EqRec (ty ki), MonadError e m, AsTySystemF ki ty, AsTmSystemF ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
+inferTmApp :: (Eq a, EqRec (ty ki), MonadError e m, AsTySystemF ki ty, AsTmSystemF ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedTypeEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmApp tyEquiv inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
     tyF <- inferFn tmF
     (tyArg, tyRet) <- expectTyArr tyF
     tyX <- inferFn tmX
-    expectEq tyEquiv tyArg tyX
+    expectTypeEq tyEquiv tyArg tyX
     return tyRet
 
 inferTmLamTy :: (Eq a, Bound (ty ki), Bound pt, Bound (tm ki ty pt), MonadState s m, HasTyVarSupply s, ToTyVar a, AsTySystemF ki ty, AsTmSystemF ki ty pt tm) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
@@ -78,7 +78,7 @@ inferTmAppTy inferFn tm = do
     s <- expectTyAll tyF
     return $ instantiate1 tyX s
 
-type SystemFInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ki ty a, AsTySystemF ki ty, AsExpectedEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemF ki ty pt tm)
+type SystemFInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ki ty a, AsTySystemF ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemF ki ty pt tm)
 
 systemFInferRules :: SystemFInferContext e w s r m ki ty pt tm a
                   => InferInput e w s r m ki ty pt tm a

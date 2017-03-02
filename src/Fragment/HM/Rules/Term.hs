@@ -6,17 +6,16 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.HM.Rules.Eval (
-    HMEvalContext
-  , hmEvalRulesLazy
-  , hmEvalRulesStrict
+module Fragment.HM.Rules.Term (
+    HMTermContext
+  , hmTermRules
   ) where
 
 import Bound (instantiate1)
 import Control.Lens (review, preview)
 import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 
-import Rules.Eval
+import Rules.Term
 import Ast.Term
 
 import Fragment.HM.Ast.Term
@@ -52,19 +51,9 @@ stepTmApp2 valueFn stepFn tm = do
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-type HMEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsTmHM ki ty pt tm)
+type HMTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmHM ki ty pt tm)
 
-hmEvalRulesLazy :: HMEvalContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
-hmEvalRulesLazy =
-  EvalInput
-  [ ValueBase valTmLam ]
-  [ EvalStep stepTmApp1
-  , EvalBase stepTmLamAppLazy
-  ]
-  []
-
-hmEvalRulesStrict :: HMEvalContext ki ty pt tm a
+hmEvalRulesStrict :: HMTermContext ki ty pt tm a
                     => EvalInput ki ty pt tm a
 hmEvalRulesStrict =
   EvalInput
@@ -75,3 +64,17 @@ hmEvalRulesStrict =
   ]
   []
 
+hmEvalRulesLazy :: HMTermContext ki ty pt tm a
+                  => EvalInput ki ty pt tm a
+hmEvalRulesLazy =
+  EvalInput
+  [ ValueBase valTmLam ]
+  [ EvalStep stepTmApp1
+  , EvalBase stepTmLamAppLazy
+  ]
+  []
+
+hmTermRules :: HMTermContext ki ty pt tm a
+            => TermInput ki ty pt tm a
+hmTermRules =
+  TermInput hmEvalRulesStrict hmEvalRulesLazy

@@ -18,11 +18,11 @@ module Rules.Infer.Unification.Offline (
     EquivRule(..)
   , InferRule(..)
   , PCheckRule(..)
-  , mkCheck
+  , mkCheckType
   , UnifyT
-  , expect
-  , expectEq
-  , expectAllEq
+  , expectType
+  , expectTypeEq
+  , expectTypeAllEq
   , InferInput(..)
   , InferOutput(..)
   , InferContext
@@ -115,16 +115,16 @@ mkInfer go unifyFn x = do
   s <- unifyFn cs
   return $ tySubst s ty
 
-mkCheck :: (Eq a, EqRec (ty ki), Monad m)
-        => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
-        -> Term ki ty pt tm a
-        -> Type ki ty a
-        -> UnifyT ki ty a m ()
-mkCheck inferFn x y =
+mkCheckType :: (Eq a, EqRec (ty ki), Monad m)
+            => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
+            -> Term ki ty pt tm a
+            -> Type ki ty a
+            -> UnifyT ki ty a m ()
+mkCheckType inferFn x y =
   let
     go tm ty = do
       tyAc <- inferFn tm
-      expect (ExpectedType ty) (ActualType tyAc)
+      expectType (ExpectedType ty) (ActualType tyAc)
   in
     go x y
 
@@ -135,7 +135,7 @@ mkCheck' :: (Eq a, EqRec (ty ki), Monad m)
         -> Type ki ty a
         -> m ()
 mkCheck' inferFn unifyFn x y = do
-  cs <- execWriterT $ (mkCheck inferFn) x y
+  cs <- execWriterT $ (mkCheckType inferFn) x y
   _ <- unifyFn cs
   return ()
 
@@ -158,18 +158,18 @@ mkPCheck rules x y =
   in
     go x y
 
-expect :: (Eq a, EqRec (ty ki), Monad m) => ExpectedType ki ty a -> ActualType ki ty a -> UnifyT ki ty a m ()
-expect (ExpectedType ty1) (ActualType ty2) =
+expectType :: (Eq a, EqRec (ty ki), Monad m) => ExpectedType ki ty a -> ActualType ki ty a -> UnifyT ki ty a m ()
+expectType (ExpectedType ty1) (ActualType ty2) =
   unless (ty1 == ty2) $
     tell [review (_UConstraint . _UCEq) (ty1, ty2)]
 
-expectEq :: (Eq a, EqRec (ty ki), Monad m) => Type ki ty a -> Type ki ty a -> UnifyT ki ty a m ()
-expectEq ty1 ty2 =
+expectTypeEq :: (Eq a, EqRec (ty ki), Monad m) => Type ki ty a -> Type ki ty a -> UnifyT ki ty a m ()
+expectTypeEq ty1 ty2 =
   unless (ty1 == ty2) $
     tell [review (_UConstraint . _UCEq) (ty1, ty2)]
 
-expectAllEq :: (Eq a, EqRec (ty ki), Monad m) => NonEmpty (Type ki ty a) -> UnifyT ki ty a m (Type ki ty a)
-expectAllEq n@(ty :| tys) = do
+expectTypeAllEq :: (Eq a, EqRec (ty ki), Monad m) => NonEmpty (Type ki ty a) -> UnifyT ki ty a m (Type ki ty a)
+expectTypeAllEq n@(ty :| tys) = do
   unless (all (== ty) tys ) $
     let
       xss = tails . N.toList $ n
@@ -204,7 +204,7 @@ data InferOutput e w s r m ki ty pt tm a =
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
 
-type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a, AsUnknownTypeError e, UnificationContext e m ki ty a)
+type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m ki ty a)
 
 prepareInfer :: InferContext e w s r m ki ty pt tm a
              => InferInput e w s r m ki ty pt tm a

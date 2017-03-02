@@ -38,7 +38,7 @@ import Context.Term
 import Rules
 import qualified Rules.Infer.SyntaxDirected as SD
 import qualified Rules.Infer.Unification.Offline as UO
-import Rules.Eval
+import Rules.Term
 
 import Fragment.PtVar
 import Fragment.PtWild
@@ -96,11 +96,11 @@ runM s r m =
 
 runEvalLazy :: LTerm -> LTerm
 runEvalLazy =
-  eoEval $ evalLazyOutput rules
+  eoEval . toEvalLazy . termOutput $ rules
 
 runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
-  eoEval $ evalStrictOutput rules
+  eoEval . toEvalStrict . termOutput $ rules
 
 runInferSyntax :: LTerm -> (Either LError LType, [LWarning])
 runInferSyntax =
@@ -126,17 +126,17 @@ runCheckOffline tm ty =
 
 runStepStrict :: LTerm -> Maybe LTerm
 runStepStrict =
-  eoStep $ evalStrictOutput rules
+  eoStep . toEvalStrict . termOutput $ rules
 
 runStepLazy :: LTerm -> Maybe LTerm
 runStepLazy =
-  eoStep $ evalLazyOutput rules
+  eoStep . toEvalLazy . termOutput $ rules
 
 runValueStrict :: LTerm -> Maybe LTerm
 runValueStrict =
-  eoValue $ evalStrictOutput rules
+  eoValue . toEvalStrict . termOutput $ rules
 
 runValueLazy :: LTerm -> Maybe LTerm
 runValueLazy =
-  eoValue $ evalLazyOutput rules
+  eoValue . toEvalLazy . termOutput $ rules
 

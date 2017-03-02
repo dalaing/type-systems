@@ -18,35 +18,41 @@ library
                      , Data.Bitransversable
                      , Data.Functor.Rec
                      , Language.TheLot
+                     , Ast.Kind
                      , Ast.Type
                      , Ast.Type.Var
                      , Ast.Error
                      , Ast.Error.Common
+                     , Ast.Error.Common.Type
+                     , Ast.Error.Common.Kind
                      , Ast.Warning
                      , Ast.Pattern
                      , Ast.Term
                      , Ast.Term.Var
                      , Context.Term
                      , Context.Term.Error
+                     , Context.Type
+                     , Context.Type.Error
                      , Rules
-                     , Rules.Eval
+                     , Rules.Term
                      , Rules.Infer
                      , Rules.Infer.SyntaxDirected
                      , Rules.Infer.Unification
                      , Rules.Infer.Unification.Offline
                      -- , Rules.Infer.Unification.Online
                      -- , Rules.Pattern
+                     , Rules.Kind
                      , Fragment.PtVar
                      , Fragment.PtVar.Rules
                      , Fragment.PtVar.Rules.Infer.SyntaxDirected
                      , Fragment.PtVar.Rules.Infer.Unification.Offline
-                     , Fragment.PtVar.Rules.Eval
+                     , Fragment.PtVar.Rules.Term
                      , Fragment.PtVar.Helpers
                      , Fragment.PtWild
                      , Fragment.PtWild.Rules
                      , Fragment.PtWild.Rules.Infer.SyntaxDirected
                      , Fragment.PtWild.Rules.Infer.Unification.Offline
-                     , Fragment.PtWild.Rules.Eval
+                     , Fragment.PtWild.Rules.Term
                      , Fragment.PtWild.Helpers
                      , Fragment.TmVar
                      , Fragment.TmVar.Rules
@@ -63,7 +69,7 @@ library
                      , Fragment.Int.Rules
                      , Fragment.Int.Rules.Infer.SyntaxDirected
                      , Fragment.Int.Rules.Infer.Unification.Offline
-                     , Fragment.Int.Rules.Eval
+                     , Fragment.Int.Rules.Term
                      , Fragment.Int.Helpers
                      , Fragment.Bool
                      , Fragment.Bool.Ast
@@ -73,7 +79,7 @@ library
                      , Fragment.Bool.Rules
                      , Fragment.Bool.Rules.Infer.SyntaxDirected
                      , Fragment.Bool.Rules.Infer.Unification.Offline
-                     , Fragment.Bool.Rules.Eval
+                     , Fragment.Bool.Rules.Term
                      , Fragment.Bool.Helpers
                      , Fragment.If
                      , Fragment.If.Ast
@@ -81,7 +87,7 @@ library
                      , Fragment.If.Rules
                      , Fragment.If.Rules.Infer.SyntaxDirected
                      , Fragment.If.Rules.Infer.Unification.Offline
-                     , Fragment.If.Rules.Eval
+                     , Fragment.If.Rules.Term
                      , Fragment.If.Helpers
                      , Fragment.Pair
                      , Fragment.Pair.Ast
@@ -92,7 +98,7 @@ library
                      , Fragment.Pair.Rules
                      , Fragment.Pair.Rules.Infer.SyntaxDirected
                      , Fragment.Pair.Rules.Infer.Unification.Offline
-                     , Fragment.Pair.Rules.Eval
+                     , Fragment.Pair.Rules.Term
                      , Fragment.Pair.Helpers
                      , Fragment.Tuple
                      , Fragment.Tuple.Ast
@@ -103,7 +109,7 @@ library
                      , Fragment.Tuple.Rules
                      , Fragment.Tuple.Rules.Infer.SyntaxDirected
                      , Fragment.Tuple.Rules.Infer.Unification.Offline
-                     , Fragment.Tuple.Rules.Eval
+                     , Fragment.Tuple.Rules.Term
                      , Fragment.Tuple.Helpers
                      , Fragment.Record
                      , Fragment.Record.Ast
@@ -114,7 +120,7 @@ library
                      , Fragment.Record.Rules
                      , Fragment.Record.Rules.Infer.SyntaxDirected
                      , Fragment.Record.Rules.Infer.Unification.Offline
-                     , Fragment.Record.Rules.Eval
+                     , Fragment.Record.Rules.Term
                      , Fragment.Record.Helpers
                      , Fragment.Variant
                      , Fragment.Variant.Ast
@@ -125,7 +131,7 @@ library
                      , Fragment.Variant.Rules
                      , Fragment.Variant.Rules.Infer.SyntaxDirected
                      , Fragment.Variant.Rules.Infer.Unification.Offline
-                     , Fragment.Variant.Rules.Eval
+                     , Fragment.Variant.Rules.Term
                      , Fragment.Variant.Helpers
                      , Fragment.Case
                      , Fragment.Case.Ast
@@ -135,7 +141,7 @@ library
                      , Fragment.Case.Rules
                      , Fragment.Case.Rules.Infer.SyntaxDirected
                      , Fragment.Case.Rules.Infer.Unification.Offline
-                     , Fragment.Case.Rules.Eval
+                     , Fragment.Case.Rules.Term
                      , Fragment.Case.Helpers
                      , Fragment.STLC
                      , Fragment.STLC.Ast
@@ -144,8 +150,7 @@ library
                      , Fragment.STLC.Ast.Term
                      , Fragment.STLC.Rules
                      , Fragment.STLC.Rules.Infer.SyntaxDirected
-                     , Fragment.STLC.Rules.Infer.Unification.Offline
-                     , Fragment.STLC.Rules.Eval
+                     , Fragment.STLC.Rules.Term
                      , Fragment.STLC.Helpers
                      , Fragment.HM
                      , Fragment.HM.Ast
@@ -154,7 +159,7 @@ library
                      , Fragment.HM.Ast.Term
                      , Fragment.HM.Rules
                      , Fragment.HM.Rules.Infer.Unification.Offline
-                     , Fragment.HM.Rules.Eval
+                     , Fragment.HM.Rules.Term
                      , Fragment.HM.Helpers
                      , Fragment.SystemF
                      , Fragment.SystemF.Ast
@@ -163,9 +168,13 @@ library
                      , Fragment.SystemF.Ast.Term
                      , Fragment.SystemF.Rules
                      , Fragment.SystemF.Rules.Infer.SyntaxDirected
-                     , Fragment.SystemF.Rules.Infer.Unification.Offline
-                     , Fragment.SystemF.Rules.Eval
+                     , Fragment.SystemF.Rules.Term
                      , Fragment.SystemF.Helpers
+                     -- , Fragment.SystemFw.Ast
+                     -- , Fragment.SystemFw.Ast.Kind
+                     -- , Fragment.SystemFw.Ast.Type
+                     -- , Fragment.SystemFw.Ast.Error
+                     -- , Fragment.SystemFw.Ast.Term
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

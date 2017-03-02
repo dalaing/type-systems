@@ -23,18 +23,18 @@ import Data.Functor.Rec
 import Fragment.Bool.Ast.Type
 import Fragment.If.Ast.Term
 
-inferTmIf :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a, AsExpectedEq e ki ty a, AsTyBool ki ty, AsTmIf ki ty pt tm) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
+inferTmIf :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsExpectedTypeEq e ki ty a, AsTyBool ki ty, AsTmIf ki ty pt tm) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
 inferTmIf tyEquiv inferFn tm = do
   (tmB, tmT, tmF) <- preview _TmIf tm
   return $ do
     tyB <- inferFn tmB
-    expect tyEquiv (ExpectedType tyB) (ActualType (review _TyBool ()))
+    expectType tyEquiv (ExpectedType tyB) (ActualType (review _TyBool ()))
     tyT <- inferFn tmT
     tyF <- inferFn tmF
-    expectEq tyEquiv tyT tyF
+    expectTypeEq tyEquiv tyT tyF
     return tyT
 
-type IfInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsUnexpected e ki ty a, AsExpectedEq e ki ty a, AsTyBool ki ty, AsTmIf ki ty pt tm)
+type IfInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsUnexpectedType e ki ty a, AsExpectedTypeEq e ki ty a, AsTyBool ki ty, AsTmIf ki ty pt tm)
 
 ifInferRules :: IfInferContext e w s r m ki ty pt tm a
              => InferInput e w s r m ki ty pt tm a

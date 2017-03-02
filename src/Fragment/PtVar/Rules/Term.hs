@@ -6,14 +6,14 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.PtVar.Rules.Eval (
-    PtVarEvalContext
-  , ptVarEvalRules
+module Fragment.PtVar.Rules.Term (
+    PtVarTermContext
+  , ptVarTermRules
   ) where
 
 import Control.Lens (preview)
 
-import Rules.Eval
+import Rules.Term
 
 import Ast.Pattern
 import Ast.Term
@@ -23,12 +23,17 @@ matchVar p tm = do
   _ <- preview _PtVar p
   return [tm]
 
-type PtVarEvalContext ki ty pt tm a = EvalContext ki ty pt tm a
+type PtVarTermContext ki ty pt tm a = TermContext ki ty pt tm a
 
-ptVarEvalRules :: PtVarEvalContext ki ty pt tm a
+ptVarEvalRules :: PtVarTermContext ki ty pt tm a
                => EvalInput ki ty pt tm a
 ptVarEvalRules =
   EvalInput
     []
     []
     [ MatchBase matchVar ]
+
+ptVarTermRules :: PtVarTermContext ki ty pt tm a
+               => TermInput ki ty pt tm a
+ptVarTermRules =
+  TermInput ptVarEvalRules ptVarEvalRules

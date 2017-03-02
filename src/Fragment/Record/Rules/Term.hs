@@ -6,17 +6,16 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.Record.Rules.Eval (
-    RecordEvalContext
-  , recordEvalRulesLazy
-  , recordEvalRulesStrict
+module Fragment.Record.Rules.Term (
+    RecordTermContext
+  , recordTermRules
   ) where
 
 import Data.Foldable (asum)
 
 import Control.Lens (review, preview)
 
-import Rules.Eval
+import Rules.Term
 import Ast.Pattern
 import Ast.Term
 
@@ -73,16 +72,9 @@ matchRecord matchFn p tm = do
         matchFn lp tmp
   fmap mconcat . traverse f $ ps
 
-type RecordEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsPtRecord pt, AsTmRecord ki ty pt tm)
+type RecordTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtRecord pt, AsTmRecord ki ty pt tm)
 
--- TODO check this, there might be more rules
-recordEvalRulesLazy :: RecordEvalContext ki ty pt tm a
-                   => EvalInput ki ty pt tm a
-recordEvalRulesLazy =
-  EvalInput
-  [] [EvalBase stepRecordIxLazy] [ MatchRecurse matchRecord ]
-
-recordEvalRulesStrict :: RecordEvalContext ki ty pt tm a
+recordEvalRulesStrict :: RecordTermContext ki ty pt tm a
                      => EvalInput ki ty pt tm a
 recordEvalRulesStrict =
   EvalInput
@@ -92,3 +84,15 @@ recordEvalRulesStrict =
     , EvalValueStep stepRecord
     ]
     [ MatchRecurse matchRecord ]
+
+recordEvalRulesLazy :: RecordTermContext ki ty pt tm a
+                   => EvalInput ki ty pt tm a
+recordEvalRulesLazy =
+  EvalInput
+  [] [EvalBase stepRecordIxLazy] [ MatchRecurse matchRecord ]
+
+recordTermRules :: RecordTermContext ki ty pt tm a
+                => TermInput ki ty pt tm a
+recordTermRules =
+  TermInput recordEvalRulesStrict recordEvalRulesLazy
+

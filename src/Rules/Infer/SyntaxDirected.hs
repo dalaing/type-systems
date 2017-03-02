@@ -12,10 +12,10 @@ module Rules.Infer.SyntaxDirected (
     EquivRule(..)
   , InferRule(..)
   , PCheckRule(..)
-  , mkCheck
-  , expect
-  , expectEq
-  , expectAllEq
+  , mkCheckType
+  , expectType
+  , expectTypeEq
+  , expectTypeAllEq
   , InferInput(..)
   , InferOutput(..)
   , InferContext
@@ -91,12 +91,12 @@ mkInfer tyEquiv pc rules =
   in
     go
 
-mkCheck :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Type ki ty a -> m ()
-mkCheck tyEquiv inferFn =
+mkCheckType :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Type ki ty a -> m ()
+mkCheckType tyEquiv inferFn =
   let
     go tm ty = do
       tyAc <- inferFn tm
-      expect tyEquiv (ExpectedType ty) (ActualType tyAc)
+      expectType tyEquiv (ExpectedType ty) (ActualType tyAc)
   in
     go
 
@@ -121,20 +121,20 @@ mkPCheck tyEquivFn rules x y =
   in
     go x y
 
-expect :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> ExpectedType ki ty a -> ActualType ki ty a -> m ()
-expect tyEquiv e@(ExpectedType ty1) a@(ActualType ty2) =
+expectType :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> ExpectedType ki ty a -> ActualType ki ty a -> m ()
+expectType tyEquiv e@(ExpectedType ty1) a@(ActualType ty2) =
   unless (ty1 `tyEquiv` ty2) $
-    throwing _Unexpected (e, a)
+    throwing _UnexpectedType (e, a)
 
-expectEq :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> m ()
-expectEq tyEquiv ty1 ty2 =
+expectTypeEq :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> Type ki ty a -> Type ki ty a -> m ()
+expectTypeEq tyEquiv ty1 ty2 =
   unless (ty1 `tyEquiv` ty2) $
-    throwing _ExpectedEq (ty1, ty2)
+    throwing _ExpectedTypeEq (ty1, ty2)
 
-expectAllEq :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedAllEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> NonEmpty (Type ki ty a) -> m (Type ki ty a)
-expectAllEq tyEquiv (ty :| tys) = do
+expectTypeAllEq :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedTypeAllEq e ki ty a) => (Type ki ty a -> Type ki ty a -> Bool) -> NonEmpty (Type ki ty a) -> m (Type ki ty a)
+expectTypeAllEq tyEquiv (ty :| tys) = do
   unless (all (tyEquiv ty) tys) $
-    throwing _ExpectedAllEq (ty :| tys)
+    throwing _ExpectedTypeAllEq (ty :| tys)
   return ty
 
 data InferInput e w s r m ki ty pt tm a =
@@ -159,7 +159,7 @@ data InferOutput e w s r m ki ty pt tm a =
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
 
-type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a, AsUnknownTypeError e)
+type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e)
 
 prepareInfer :: InferContext e w s r m ki ty pt tm a
              => InferInput e w s r m ki ty pt tm a
@@ -168,7 +168,7 @@ prepareInfer ii =
   let
     e = mkEquiv . iiEquivRules $ ii
     i = mkInfer e pc . iiInferRules $ ii
-    c = mkCheck e i
+    c = mkCheckType e i
     pc = mkPCheck e . iiPCheckRules $ ii
   in
     InferOutput i c

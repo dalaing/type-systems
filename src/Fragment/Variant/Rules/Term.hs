@@ -6,16 +6,16 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.Variant.Rules.Eval (
-    VariantEvalContext
-  , variantEvalRules
+module Fragment.Variant.Rules.Term (
+    VariantTermContext
+  , variantTermRules
   ) where
 
 import Control.Monad (MonadPlus(..))
 
 import Control.Lens (review, preview)
 
-import Rules.Eval
+import Rules.Term
 import Ast.Pattern
 import Ast.Term
 
@@ -42,12 +42,17 @@ matchVariant matchFn p tm = do
   then matchFn pV tmV
   else mzero
 
-type VariantEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsPtVariant pt, AsTmVariant ki ty pt tm)
+type VariantTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtVariant pt, AsTmVariant ki ty pt tm)
 
-variantEvalRules :: VariantEvalContext ki ty pt tm a
+variantEvalRules :: VariantTermContext ki ty pt tm a
                 => EvalInput ki ty pt tm a
 variantEvalRules =
   EvalInput
     [ ValueRecurse valueVariant ]
     [ EvalStep stepVariant ]
     [ MatchRecurse matchVariant ]
+
+variantTermRules :: VariantTermContext ki ty pt tm a
+                 => TermInput ki ty pt tm a
+variantTermRules =
+  TermInput variantEvalRules variantEvalRules

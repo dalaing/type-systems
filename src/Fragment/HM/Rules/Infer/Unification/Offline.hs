@@ -67,7 +67,7 @@ inferTmLam inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyV) $ inferFn tmF
     return $ review _TyArr (tyV, tyRet)
 
-inferTmApp :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsTyHM ki ty, AsTmHM ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedEq e ki ty a)
+inferTmApp :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsTyHM ki ty, AsTmHM ki ty pt tm, AsExpectedTyArr e ki ty a, AsExpectedTypeEq e ki ty a)
            => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
            -> Term ki ty pt tm a
            -> Maybe (UnifyT ki ty a m (Type ki ty a))
@@ -78,10 +78,10 @@ inferTmApp inferFn tm = do
     tyX <- inferFn tmX
     tyV <- fmap (review _TyVar) freshTyVar
     -- would be nice to tag this with the expectTyArr error somehow
-    expectEq tyF (review _TyArr (tyX, tyV))
+    expectTypeEq tyF (review _TyArr (tyX, tyV))
     return tyV
 
-type HMInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTyHM ki ty, AsExpectedEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmHM ki ty pt tm)
+type HMInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTyHM ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmHM ki ty pt tm)
 
 hmInferRules :: HMInferContext e w s r m ki ty pt tm a
              => InferInput e w s r m ki ty pt tm a

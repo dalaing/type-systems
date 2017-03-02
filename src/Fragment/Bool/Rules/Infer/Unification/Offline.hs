@@ -41,7 +41,7 @@ inferBool tm = do
   _ <- preview _TmBool tm
   return . return . review _TyBool $ ()
 
-inferAnd :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ki ty a, AsTyBool ki ty, AsTmBool ki ty pt tm)
+inferAnd :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedType e ki ty a, AsTyBool ki ty, AsTmBool ki ty pt tm)
          => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
          -> Term ki ty pt tm a
          -> Maybe (UnifyT ki ty a m (Type ki ty a))
@@ -52,12 +52,12 @@ inferAnd inferFn tm = do
     ty2 <- inferFn tm2
     tyV <- fmap (review _TyVar) freshTyVar
     let ty = review _TyBool ()
-    expectEq ty1 ty
-    expectEq ty2 ty
-    expectEq tyV ty
+    expectTypeEq ty1 ty
+    expectTypeEq ty2 ty
+    expectTypeEq tyV ty
     return tyV
 
-inferOr :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpected e ki ty a, AsTyBool ki ty, AsTmBool ki ty pt tm)
+inferOr :: (Eq a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedType e ki ty a, AsTyBool ki ty, AsTmBool ki ty pt tm)
          => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
          -> Term ki ty pt tm a
          -> Maybe (UnifyT ki ty a m (Type ki ty a))
@@ -68,12 +68,12 @@ inferOr inferFn tm = do
     ty2 <- inferFn tm2
     tyV <- fmap (review _TyVar) freshTyVar
     let ty = review _TyBool ()
-    expectEq ty1 ty
-    expectEq ty2 ty
-    expectEq tyV ty
+    expectTypeEq ty1 ty
+    expectTypeEq ty2 ty
+    expectTypeEq tyV ty
     return tyV
 
-checkBool :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpected e ki ty a, AsPtBool pt, AsTyBool ki ty)
+checkBool :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsPtBool pt, AsTyBool ki ty)
           => Pattern pt a
           -> Type ki ty a
           -> Maybe (UnifyT ki ty a m [Type ki ty a])
@@ -81,7 +81,7 @@ checkBool p ty = do
   _ <- preview _PtBool p
   return $ do
     let tyB = review _TyBool ()
-    expect (ExpectedType tyB) (ActualType ty)
+    expectType (ExpectedType tyB) (ActualType ty)
     return []
 
 type BoolInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)

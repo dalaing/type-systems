@@ -6,16 +6,16 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.Bool.Rules.Eval (
-    BoolEvalContext
-  , boolEvalRules
+module Fragment.Bool.Rules.Term (
+    BoolTermContext
+  , boolTermRules
   ) where
 
 import Control.Monad (MonadPlus(..))
 
 import Control.Lens (review, preview)
 
-import Rules.Eval
+import Rules.Term
 import Ast.Pattern
 import Ast.Term
 
@@ -95,9 +95,9 @@ matchBool eval p tm = do
   then return []
   else mzero
 
-type BoolEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsPtBool pt, AsTmBool ki ty pt tm)
+type BoolTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtBool pt, AsTmBool ki ty pt tm)
 
-boolEvalRules :: BoolEvalContext ki ty pt tm a
+boolEvalRules :: BoolTermContext ki ty pt tm a
                => EvalInput ki ty pt tm a
 boolEvalRules =
   EvalInput
@@ -110,3 +110,8 @@ boolEvalRules =
     , EvalBase stepOrBool
     ]
     [ MatchEval matchBool ]
+
+boolTermRules :: BoolTermContext ki ty pt tm a
+              => TermInput ki ty pt tm a
+boolTermRules =
+  TermInput boolEvalRules boolEvalRules

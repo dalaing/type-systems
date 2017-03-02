@@ -17,14 +17,15 @@ import Rules
 import Fragment.SystemF.Ast
 import qualified Fragment.SystemF.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.SystemF.Rules.Infer.Unification.Offline as UO
-import Fragment.SystemF.Rules.Eval
+import Fragment.SystemF.Rules.Term
 
 data RSystemF
 
 instance RulesIn RSystemF where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RSystemF = SD.SystemFInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RSystemF = UO.SystemFInferContext e w s r m ki ty pt tm a
-  type RuleEvalContext ki ty pt tm a RSystemF = SystemFEvalContext ki ty pt tm a
+  type RuleTermContext ki ty pt tm a RSystemF = SystemFTermContext ki ty pt tm a
+  type KindList RSystemF = '[]
   type TypeList RSystemF = '[TyFSystemF]
   type ErrorList ki ty pt tm a RSystemF = '[ErrExpectedTyArr ki ty a, ErrExpectedTyAll ki ty a]
   type WarningList ki ty pt tm a RSystemF = '[]
@@ -33,5 +34,4 @@ instance RulesIn RSystemF where
 
   inferSyntaxInput _ = SD.systemFInferRules
   inferOfflineInput _ = UO.systemFInferRules
-  evalLazyInput _ = systemFEvalRulesLazy
-  evalStrictInput _ = systemFEvalRulesStrict
+  termInput _ = systemFTermRules

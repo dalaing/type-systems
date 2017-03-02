@@ -13,7 +13,7 @@ module Context.Term (
   , emptyTermContext
   , HasTermContext(..)
   , AsUnboundTermVariable(..)
-  , lookupBindings
+  , lookupTermBindings
   , lookupTerm
   , insertTerm
   ) where
@@ -35,15 +35,15 @@ data TermContext ki ty a = TermContext (M.Map a (Type ki ty a))
 
 emptyTermContext :: TermContext ki ty a
 emptyTermContext = TermContext M.empty
- 
+
 class HasTermContext l ki ty a | l -> ki, l -> ty, l -> a where
   termContext :: Lens' l (TermContext ki ty a)
 
 instance HasTermContext (TermContext ki ty a) ki ty a where
   termContext = id
- 
-lookupBindings :: (MonadReader r m, HasTermContext r ki ty a) => m (S.Set a)
-lookupBindings = do
+
+lookupTermBindings :: (MonadReader r m, HasTermContext r ki ty a) => m (S.Set a)
+lookupTermBindings = do
   TermContext m <- view termContext
   return $ M.keysSet m
 

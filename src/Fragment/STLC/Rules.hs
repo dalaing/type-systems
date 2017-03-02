@@ -17,14 +17,15 @@ import Rules
 import Fragment.STLC.Ast
 import qualified Fragment.STLC.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.STLC.Rules.Infer.Unification.Offline as UO
-import Fragment.STLC.Rules.Eval
+import Fragment.STLC.Rules.Term
 
 data RSTLC
 
 instance RulesIn RSTLC where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RSTLC = SD.STLCInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RSTLC = UO.STLCInferContext e w s r m ki ty pt tm a
-  type RuleEvalContext ki ty pt tm a RSTLC = STLCEvalContext ki ty pt tm a
+  type RuleTermContext ki ty pt tm a RSTLC = STLCTermContext ki ty pt tm a
+  type KindList RSTLC = '[]
   type TypeList RSTLC = '[TyFSTLC]
   type ErrorList ki ty pt tm a RSTLC = '[ErrExpectedTyArr ki ty a]
   type WarningList ki ty pt tm a RSTLC = '[]
@@ -33,5 +34,4 @@ instance RulesIn RSTLC where
 
   inferSyntaxInput _ = SD.stlcInferRules
   inferOfflineInput _ = UO.stlcInferRules
-  evalLazyInput _ = stlcEvalRulesLazy
-  evalStrictInput _ = stlcEvalRulesStrict
+  termInput _ = stlcTermRules

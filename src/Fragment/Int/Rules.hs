@@ -18,22 +18,21 @@ import Ast.Error.Common
 import Fragment.Int.Ast
 import qualified Fragment.Int.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.Int.Rules.Infer.Unification.Offline as UO
-import Fragment.Int.Rules.Eval
+import Fragment.Int.Rules.Term
 
 data RInt
 
 instance RulesIn RInt where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RInt = SD.IntInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RInt = UO.IntInferContext e w s r m ki ty pt tm a
-  type RuleEvalContext ki ty pt tm a RInt = IntEvalContext ki ty pt tm a
+  type RuleTermContext ki ty pt tm a RInt = IntTermContext ki ty pt tm a
   type KindList RInt = '[]
   type TypeList RInt = '[TyFInt]
-  type ErrorList ki ty pt tm a RInt = '[ErrUnexpected ki ty a]
+  type ErrorList ki ty pt tm a RInt = '[ErrUnexpectedType ki ty a]
   type WarningList ki ty pt tm a RInt = '[]
   type PatternList RInt = '[PtFInt]
   type TermList RInt = '[TmFInt]
 
   inferSyntaxInput _ = SD.intInferRules
   inferOfflineInput _ = UO.intInferRules
-  evalLazyInput _ = intEvalRules
-  evalStrictInput _ = intEvalRules
+  termInput _ = intTermRules

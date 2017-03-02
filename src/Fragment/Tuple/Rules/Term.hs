@@ -6,10 +6,9 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.Tuple.Rules.Eval (
-    TupleEvalContext
-  , tupleEvalRulesLazy
-  , tupleEvalRulesStrict
+module Fragment.Tuple.Rules.Term (
+    TupleTermContext
+  , tupleTermRules
   ) where
 
 import Control.Monad (zipWithM)
@@ -17,7 +16,7 @@ import Data.Foldable (asum)
 
 import Control.Lens (review, preview)
 
-import Rules.Eval
+import Rules.Term
 import Ast.Pattern
 import Ast.Term
 
@@ -70,16 +69,9 @@ matchTuple matchFn p tm = do
   tmss <- zipWithM matchFn pts tms
   return $ mconcat tmss
 
-type TupleEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsPtTuple pt, AsTmTuple ki ty pt tm)
+type TupleTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtTuple pt, AsTmTuple ki ty pt tm)
 
--- TODO check this, there might be more rules
-tupleEvalRulesLazy :: TupleEvalContext ki ty pt tm a
-                   => EvalInput ki ty pt tm a
-tupleEvalRulesLazy =
-  EvalInput
-  [] [EvalBase stepTupleIxLazy] [ MatchRecurse matchTuple ]
-
-tupleEvalRulesStrict :: TupleEvalContext ki ty pt tm a
+tupleEvalRulesStrict :: TupleTermContext ki ty pt tm a
                      => EvalInput ki ty pt tm a
 tupleEvalRulesStrict =
   EvalInput
@@ -89,3 +81,14 @@ tupleEvalRulesStrict =
     , EvalValueStep stepTuple
     ]
     [ MatchRecurse matchTuple ]
+
+tupleEvalRulesLazy :: TupleTermContext ki ty pt tm a
+                   => EvalInput ki ty pt tm a
+tupleEvalRulesLazy =
+  EvalInput
+  [] [EvalBase stepTupleIxLazy] [ MatchRecurse matchTuple ]
+
+tupleTermRules :: TupleTermContext ki ty pt tm a
+               => TermInput ki ty pt tm a
+tupleTermRules =
+  TermInput tupleEvalRulesStrict tupleEvalRulesLazy

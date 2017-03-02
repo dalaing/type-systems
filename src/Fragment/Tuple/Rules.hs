@@ -17,14 +17,14 @@ import Rules
 import Fragment.Tuple.Ast
 import qualified Fragment.Tuple.Rules.Infer.SyntaxDirected as SD
 import qualified Fragment.Tuple.Rules.Infer.Unification.Offline as UO
-import Fragment.Tuple.Rules.Eval
+import Fragment.Tuple.Rules.Term
 
 data RTuple
 
 instance RulesIn RTuple where
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RTuple = SD.TupleInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RTuple = UO.TupleInferContext e w s r m ki ty pt tm a
-  type RuleEvalContext ki ty pt tm a RTuple = TupleEvalContext ki ty pt tm a
+  type RuleTermContext ki ty pt tm a RTuple = TupleTermContext ki ty pt tm a
   type KindList RTuple = '[]
   type TypeList RTuple = '[TyFTuple]
   type ErrorList ki ty pt tm a RTuple = '[ErrExpectedTyTuple ki ty a, ErrTupleOutOfBounds]
@@ -34,5 +34,4 @@ instance RulesIn RTuple where
 
   inferSyntaxInput _ = SD.tupleInferRules
   inferOfflineInput _ = UO.tupleInferRules
-  evalLazyInput _ = tupleEvalRulesLazy
-  evalStrictInput _ = tupleEvalRulesStrict
+  termInput _ = tupleTermRules

@@ -7,10 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE KindSignatures #-}
-module Fragment.Case.Rules.Eval (
-    CaseEvalContext
-  , caseEvalRulesLazy
-  , caseEvalRulesStrict
+module Fragment.Case.Rules.Term (
+    CaseTermContext
+  , caseTermRules
   ) where
 
 import Bound (instantiate)
@@ -19,7 +18,7 @@ import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 
 import qualified Data.List.NonEmpty as N
 
-import Rules.Eval
+import Rules.Term
 import Ast.Pattern
 import Ast.Term
 
@@ -59,18 +58,9 @@ stepCaseValueStrict valueFn matchFn tm = do
   vC <- valueFn tmC
   handleMatch matchFn vC alts
 
-type CaseEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AstBound ki ty pt tm, AstTransversable ki ty pt tm, AsTmCase ki ty pt tm)
+type CaseTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AstBound ki ty pt tm, AstTransversable ki ty pt tm, AsTmCase ki ty pt tm)
 
--- TODO check this, there might be more rules
-caseEvalRulesLazy :: CaseEvalContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
-caseEvalRulesLazy =
-  EvalInput
-    []
-    [EvalMatch stepCaseLazy]
-    []
-
-caseEvalRulesStrict :: CaseEvalContext ki ty pt tm a
+caseEvalRulesStrict :: CaseTermContext ki ty pt tm a
                     => EvalInput ki ty pt tm a
 caseEvalRulesStrict =
   EvalInput
@@ -79,3 +69,16 @@ caseEvalRulesStrict =
     , EvalValueMatch stepCaseValueStrict
     ]
     []
+
+caseEvalRulesLazy :: CaseTermContext ki ty pt tm a
+                  => EvalInput ki ty pt tm a
+caseEvalRulesLazy =
+  EvalInput
+    []
+    [EvalMatch stepCaseLazy]
+    []
+
+caseTermRules :: CaseTermContext ki ty pt tm a
+              => TermInput ki ty pt tm a
+caseTermRules =
+  TermInput caseEvalRulesStrict caseEvalRulesLazy

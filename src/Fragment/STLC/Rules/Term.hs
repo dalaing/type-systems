@@ -6,17 +6,16 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-module Fragment.STLC.Rules.Eval (
-    STLCEvalContext
-  , stlcEvalRulesLazy
-  , stlcEvalRulesStrict
+module Fragment.STLC.Rules.Term (
+    STLCTermContext
+  , stlcTermRules
   ) where
 
 import Bound (instantiate1)
 import Control.Lens (review, preview)
 import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 
-import Rules.Eval
+import Rules.Term
 import Ast.Term
 
 import Fragment.STLC.Ast.Term
@@ -52,19 +51,9 @@ stepTmApp2 valueFn stepFn tm = do
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-type STLCEvalContext ki ty pt tm a = (EvalContext ki ty pt tm a, AsTmSTLC ki ty pt tm)
+type STLCTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmSTLC ki ty pt tm)
 
-stlcEvalRulesLazy :: STLCEvalContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
-stlcEvalRulesLazy =
-  EvalInput
-  [ ValueBase valTmLam ]
-  [ EvalStep stepTmApp1
-  , EvalBase stepTmLamAppLazy
-  ]
-  []
-
-stlcEvalRulesStrict :: STLCEvalContext ki ty pt tm a
+stlcEvalRulesStrict :: STLCTermContext ki ty pt tm a
                     => EvalInput ki ty pt tm a
 stlcEvalRulesStrict =
   EvalInput
@@ -75,3 +64,17 @@ stlcEvalRulesStrict =
   ]
   []
 
+stlcEvalRulesLazy :: STLCTermContext ki ty pt tm a
+                  => EvalInput ki ty pt tm a
+stlcEvalRulesLazy =
+  EvalInput
+  [ ValueBase valTmLam ]
+  [ EvalStep stepTmApp1
+  , EvalBase stepTmLamAppLazy
+  ]
+  []
+
+stlcTermRules :: STLCTermContext ki ty pt tm a
+              => TermInput ki ty pt tm a
+stlcTermRules =
+  TermInput stlcEvalRulesStrict stlcEvalRulesLazy

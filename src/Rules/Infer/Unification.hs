@@ -127,7 +127,7 @@ mkUnifyMany unify1 ty1 ty2
   | length ty1 == length ty2 = zipWithM_ (\x y -> unify1 (UCEq x y)) ty1 ty2
   | otherwise = throwing _UnificationMismatch (ty1, ty2)
 
-mkUnify1 :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+mkUnify1 :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
          => (Type ki ty a -> Type ki ty a -> Bool)
          -> [UnificationRule m ki ty a]
          -> UConstraint ki ty a
@@ -155,7 +155,7 @@ mkUnify1 tyEquiv rules =
           equate c1 c2
         (Nothing, Nothing) ->
           unless (tyEquiv c1 c2) $
-            throwing _ExpectedEq (c1, c2)
+            throwing _ExpectedTypeEq (c1, c2)
   in
     unify1
 
@@ -184,7 +184,7 @@ instance (Ord a, Bound (ty ki), Bitransversable (ty ki)) => Monoid (TypeSubstitu
   mappend ts1@(TypeSubstitution m1) ts2@(TypeSubstitution m2) =
     TypeSubstitution $ M.unionWith combineType (fmap (tySubst ts2) m1) (fmap (tySubst ts1) m2)
 
-mkUnify' :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+mkUnify' :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
         => (Type ki ty a -> Type ki ty a -> Bool)
         -> [UnificationRule m ki ty a]
         -> [UConstraint ki ty a]
@@ -199,7 +199,7 @@ mkUnify' tyEquiv rules =
   in
     unify
 
-mkGatherTypeSubstitution :: (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+mkGatherTypeSubstitution :: (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
          => (forall s. [UConstraint ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())
          -> [UConstraint ki ty a]
          -> m (TypeSubstitution ki ty a)
@@ -213,7 +213,7 @@ mkGatherTypeSubstitution unify cs =
 -- probably want a version that has a substitution map stored in a writer monad, updates on calls to unify
 -- - this would be particularly useful for the online version of HM
 
-type UnificationContext e m ki ty a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+type UnificationContext e m ki ty a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
 
 mkUnify :: UnificationContext e m ki ty a
         => (Type ki ty a -> Type ki ty a -> Bool)
