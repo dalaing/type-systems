@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment.HM.Rules.Type.Infer.Offline (
     HMInferContext
   , hmInferRules
@@ -19,7 +20,7 @@ import Control.Lens (review, preview, (%~))
 import Control.Lens.Wrapped (_Wrapped)
 import Data.Equivalence.Monad (EquivT, classDesc)
 
-import Rules.Infer.Unification
+import Rules.Unification
 import Rules.Type.Infer.Offline
 import Ast.Type
 import Ast.Type.Var
@@ -33,12 +34,11 @@ import Fragment.HM.Ast.Type
 import Fragment.HM.Ast.Error
 import Fragment.HM.Ast.Term
 
-unifyArr :: (UnificationContext e m ki ty a, AsTyHM ki ty)
+unifyArr :: (UnificationContext e m (Type ki ty) a, AsTyHM ki ty)
           => ([Type ki ty a] -> [Type ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())
-          -> UConstraint ki ty a
+          -> UConstraint (Type ki ty) a
           -> Maybe (EquivT s (Type ki ty a) (Type ki ty a) m ())
-unifyArr unifyMany u = do
-  (ty1, ty2) <- preview _UCEq u
+unifyArr unifyMany (UCEq ty1 ty2) = do
   (p1a, p1b) <- preview _TyArr ty1
   (p2a, p2b) <- preview _TyArr ty2
   return $ do

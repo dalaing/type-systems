@@ -33,7 +33,7 @@ import Data.List (tails)
 import Data.Maybe (fromMaybe)
 import Data.Foldable (asum)
 
-import Control.Lens (review)
+import Bound (Bound)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Writer (MonadWriter(..), WriterT, execWriterT, runWriterT)
 import Control.Monad.Error.Lens (throwing)
@@ -41,6 +41,9 @@ import Control.Monad.Error.Lens (throwing)
 import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as N
 
+import qualified Data.Map as M
+
+import Data.Bitransversable
 import Data.Functor.Rec
 
 import Ast.Type
@@ -48,9 +51,9 @@ import Ast.Pattern
 import Ast.Term
 import Ast.Error.Common
 
-import Rules.Infer.Unification
+import Rules.Unification
 
-type UnifyT ki ty a = WriterT [UConstraint ki ty a]
+type UnifyT ki ty a = WriterT [UConstraint (Type ki ty) a]
 
 data InferRule e w s r m ki ty pt tm a =
     InferBase (Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a)))
@@ -83,15 +86,15 @@ mkInfer' normalizeFn pc rules =
   in
     go
 
-mkInfer :: (UnificationContext e m ki ty a, MonadError e m, AsUnknownTypeError e)
+mkInfer :: (UnificationContext e m (Type ki ty) a, MonadError e m, AsUnknownTypeError e)
         => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
-        -> ([UConstraint ki ty a] -> m (TypeSubstitution ki ty a))
+        -> ([UConstraint (Type ki ty) a] -> m (M.Map a (Type ki ty a)))
         -> Term ki ty pt tm a
         -> m (Type ki ty a)
 mkInfer go unifyFn x = do
   (ty, cs) <- runWriterT $ go x
   s <- unifyFn cs
-  return $ tySubst s ty
+  return $ mapSubst _TyVar s ty
 
 mkCheckType :: (Eq a, EqRec (ty ki), Monad m)
             => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
@@ -108,7 +111,7 @@ mkCheckType inferFn x y =
 
 mkCheck' :: (Eq a, EqRec (ty ki), Monad m)
         => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
-        -> ([UConstraint ki ty a] -> m (TypeSubstitution ki ty a))
+        -> ([UConstraint (Type ki ty) a] -> m (M.Map a (Type ki ty a)))
         -> Term ki ty pt tm a
         -> Type ki ty a
         -> m ()
@@ -139,12 +142,12 @@ mkPCheck rules x y =
 expectType :: (Eq a, EqRec (ty ki), Monad m) => ExpectedType ki ty a -> ActualType ki ty a -> UnifyT ki ty a m ()
 expectType (ExpectedType ty1) (ActualType ty2) =
   unless (ty1 == ty2) $
-    tell [review (_UConstraint . _UCEq) (ty1, ty2)]
+    tell [UCEq ty1 ty2]
 
 expectTypeEq :: (Eq a, EqRec (ty ki), Monad m) => Type ki ty a -> Type ki ty a -> UnifyT ki ty a m ()
 expectTypeEq ty1 ty2 =
   unless (ty1 == ty2) $
-    tell [review (_UConstraint . _UCEq) (ty1, ty2)]
+    tell [UCEq ty1 ty2]
 
 expectTypeAllEq :: (Eq a, EqRec (ty ki), Monad m) => NonEmpty (Type ki ty a) -> UnifyT ki ty a m (Type ki ty a)
 expectTypeAllEq n@(ty :| tys) = do
@@ -152,7 +155,7 @@ expectTypeAllEq n@(ty :| tys) = do
     let
       xss = tails . N.toList $ n
       f [] = []
-      f (x : xs) = fmap (\y -> review (_UConstraint . _UCEq) (x, y)) xs
+      f (x : xs) = fmap (UCEq x) xs
       ws = xss >>= f
     in
       tell ws
@@ -160,7 +163,7 @@ expectTypeAllEq n@(ty :| tys) = do
 
 data InferInput e w s r m ki ty pt tm a =
   InferInput {
-    iiUnifyRules :: [UnificationRule m ki ty a]
+    iiUnifyRules :: [UnificationRule m (Type ki ty) a]
   , iiInferRules :: [InferRule e w s r m ki ty pt tm a]
   , iiPCheckRules :: [PCheckRule e m pt ki ty a]
   }
@@ -180,7 +183,7 @@ data InferOutput e w s r m ki ty pt tm a =
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
 
-type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m ki ty a)
+type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m (Type ki ty) a)
 
 prepareInfer :: InferContext e w s r m ki ty pt tm a
              => (Type ki ty a -> Type ki ty a)
@@ -188,7 +191,7 @@ prepareInfer :: InferContext e w s r m ki ty pt tm a
              -> InferOutput e w s r m ki ty pt tm a
 prepareInfer normalizeFn ii =
   let
-    u = mkUnify normalizeFn . iiUnifyRules $ ii
+    u = mkUnify _TyVar normalizeFn . iiUnifyRules $ ii
     pc = mkPCheck . iiPCheckRules $ ii
     i' = mkInfer' normalizeFn pc . iiInferRules $ ii
     i = mkInfer i' u

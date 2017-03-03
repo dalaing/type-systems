@@ -24,7 +24,6 @@ import Data.Proxy
 import GHC.Exts (Constraint)
 
 import qualified Rules.Type.Infer.SyntaxDirected as SD
-import Rules.Infer.Unification
 import qualified Rules.Type.Infer.Offline as UO
 import Rules.Type
 import Rules.Term
@@ -70,7 +69,7 @@ instance RulesIn '[] where
   type RuleTermContext ki ty pt tm a '[] = (() :: Constraint)
   type KindList '[] = '[KiFBase]
   type TypeList '[] = '[]
-  type ErrorList ki ty pt tm a '[] = '[ErrUnknownTypeError, ErrOccursError ki ty a, ErrUnificationMismatch ki ty a]
+  type ErrorList ki ty pt tm a '[] = '[ErrUnknownTypeError]
   type WarningList ki ty pt tm a '[] = '[]
   type PatternList '[] = '[]
   type TermList '[] = '[]

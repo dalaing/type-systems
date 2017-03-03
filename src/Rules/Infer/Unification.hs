@@ -159,6 +159,21 @@ mkUnify1 normalizeFn rules =
   in
     unify1
 
+mkUnify' :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
+        => (Type ki ty a -> Type ki ty a)
+        -> [UnificationRule m ki ty a]
+        -> [UConstraint ki ty a]
+        -> EquivT s (Type ki ty a) (Type ki ty a) m ()
+mkUnify' normalizeFn rules =
+  let
+    unify1 = mkUnify1 normalizeFn rules
+    unify [] = return ()
+    unify (x : xs) = do
+      unify1 x
+      unify xs
+  in
+    unify
+
 combineType :: (Ord a, Bitransversable (ty ki)) => Type ki ty a -> Type ki ty a -> Type ki ty a
 combineType ty1 ty2 = case (preview _TyVar ty1, preview _TyVar ty2) of
   (Just _, Just _) -> ty1
@@ -183,21 +198,6 @@ instance (Ord a, Bound (ty ki), Bitransversable (ty ki)) => Monoid (TypeSubstitu
   mempty = TypeSubstitution mempty
   mappend ts1@(TypeSubstitution m1) ts2@(TypeSubstitution m2) =
     TypeSubstitution $ M.unionWith combineType (fmap (tySubst ts2) m1) (fmap (tySubst ts1) m2)
-
-mkUnify' :: (Ord a, OrdRec (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
-        => (Type ki ty a -> Type ki ty a)
-        -> [UnificationRule m ki ty a]
-        -> [UConstraint ki ty a]
-        -> EquivT s (Type ki ty a) (Type ki ty a) m ()
-mkUnify' normalizeFn rules =
-  let
-    unify1 = mkUnify1 normalizeFn rules
-    unify [] = return ()
-    unify (x : xs) = do
-      unify1 x
-      unify xs
-  in
-    unify
 
 mkGatherTypeSubstitution :: (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsExpectedTypeEq e ki ty a, AsOccursError e ki ty a, AsUnificationMismatch e ki ty a)
          => (forall s. [UConstraint ki ty a] -> EquivT s (Type ki ty a) (Type ki ty a) m ())

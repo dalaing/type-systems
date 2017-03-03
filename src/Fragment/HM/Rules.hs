@@ -15,6 +15,8 @@ module Fragment.HM.Rules (
 import GHC.Exts (Constraint)
 
 import Rules
+import Rules.Unification
+import Ast.Type
 
 import Fragment.HM.Ast
 import Fragment.HM.Rules.Type.Infer.Offline
@@ -30,7 +32,7 @@ instance RulesIn RHM where
   type RuleTermContext ki ty pt tm a RHM = HMTermContext ki ty pt tm a
   type KindList RHM = '[]
   type TypeList RHM = '[TyFHM]
-  type ErrorList ki ty pt tm a RHM = '[ErrExpectedTyArr ki ty a]
+  type ErrorList ki ty pt tm a RHM = '[ErrExpectedTyArr ki ty a, ErrOccursError (Type ki ty) a, ErrUnificationMismatch (Type ki ty) a, ErrUnificationExpectedEq (Type ki ty) a]
   type WarningList ki ty pt tm a RHM = '[]
   type PatternList RHM = '[]
   type TermList RHM = '[TmFHM]

@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment.Variant.Rules.Type.Infer.Offline (
     VariantInferContext
   , variantInferRules

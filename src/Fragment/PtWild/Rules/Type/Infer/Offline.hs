@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment.PtWild.Rules.Type.Infer.Offline (
     PtWildInferContext
   , ptWildInferRules

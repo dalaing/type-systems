@@ -36,13 +36,13 @@ library
                      , Rules
                      , Rules.Term
                      , Rules.Type
-                     , Rules.Infer.Unification
+                     , Rules.Unification
+                     -- , Rules.Infer.Unification
                      , Rules.Type.Infer.SyntaxDirected
                      , Rules.Type.Infer.Offline
                      -- , Rules.Type.Infer.Online
                      -- , Rules.Pattern
-                     , Rules.Kind
-                     -- , Rules.Kind.Infer.SyntaxDirected
+                     , Rules.Kind.Infer.SyntaxDirected
                      -- , Rules.Kind.Infer.Offline
                      , Fragment.PtVar
                      , Fragment.PtVar.Rules
@@ -62,6 +62,8 @@ library
                      , Fragment.TmVar.Rules.Type.Infer.Offline
                      , Fragment.TmVar.Helpers
                      , Fragment.TyVar
+                     , Fragment.TyVar.Rules
+                     , Fragment.TyVar.Rules.Type
                      -- , Fragment.TyVar.Rules.Kind.Infer.SyntaxDirected
                      -- , Fragment.TyVar.Rules.Kind.Infer.Offline
                      , Fragment.TyVar.Helpers

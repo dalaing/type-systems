@@ -9,4 +9,5 @@ module Fragment.TyVar (
     module X
   ) where
 
+import Fragment.TyVar.Rules as X
 import Fragment.TyVar.Helpers as X
