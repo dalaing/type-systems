@@ -25,12 +25,6 @@ import Fragment.Int.Ast.Type
 import Fragment.Int.Ast.Pattern
 import Fragment.Int.Ast.Term
 
-equivInt :: AsTyInt ki ty => Type ki ty a -> Type ki ty a -> Maybe Bool
-equivInt ty1 ty2 = do
-  _ <- preview _TyInt ty1
-  _ <- preview _TyInt ty2
-  return True
-
 inferInt :: (Monad m, AsTyInt ki ty, AsTmInt ki ty pt tm)
          => Term ki ty pt tm a
          -> Maybe (m (Type ki ty a))

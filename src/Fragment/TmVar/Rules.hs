@@ -23,6 +23,7 @@ import qualified Fragment.TmVar.Rules.Type.Infer.Offline as UO
 data RTmVar
 
 instance RulesIn RTmVar where
+  type RuleKindInferSyntaxContext e w s r m ki ty a RTmVar = (() :: Constraint)
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RTmVar = SD.TmVarInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RTmVar = UO.TmVarInferContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RTmVar = (() :: Constraint)
@@ -34,6 +35,7 @@ instance RulesIn RTmVar where
   type PatternList RTmVar = '[]
   type TermList RTmVar = '[]
 
+  inferKindInputSyntax _ = mempty
   inferSyntaxInput _ = SD.tmVarInferRules
   inferOfflineInput _ = UO.tmVarInferRules
   typeInput _ = mempty

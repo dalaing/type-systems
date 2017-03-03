@@ -23,6 +23,7 @@ import Fragment.PtVar.Rules.Term
 data RPtVar
 
 instance RulesIn RPtVar where
+  type RuleKindInferSyntaxContext e w s r m ki ty a RPtVar = (() :: Constraint)
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RPtVar = SD.PtVarInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RPtVar = UO.PtVarInferContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RPtVar = (() :: Constraint)
@@ -34,6 +35,7 @@ instance RulesIn RPtVar where
   type PatternList RPtVar = '[]
   type TermList RPtVar = '[]
 
+  inferKindInputSyntax _ = mempty
   inferSyntaxInput _ = SD.ptVarInferRules
   inferOfflineInput _ = UO.ptVarInferRules
   typeInput _ = mempty

@@ -15,28 +15,33 @@ module Fragment.Bool.Rules (
 import Rules
 import Ast.Error.Common
 
+import Fragment.KiBase.Ast.Kind
+
 import Fragment.Bool.Ast
-import qualified Fragment.Bool.Rules.Type.Infer.SyntaxDirected as SD
-import qualified Fragment.Bool.Rules.Type.Infer.Offline as UO
+import qualified Fragment.Bool.Rules.Kind.Infer.SyntaxDirected as KSD
+import qualified Fragment.Bool.Rules.Type.Infer.SyntaxDirected as TSD
+import qualified Fragment.Bool.Rules.Type.Infer.Offline as TUO
 import Fragment.Bool.Rules.Type
 import Fragment.Bool.Rules.Term
 
 data RBool
 
 instance RulesIn RBool where
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RBool = SD.BoolInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RBool = UO.BoolInferContext e w s r m ki ty pt tm a
+  type RuleKindInferSyntaxContext e w s r m ki ty a RBool = KSD.BoolKindRulesContext e w s r m ki ty a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RBool = TSD.BoolInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RBool = TUO.BoolInferContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RBool = BoolTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RBool = BoolTermContext ki ty pt tm a
-  type KindList RBool = '[]
+  type KindList RBool = '[KiFBase]
   type TypeList RBool = '[TyFBool]
   type ErrorList ki ty pt tm a RBool = '[ErrUnexpectedType ki ty a]
   type WarningList ki ty pt tm a RBool = '[]
   type PatternList RBool = '[PtFBool]
   type TermList RBool = '[TmFBool]
 
-  inferSyntaxInput _ = SD.boolInferRules
-  inferOfflineInput _ = UO.boolInferRules
+  inferKindInputSyntax _ = KSD.boolKindRules
+  inferSyntaxInput _ = TSD.boolInferRules
+  inferOfflineInput _ = TUO.boolInferRules
   typeInput _ = boolTypeRules
   termInput _ = boolTermRules
 

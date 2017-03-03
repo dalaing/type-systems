@@ -16,11 +16,13 @@ import GHC.Exts (Constraint)
 
 import Rules
 
+import Fragment.TyVar.Rules.Kind.Infer.SyntaxDirected
 import Fragment.TyVar.Rules.Type
 
 data RTyVar
 
 instance RulesIn RTyVar where
+  type RuleKindInferSyntaxContext e w s r m ki ty a RTyVar = TyVarKindRulesContext e w s r m ki ty a
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RTyVar = (() :: Constraint)
   type RuleInferOfflineContext e w s r m ki ty pt tm a RTyVar = (() :: Constraint)
   type RuleTypeContext ki ty a RTyVar = (TyVarTypeContext ki ty a)
@@ -32,6 +34,7 @@ instance RulesIn RTyVar where
   type PatternList RTyVar = '[]
   type TermList RTyVar = '[]
 
+  inferKindInputSyntax _ = tyVarKindRules
   inferSyntaxInput _ = mempty
   inferOfflineInput _ = mempty
   typeInput _ = tyVarTypeRules

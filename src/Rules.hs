@@ -23,8 +23,10 @@ module Rules (
 import Data.Proxy
 import GHC.Exts (Constraint)
 
-import qualified Rules.Type.Infer.SyntaxDirected as SD
-import qualified Rules.Type.Infer.Offline as UO
+import Rules.Unification
+import qualified Rules.Kind.Infer.SyntaxDirected as KSD
+import qualified Rules.Type.Infer.SyntaxDirected as TSD
+import qualified Rules.Type.Infer.Offline as TUO
 import Rules.Type
 import Rules.Term
 
@@ -46,6 +48,7 @@ instance TLAppend xs ys => TLAppend (x ': xs) ys where
   type Append (x ': xs) ys = x ': (Append xs ys)
 
 class RulesIn (k :: j) where
+  type RuleKindInferSyntaxContext e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
   type RuleInferSyntaxContext e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
   type RuleInferOfflineContext e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
   type RuleTypeContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
@@ -57,29 +60,33 @@ class RulesIn (k :: j) where
   type PatternList k :: [(* -> *) -> * -> *]
   type TermList k :: [(* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
 
-  inferSyntaxInput :: (SD.InferContext e w s r m ki ty pt tm a , RuleInferSyntaxContext e w s r m ki ty pt tm a k) => Proxy k -> SD.InferInput e w s r m ki ty pt tm a
-  inferOfflineInput :: (UO.InferContext e w s r m ki ty pt tm a , RuleInferOfflineContext e w s r m ki ty pt tm a k) => Proxy k -> UO.InferInput e w s r m ki ty pt tm a
+  inferKindInputSyntax :: (KSD.KindRulesContext e w s r m ki ty a , RuleKindInferSyntaxContext e w s r m ki ty a k) => Proxy k -> KSD.KindRulesInput e w s r m ki ty a
+  inferSyntaxInput :: (TSD.InferContext e w s r m ki ty pt tm a , RuleInferSyntaxContext e w s r m ki ty pt tm a k) => Proxy k -> TSD.InferInput e w s r m ki ty pt tm a
+  inferOfflineInput :: (TUO.InferContext e w s r m ki ty pt tm a , RuleInferOfflineContext e w s r m ki ty pt tm a k) => Proxy k -> TUO.InferInput e w s r m ki ty pt tm a
   typeInput :: RuleTypeContext ki ty a k => Proxy k -> TypeInput ki ty a
   termInput :: (TermContext ki ty pt tm a, RuleTermContext ki ty pt tm a k) => Proxy k -> TermInput ki ty pt tm a
 
 instance RulesIn '[] where
+  type RuleKindInferSyntaxContext e w s r m ki ty a '[] = (() :: Constraint)
   type RuleInferSyntaxContext e w s r m ki ty pt tm a '[] = (() :: Constraint)
   type RuleInferOfflineContext e w s r m ki ty pt tm a '[] = (() :: Constraint)
   type RuleTypeContext ki ty a '[] = (() :: Constraint)
   type RuleTermContext ki ty pt tm a '[] = (() :: Constraint)
-  type KindList '[] = '[KiFBase]
+  type KindList '[] = '[]
   type TypeList '[] = '[]
-  type ErrorList ki ty pt tm a '[] = '[ErrUnknownTypeError]
+  type ErrorList ki ty pt tm a '[] = '[ErrUnknownTypeError, ErrOccursError (Type ki ty) a, ErrUnificationMismatch (Type ki ty) a, ErrUnificationExpectedEq (Type ki ty) a]
   type WarningList ki ty pt tm a '[] = '[]
   type PatternList '[] = '[]
   type TermList '[] = '[]
 
+  inferKindInputSyntax _ = mempty
   inferSyntaxInput _ = mempty
   inferOfflineInput _ = mempty
   typeInput _ = mempty
   termInput _ = mempty
 
 instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
+  type RuleKindInferSyntaxContext e w s r m ki ty a (k ': ks) = (RuleKindInferSyntaxContext e w s r m ki ty a k, RuleKindInferSyntaxContext e w s r m ki ty a ks)
   type RuleInferSyntaxContext e w s r m ki ty pt tm a (k ': ks) = (RuleInferSyntaxContext e w s r m ki ty pt tm a k, RuleInferSyntaxContext e w s r m ki ty pt tm a ks)
   type RuleInferOfflineContext e w s r m ki ty pt tm a (k ': ks) = (RuleInferOfflineContext e w s r m ki ty pt tm a k, RuleInferOfflineContext e w s r m ki ty pt tm a ks)
   type RuleTypeContext ki ty a (k ': ks) = (RuleTypeContext ki ty a k, RuleTypeContext ki ty a ks)
@@ -91,6 +98,7 @@ instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
   type PatternList (k ': ks) = Append (PatternList k) (PatternList ks)
   type TermList (k ': ks) = Append (TermList k) (TermList ks)
 
+  inferKindInputSyntax _ = inferKindInputSyntax (Proxy :: Proxy k) `mappend` inferKindInputSyntax (Proxy :: Proxy ks)
   inferSyntaxInput _ = inferSyntaxInput (Proxy :: Proxy k) `mappend` inferSyntaxInput (Proxy :: Proxy ks)
   inferOfflineInput _ = inferOfflineInput (Proxy :: Proxy k) `mappend` inferOfflineInput (Proxy :: Proxy ks)
   typeInput _ = typeInput (Proxy :: Proxy k) `mappend` typeInput (Proxy :: Proxy ks)
@@ -109,8 +117,9 @@ class RulesOut (k :: j) where
   type RPattern k :: (* -> *)
   type RTerm k :: (* -> *)
 
-  inferSyntaxOutput :: (SD.InferContext e w s r m ki ty pt tm a, RuleInferSyntaxContext e w s r m ki ty pt tm a k, RuleTypeContext ki ty a k) => Proxy k -> SD.InferOutput e w s r m ki ty pt tm a
-  inferOfflineOutput :: (UO.InferContext e w s r m ki ty pt tm a, RuleInferOfflineContext e w s r m ki ty pt tm a k, RuleTypeContext ki ty a k) => Proxy k -> UO.InferOutput e w s r m ki ty pt tm a
+  inferKindOutputSyntax :: (KSD.KindRulesContext e w s r m ki ty a, RuleKindInferSyntaxContext e w s r m ki ty a k) => Proxy k -> KSD.KindRulesOutput e w s r m ki ty a
+  inferSyntaxOutput :: (TSD.InferContext e w s r m ki ty pt tm a, RuleInferSyntaxContext e w s r m ki ty pt tm a k, RuleTypeContext ki ty a k) => Proxy k -> TSD.InferOutput e w s r m ki ty pt tm a
+  inferOfflineOutput :: (TUO.InferContext e w s r m ki ty pt tm a, RuleInferOfflineContext e w s r m ki ty pt tm a k, RuleTypeContext ki ty a k) => Proxy k -> TUO.InferOutput e w s r m ki ty pt tm a
   typeOutput :: RuleTypeContext ki ty a k => Proxy k -> TypeOutput ki ty a
   termOutput :: (TermContext ki ty pt tm a, RuleTermContext ki ty pt tm a k) => Proxy k -> TermOutput ki ty pt tm a
 
@@ -127,7 +136,8 @@ instance RulesIn k => RulesOut (k :: j) where
   type RPattern k = Pattern (RPatternF k)
   type RTerm k = Term (RKindF k) (RTypeF k) (RPatternF k) (RTermF k)
 
-  inferSyntaxOutput p = SD.prepareInfer (toNormalizeType $ typeOutput p) . inferSyntaxInput $ p
-  inferOfflineOutput p = UO.prepareInfer (toNormalizeType $ typeOutput p) . inferOfflineInput $ p
+  inferKindOutputSyntax = KSD.prepareKindRules . inferKindInputSyntax
+  inferSyntaxOutput p = TSD.prepareInfer (toNormalizeType $ typeOutput p) . inferSyntaxInput $ p
+  inferOfflineOutput p = TUO.prepareInfer (toNormalizeType $ typeOutput p) . inferOfflineInput $ p
   typeOutput = prepareType . typeInput
   termOutput = prepareTerm . termInput

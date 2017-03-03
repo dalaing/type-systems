@@ -15,27 +15,32 @@ module Fragment.Int.Rules (
 import Rules
 import Ast.Error.Common
 
+import Fragment.KiBase.Ast.Kind
+
 import Fragment.Int.Ast
-import qualified Fragment.Int.Rules.Type.Infer.SyntaxDirected as SD
-import qualified Fragment.Int.Rules.Type.Infer.Offline as UO
+import qualified Fragment.Int.Rules.Kind.Infer.SyntaxDirected as KSD
+import qualified Fragment.Int.Rules.Type.Infer.SyntaxDirected as TSD
+import qualified Fragment.Int.Rules.Type.Infer.Offline as TUO
 import Fragment.Int.Rules.Type
 import Fragment.Int.Rules.Term
 
 data RInt
 
 instance RulesIn RInt where
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RInt = SD.IntInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RInt = UO.IntInferContext e w s r m ki ty pt tm a
+  type RuleKindInferSyntaxContext e w s r m ki ty a RInt = KSD.IntKindRulesContext e w s r m ki ty a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RInt = TSD.IntInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RInt = TUO.IntInferContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RInt = IntTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RInt = IntTermContext ki ty pt tm a
-  type KindList RInt = '[]
+  type KindList RInt = '[KiFBase]
   type TypeList RInt = '[TyFInt]
   type ErrorList ki ty pt tm a RInt = '[ErrUnexpectedType ki ty a]
   type WarningList ki ty pt tm a RInt = '[]
   type PatternList RInt = '[PtFInt]
   type TermList RInt = '[TmFInt]
 
-  inferSyntaxInput _ = SD.intInferRules
-  inferOfflineInput _ = UO.intInferRules
+  inferKindInputSyntax _ = KSD.intKindRules
+  inferSyntaxInput _ = TSD.intInferRules
+  inferOfflineInput _ = TUO.intInferRules
   typeInput _ = intTypeRules
   termInput _ = intTermRules

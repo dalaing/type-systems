@@ -23,15 +23,11 @@ module Ast.Kind (
   , KiSum(..)
   , _KiNow
   , _KiNext
-  , KiFBase
-  , AsKiBase(..)
   ) where
 
 import Control.Lens.Prism (Prism', prism)
-import Control.Lens.Wrapped (_Wrapped)
-import Control.Lens.TH (makeWrapped, makePrisms)
+import Control.Lens.TH (makeWrapped)
 import Data.Functor.Classes
-import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
 newtype Kind k = Kind (k (Kind k))
 
@@ -59,28 +55,3 @@ _KiNow :: Prism' (KiSum (f ': g) a) (f a)
 _KiNow = prism KiNow $ \x -> case x of
   KiNow y -> Right y
   _ -> Left x
-
-data KiFBase f =
-    KiBaseF
-  deriving (Eq, Ord, Show)
-
-makePrisms ''KiFBase
-
-deriveEq1 ''KiFBase
-deriveOrd1 ''KiFBase
-deriveShow1 ''KiFBase
-
-class AsKiBase ki where
-  _KiBaseP :: Prism' (ki j) (KiFBase j)
-
-  _KiBase :: Prism' (Kind ki) ()
-  _KiBase = _Wrapped . _KiBaseP . _KiBaseF
-
-instance AsKiBase KiFBase where
-  _KiBaseP = id
-
-instance {-# OVERLAPPABLE #-} AsKiBase (KiSum xs) => AsKiBase (KiSum (x ': xs)) where
-  _KiBaseP = _KiNext . _KiBaseP
-
-instance {-# OVERLAPPING #-} AsKiBase (KiSum (KiFBase ': xs)) where
-  _KiBaseP = _KiNow . _KiBaseP

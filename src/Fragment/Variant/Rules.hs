@@ -14,27 +14,32 @@ module Fragment.Variant.Rules (
 
 import Rules
 
+import Fragment.KiBase.Ast.Kind
+
 import Fragment.Variant.Ast
-import qualified Fragment.Variant.Rules.Type.Infer.SyntaxDirected as SD
-import qualified Fragment.Variant.Rules.Type.Infer.Offline as UO
+import qualified Fragment.Variant.Rules.Kind.Infer.SyntaxDirected as KSD
+import qualified Fragment.Variant.Rules.Type.Infer.SyntaxDirected as TSD
+import qualified Fragment.Variant.Rules.Type.Infer.Offline as TUO
 import Fragment.Variant.Rules.Type
 import Fragment.Variant.Rules.Term
 
 data RVariant
 
 instance RulesIn RVariant where
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RVariant = SD.VariantInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RVariant = UO.VariantInferContext e w s r m ki ty pt tm a
+  type RuleKindInferSyntaxContext e w s r m ki ty a RVariant = KSD.VariantKindRulesContext e w s r m ki ty a
+  type RuleInferSyntaxContext e w s r m ki ty pt tm a RVariant = TSD.VariantInferContext e w s r m ki ty pt tm a
+  type RuleInferOfflineContext e w s r m ki ty pt tm a RVariant = TUO.VariantInferContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RVariant = VariantTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RVariant = VariantTermContext ki ty pt tm a
-  type KindList RVariant = '[]
+  type KindList RVariant = '[KiFBase]
   type TypeList RVariant = '[TyFVariant]
   type ErrorList ki ty pt tm a RVariant = '[ErrExpectedTyVariant ki ty a, ErrVariantNotFound]
   type WarningList ki ty pt tm a RVariant = '[]
   type PatternList RVariant = '[PtFVariant]
   type TermList RVariant = '[TmFVariant]
 
-  inferSyntaxInput _ = SD.variantInferRules
-  inferOfflineInput _ = UO.variantInferRules
+  inferKindInputSyntax _ = KSD.variantKindRules
+  inferSyntaxInput _ = TSD.variantInferRules
+  inferOfflineInput _ = TUO.variantInferRules
   typeInput _ = variantTypeRules
   termInput _ = variantTermRules

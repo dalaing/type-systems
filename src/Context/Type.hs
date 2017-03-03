@@ -37,19 +37,19 @@ emptyTypeContext :: TypeContext ki a
 emptyTypeContext = TypeContext M.empty
 
 class HasTypeContext l ki a | l -> ki, l -> a where
-  termContext :: Lens' l (TypeContext ki a)
+  typeContext :: Lens' l (TypeContext ki a)
 
 instance HasTypeContext (TypeContext ki a) ki a where
-  termContext = id
+  typeContext = id
 
 lookupTypeBindings :: (MonadReader r m, HasTypeContext r ki a) => m (S.Set a)
 lookupTypeBindings = do
-  TypeContext m <- view termContext
+  TypeContext m <- view typeContext
   return $ M.keysSet m
 
 lookupType :: (Ord a, MonadReader r m, MonadError e m, HasTypeContext r ki a, AsUnboundTypeVariable e a) => a -> m (Kind ki)
 lookupType v = do
-  TypeContext m <- view termContext
+  TypeContext m <- view typeContext
   case M.lookup v m of
     Nothing -> throwing _UnboundTypeVariable v
     Just ty -> return ty

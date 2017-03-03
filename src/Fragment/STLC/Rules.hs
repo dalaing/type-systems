@@ -17,6 +17,7 @@ import GHC.Exts (Constraint)
 import Rules
 
 import Fragment.STLC.Ast
+import Fragment.STLC.Rules.Kind.Infer.SyntaxDirected
 import Fragment.STLC.Rules.Type.Infer.SyntaxDirected
 import Fragment.STLC.Rules.Type
 import Fragment.STLC.Rules.Term
@@ -24,6 +25,7 @@ import Fragment.STLC.Rules.Term
 data RSTLC
 
 instance RulesIn RSTLC where
+  type RuleKindInferSyntaxContext e w s r m ki ty a RSTLC = STLCKindRulesContext e w s r m ki ty a
   type RuleInferSyntaxContext e w s r m ki ty pt tm a RSTLC = STLCInferContext e w s r m ki ty pt tm a
   type RuleInferOfflineContext e w s r m ki ty pt tm a RSTLC = (() :: Constraint)
   type RuleTypeContext ki ty a RSTLC = STLCTypeContext ki ty a
@@ -35,6 +37,7 @@ instance RulesIn RSTLC where
   type PatternList RSTLC = '[]
   type TermList RSTLC = '[TmFSTLC]
 
+  inferKindInputSyntax _ = stlcKindRules
   inferSyntaxInput _ = stlcInferRules
   inferOfflineInput _ = mempty
   typeInput _ = stlcTypeRules
