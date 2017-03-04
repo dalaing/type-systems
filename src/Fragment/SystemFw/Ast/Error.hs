@@ -20,6 +20,9 @@ module Fragment.SystemFw.Ast.Error (
   , ErrExpectedTyAll(..)
   , AsExpectedTyAll(..)
   , expectTyAll
+  , ErrExpectedKiArr(..)
+  , AsExpectedKiArr(..)
+  , expectKiArr
   ) where
 
 import Bound (Scope)
@@ -33,6 +36,7 @@ import Ast.Kind
 import Ast.Type
 import Ast.Error
 
+import Fragment.SystemFw.Ast.Kind
 import Fragment.SystemFw.Ast.Type
 
 data ErrExpectedTyArr ki ty a = ErrExpectedTyArr (Type ki ty a)
@@ -80,3 +84,26 @@ expectTyAll ty =
   case preview _TyAll ty of
     Just (k, s) -> return (k, s)
     _ -> throwing _ExpectedTyAll ty
+
+data ErrExpectedKiArr ki = ErrExpectedKiArr (Kind ki)
+  deriving (Eq, Ord, Show)
+
+makePrisms ''ErrExpectedKiArr
+
+class AsExpectedKiArr e ki where -- | e -> ty, e -> a where
+  _ExpectedKiArr :: Prism' e (Kind ki)
+
+instance AsExpectedKiArr (ErrExpectedKiArr ki) ki where
+  _ExpectedKiArr = _ErrExpectedKiArr
+
+instance {-# OVERLAPPABLE #-} AsExpectedKiArr (ErrSum xs) ki => AsExpectedKiArr (ErrSum (x ': xs)) ki where
+  _ExpectedKiArr = _ErrNext . _ExpectedKiArr
+
+instance {-# OVERLAPPING #-} AsExpectedKiArr (ErrSum (ErrExpectedKiArr ki ': xs)) ki where
+  _ExpectedKiArr = _ErrNow . _ExpectedKiArr
+
+expectKiArr :: (MonadError e m, AsExpectedKiArr e ki , AsKiSystemFw ki) => Kind ki -> m (Kind ki, Kind ki)
+expectKiArr ty =
+  case preview _KiArr ty of
+    Just (tyArg, tyRet) -> return (tyArg, tyRet)
+    _ -> throwing _ExpectedKiArr ty

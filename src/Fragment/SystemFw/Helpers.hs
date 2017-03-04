@@ -45,8 +45,8 @@ tmLam v ty tm = review _TmLam (ty, abstract1 (review _ATmVar v) . review _Unwrap
 tmApp :: AsTmSystemFw ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmApp = curry $ review _TmApp
 
-tmLamTy :: (Eq a, AsTmSystemFw ki ty pt tm) => a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmLamTy v tm = review _TmLamTy (abstract1 (review _ATyVar v) . review _Unwrapped $ tm)
+tmLamTy :: (Eq a, AsTmSystemFw ki ty pt tm) => a -> Kind ki -> Term ki ty pt tm a -> Term ki ty pt tm a
+tmLamTy v ki tm = review _TmLamTy (ki, abstract1 (review _ATyVar v) . review _Unwrapped $ tm)
 
 tmAppTy :: AsTmSystemFw ki ty pt tm => Term ki ty pt tm a -> Type ki ty a -> Term ki ty pt tm a
 tmAppTy = curry $ review _TmAppTy
