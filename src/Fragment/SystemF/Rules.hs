@@ -15,6 +15,7 @@ module Fragment.SystemF.Rules (
 import GHC.Exts (Constraint)
 
 import Rules
+import Ast.Error.Common
 
 import Fragment.SystemF.Ast
 import Fragment.SystemF.Rules.Kind.Infer.SyntaxDirected
@@ -32,7 +33,7 @@ instance RulesIn RSystemF where
   type RuleTermContext ki ty pt tm a RSystemF = SystemFTermContext ki ty pt tm a
   type KindList RSystemF = '[]
   type TypeList RSystemF = '[TyFSystemF]
-  type ErrorList ki ty pt tm a RSystemF = '[ErrExpectedTyArr ki ty a, ErrExpectedTyAll ki ty a]
+  type ErrorList ki ty pt tm a RSystemF = '[ErrUnexpectedKind ki, ErrExpectedTyArr ki ty a, ErrExpectedTyAll ki ty a]
   type WarningList ki ty pt tm a RSystemF = '[]
   type PatternList RSystemF = '[]
   type TermList RSystemF = '[TmFSystemF]

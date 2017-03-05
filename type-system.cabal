@@ -29,6 +29,7 @@ library
                      , Ast.Pattern
                      , Ast.Term
                      , Ast.Term.Var
+                     , Context
                      , Context.Term
                      , Context.Term.Error
                      , Context.Type
@@ -203,6 +204,9 @@ library
                      , Fragment.SystemFw.Ast.Type
                      , Fragment.SystemFw.Ast.Error
                      , Fragment.SystemFw.Ast.Term
+                     , Fragment.SystemFw.Rules
+                     , Fragment.SystemFw.Rules.Kind.Infer.SyntaxDirected
+                     , Fragment.SystemFw.Rules.Type.Infer.SyntaxDirected
                      , Fragment.SystemFw.Rules.Type
                      , Fragment.SystemFw.Rules.Term
                      , Fragment.SystemFw.Helpers

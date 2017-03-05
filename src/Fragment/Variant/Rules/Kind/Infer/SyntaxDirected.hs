@@ -36,10 +36,10 @@ inferTyVariant inferFn ty = do
     traverse_ (\(_, tyV) -> mkCheckKind inferFn tyV ki) tys
     return . review _KiBase $ ()
 
-type VariantKindRulesContext e s w r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyVariant ki ty)
+type VariantKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyVariant ki ty)
 
-variantKindRules :: VariantKindRulesContext e s w r m ki ty a
-              => KindRulesInput e s w r m ki ty a
+variantKindRules :: VariantKindRulesContext e w s r m ki ty a
+              => KindRulesInput e w s r m ki ty a
 variantKindRules =
   KindRulesInput
     [InferKindRecurse inferTyVariant]

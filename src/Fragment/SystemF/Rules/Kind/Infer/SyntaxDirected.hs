@@ -57,10 +57,10 @@ inferTyAll inferFn ty = do
       throwing _UnexpectedKind (ExpectedKind ki, ActualKind ki')
     return ki
 
-type SystemFKindRulesContext e s w r m ki ty a = (Ord a, MonadReader r m, HasTypeContext r ki a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTySystemF ki ty)
+type SystemFKindRulesContext e w s r m ki ty a = (Ord a, MonadReader r m, HasTypeContext r ki a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTySystemF ki ty)
 
-systemFKindRules :: SystemFKindRulesContext e s w r m ki ty a
-              => KindRulesInput e s w r m ki ty a
+systemFKindRules :: SystemFKindRulesContext e w s r m ki ty a
+              => KindRulesInput e w s r m ki ty a
 systemFKindRules =
   KindRulesInput
     [ InferKindRecurse inferTyArr

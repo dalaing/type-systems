@@ -27,10 +27,10 @@ inferTyInt ty = do
   _ <- preview _TyInt ty
   return . return . review _KiBase $ ()
 
-type IntKindRulesContext e s w r m ki ty a = (Monad m, AsKiBase ki, AsTyInt ki ty)
+type IntKindRulesContext e w s r m ki ty a = (Monad m, AsKiBase ki, AsTyInt ki ty)
 
-intKindRules :: IntKindRulesContext e s w r m ki ty a
-              => KindRulesInput e s w r m ki ty a
+intKindRules :: IntKindRulesContext e w s r m ki ty a
+              => KindRulesInput e w s r m ki ty a
 intKindRules =
   KindRulesInput
     [InferKindBase inferTyInt]

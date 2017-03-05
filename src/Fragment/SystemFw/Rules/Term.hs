@@ -58,7 +58,7 @@ stepTmLamAppStrict valueFn tm = do
 stepTmLamTyAppTy :: (Bound (ty ki), Bound pt, Bound (tm ki ty pt)) => AsTmSystemFw ki ty pt tm => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
 stepTmLamTyAppTy tm = do
   (tmF, tyX) <- preview _TmAppTy tm
-  s <- preview _TmLamTy tmF
+  (_, s) <- preview _TmLamTy tmF
   return . review _Wrapped . instantiate1 (review _Type tyX) $ s
 
 stepTmApp2 :: AsTmSystemFw ki ty pt tm => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)

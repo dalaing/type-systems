@@ -36,10 +36,10 @@ inferTyRecord inferFn ty = do
     traverse_ (\(_, tyR) -> mkCheckKind inferFn tyR ki) tys
     return . review _KiBase $ ()
 
-type RecordKindRulesContext e s w r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyRecord ki ty)
+type RecordKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyRecord ki ty)
 
-recordKindRules :: RecordKindRulesContext e s w r m ki ty a
-              => KindRulesInput e s w r m ki ty a
+recordKindRules :: RecordKindRulesContext e w s r m ki ty a
+              => KindRulesInput e w s r m ki ty a
 recordKindRules =
   KindRulesInput
     [InferKindRecurse inferTyRecord]

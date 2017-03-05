@@ -27,10 +27,10 @@ inferTyBool ty = do
   _ <- preview _TyBool ty
   return . return . review _KiBase $ ()
 
-type BoolKindRulesContext e s w r m ki ty a = (Monad m, AsKiBase ki, AsTyBool ki ty)
+type BoolKindRulesContext e w s r m ki ty a = (Monad m, AsKiBase ki, AsTyBool ki ty)
 
-boolKindRules :: BoolKindRulesContext e s w r m ki ty a
-              => KindRulesInput e s w r m ki ty a
+boolKindRules :: BoolKindRulesContext e w s r m ki ty a
+              => KindRulesInput e w s r m ki ty a
 boolKindRules =
   KindRulesInput
     [InferKindBase inferTyBool]

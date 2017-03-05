@@ -35,10 +35,10 @@ inferTyPair inferFn ty = do
     mkCheckKind inferFn ty2 ki
     return . review _KiBase $ ()
 
-type PairKindRulesContext e s w r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyPair ki ty)
+type PairKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyPair ki ty)
 
-pairKindRules :: PairKindRulesContext e s w r m ki ty a
-              => KindRulesInput e s w r m ki ty a
+pairKindRules :: PairKindRulesContext e w s r m ki ty a
+              => KindRulesInput e w s r m ki ty a
 pairKindRules =
   KindRulesInput
     [InferKindRecurse inferTyPair]

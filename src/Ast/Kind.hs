@@ -55,3 +55,31 @@ _KiNow :: Prism' (KiSum (f ': g) a) (f a)
 _KiNow = prism KiNow $ \x -> case x of
   KiNow y -> Right y
   _ -> Left x
+
+instance Eq1 (KiSum '[]) where
+  liftEq _ _ _ = True
+
+instance (Eq1 x, Eq1 (KiSum xs)) => Eq1 (KiSum (x ': xs)) where
+  liftEq e (KiNow x) (KiNow y) = liftEq e x y
+  liftEq e (KiNext x) (KiNext y) = liftEq e x y
+  liftEq _ _ _ = False
+
+instance Ord1 (KiSum '[]) where
+  liftCompare _ _ _ = EQ
+
+instance (Ord1 x, Ord1 (KiSum xs)) => Ord1 (KiSum (x ': xs)) where
+  liftCompare c (KiNow x) (KiNow y) = liftCompare c x y
+  liftCompare _ (KiNow _) _ = LT
+  liftCompare _ _ (KiNow _) = GT
+  liftCompare c (KiNext x) (KiNext y) = liftCompare c x y
+
+instance Show1 (KiSum '[]) where
+  liftShowsPrec _ _ _ _ _ = ""
+
+instance (Show1 x, Show1 (KiSum xs)) => Show1 (KiSum (x ':xs)) where
+  liftShowsPrec s sl n (KiNow x) = liftShowsPrec s sl n x
+  liftShowsPrec s sl n (KiNext x) = liftShowsPrec s sl n x
+
+
+
+
