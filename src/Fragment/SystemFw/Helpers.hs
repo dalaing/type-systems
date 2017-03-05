@@ -6,7 +6,8 @@ Stability   : experimental
 Portability : non-portable
 -}
 module Fragment.SystemFw.Helpers (
-    tyArr
+    kiArr
+  , tyArr
   , tyAll
   , tyLam
   , tyApp
@@ -24,8 +25,12 @@ import Ast.Kind
 import Ast.Type
 import Ast.Term
 
+import Fragment.SystemFw.Ast.Kind
 import Fragment.SystemFw.Ast.Type
 import Fragment.SystemFw.Ast.Term
+
+kiArr :: AsKiSystemFw ki => Kind ki -> Kind ki -> Kind ki
+kiArr = curry $ review _KiArr
 
 tyArr :: AsTySystemFw ki ty => Type ki ty a -> Type ki ty a -> Type ki ty a
 tyArr = curry $ review _TyArr

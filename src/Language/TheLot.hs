@@ -49,6 +49,8 @@ import Rules.Term
 import Fragment.PtVar
 import Fragment.PtWild
 import Fragment.TmVar
+import Fragment.TyVar
+import Fragment.KiBase
 import Fragment.Int
 import Fragment.Bool
 import Fragment.If
@@ -65,6 +67,7 @@ type Rules =
   '[ RPtVar
    , RPtWild
    , RTmVar
+   , RTyVar
    , RInt
    , RBool
    , RIf
