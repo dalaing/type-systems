@@ -7,6 +7,7 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.TmVar.Rules.Type.Infer.Offline (
     TmVarInferContext
   , tmVarInferRules

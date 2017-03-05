@@ -12,10 +12,13 @@ Portability : non-portable
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Context.Type (
     TypeContext(..)
   , emptyTypeContext
-  , HasTypeContext(..)
+  , HasTypeContext'(..)
+  , HasTypeContext
   , AsUnboundTypeVariable(..)
   , lookupTypeBindings
   , lookupType
@@ -40,11 +43,19 @@ data TypeContext ki a = TypeContext (M.Map a (Kind ki))
 emptyTypeContext :: TypeContext ki a
 emptyTypeContext = TypeContext M.empty
 
-class HasTypeContext l ki a | l -> ki, l -> a where
-  typeContext :: Lens' l (TypeContext ki a)
+class HasTypeContext' l where
+  type TyCtxKi l :: (* -> *)
+  type TyCtxVar l :: *
 
-instance HasTypeContext (TypeContext ki a) ki a where
+  typeContext :: Lens' l (TypeContext (TyCtxKi l) (TyCtxVar l))
+
+instance HasTypeContext' (TypeContext ki a)where
+  type TyCtxKi (TypeContext ki a) = ki
+  type TyCtxVar (TypeContext ki a) = a
+
   typeContext = id
+
+type HasTypeContext r ki a = (HasTypeContext' r, ki ~ TyCtxKi r, a ~ TyCtxVar r)
 
 lookupTypeBindings :: (MonadReader r m, HasTypeContext r ki a) => m (S.Set a)
 lookupTypeBindings = do

@@ -6,16 +6,18 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Context.Term (
     TermContext(..)
   , emptyTermContext
-  , HasTermContext(..)
+  , HasTermContext'(..)
+  , HasTermContext
   , AsUnboundTermVariable(..)
   , lookupTermBindings
   , lookupTerm
@@ -40,11 +42,21 @@ data TermContext ki ty a = TermContext (M.Map a (Type ki ty a))
 emptyTermContext :: TermContext ki ty a
 emptyTermContext = TermContext M.empty
 
-class HasTermContext l ki ty a | l -> ki, l -> ty, l -> a where
-  termContext :: Lens' l (TermContext ki ty a)
+class HasTermContext' l where
+  type TmCtxKi l :: (* -> *)
+  type TmCtxTy l :: ((* -> *) -> (* -> *) -> * -> *)
+  type TmCtxVar l :: *
 
-instance HasTermContext (TermContext ki ty a) ki ty a where
+  termContext :: Lens' l (TermContext (TmCtxKi l) (TmCtxTy l) (TmCtxVar l))
+
+instance HasTermContext' (TermContext ki ty a) where
+  type TmCtxKi (TermContext ki ty a) = ki
+  type TmCtxTy (TermContext ki ty a) = ty
+  type TmCtxVar (TermContext ki ty a) = a
+
   termContext = id
+
+type HasTermContext r ki ty a = (HasTermContext' r, ki ~ TmCtxKi r, ty ~ TmCtxTy r, a ~ TmCtxVar r)
 
 lookupTermBindings :: (MonadReader r m, HasTermContext r ki ty a) => m (S.Set a)
 lookupTermBindings = do

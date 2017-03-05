@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.SystemFw.Rules.Kind.Infer.SyntaxDirected (
     SystemFwKindRulesContext
   , systemFwKindRules

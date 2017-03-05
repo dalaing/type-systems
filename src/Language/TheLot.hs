@@ -11,6 +11,9 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Language.TheLot (
     runEvalStrict
   , runEvalLazy
@@ -30,10 +33,13 @@ import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.Except
 import Control.Monad.State
+import Control.Lens ((&), (.~))
+import Control.Lens.TH (makeLenses)
 
 import Ast.Type
 import Ast.Term
-import Context.Term
+import qualified Context.Type as CTy
+import qualified Context.Term as CTm
 
 import Rules
 import qualified Rules.Type.Infer.SyntaxDirected as SD
@@ -52,7 +58,7 @@ import Fragment.Record
 import Fragment.Variant
 -- import Fragment.STLC
 -- import Fragment.HM
-import Fragment.SystemF
+import Fragment.SystemFw
 import Fragment.Case
 
 type Rules =
@@ -68,7 +74,7 @@ type Rules =
    , RVariant
    , RCase
    -- , RHM
-   , RSystemF
+   , RSystemFw
    ]
 
 rules :: Proxy Rules
@@ -94,6 +100,28 @@ runM s r m =
   flip evalStateT s $
   m
 
+data LContext =
+  LContext {
+    _lTermContext :: CTm.TermContext KindF TypeF String
+  , _lTypeContext :: CTy.TypeContext KindF String
+  }
+
+makeLenses ''LContext
+
+emptyContext :: LContext
+emptyContext = LContext CTm.emptyTermContext CTy.emptyTypeContext
+
+instance CTm.HasTermContext' LContext where
+  type TmCtxKi LContext = KindF
+  type TmCtxTy LContext = TypeF
+  type TmCtxVar LContext = String
+  termContext = lTermContext
+
+instance CTy.HasTypeContext' LContext where
+  type TyCtxKi LContext = KindF
+  type TyCtxVar LContext = String
+  typeContext = lTypeContext
+
 runEvalLazy :: LTerm -> LTerm
 runEvalLazy =
   eoEval . toEvalLazy . termOutput $ rules
@@ -104,22 +132,22 @@ runEvalStrict =
 
 runInferSyntax :: LTerm -> (Either LError LType, [LWarning])
 runInferSyntax =
-  runM (0 :: Int) emptyTermContext .
+  runM (0 :: Int) emptyContext .
   SD.ioInfer (inferSyntaxOutput rules)
 
 runCheckSyntax :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheckSyntax tm ty =
-  runM (0 :: Int) emptyTermContext $
+  runM (0 :: Int) emptyContext $
   (SD.ioCheck $ inferSyntaxOutput rules) tm ty
 
 runInferOffline :: LTerm -> (Either LError LType, [LWarning])
 runInferOffline =
-  runM (0 :: Int) emptyTermContext .
+  runM (0 :: Int) emptyContext .
   UO.ioInfer (inferOfflineOutput rules)
 
 runCheckOffline :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheckOffline tm ty =
-  runM (0 :: Int) emptyTermContext $
+  runM (0 :: Int) emptyContext $
   (UO.ioCheck $ inferOfflineOutput rules) tm ty
 
 -- for debugging

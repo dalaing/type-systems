@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.STLC.Rules.Type.Infer.SyntaxDirected (
     STLCInferContext
   , stlcInferRules

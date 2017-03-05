@@ -6,6 +6,7 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.TyVar.Rules.Kind.Infer.SyntaxDirected (
     TyVarKindRulesContext
   , tyVarKindRules
