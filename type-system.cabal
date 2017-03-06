@@ -166,6 +166,17 @@ library
                      , Fragment.Case.Rules.Type.Infer.Offline
                      , Fragment.Case.Rules.Term
                      , Fragment.Case.Helpers
+                     -- , Fragment.IsoRec
+                     , Fragment.IsoRec.Ast
+                     , Fragment.IsoRec.Ast.Type
+                     , Fragment.IsoRec.Ast.Error
+                     , Fragment.IsoRec.Ast.Term
+                     -- , Fragment.IsoRec.Rules
+                     -- , Fragment.IsoRec.Rules.Kind.Infer.SyntaxDirected
+                     , Fragment.IsoRec.Rules.Type.Infer.SyntaxDirected
+                     , Fragment.IsoRec.Rules.Type
+                     , Fragment.IsoRec.Rules.Term
+                     , Fragment.IsoRec.Helpers
                      , Fragment.STLC
                      , Fragment.STLC.Ast
                      , Fragment.STLC.Ast.Type
