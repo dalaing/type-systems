@@ -9,8 +9,8 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.HM.Rules.Type.Infer.Offline (
-    HMInferContext
-  , hmInferRules
+    HMInferTypeContext
+  , hmInferTypeRules
   ) where
 
 import Bound (instantiate1)
@@ -76,14 +76,14 @@ inferTmApp inferFn tm = do
     expectTypeEq tyF (review _TyArr (tyX, tyV))
     return tyV
 
-type HMInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTyHM ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmHM ki ty pt tm)
+type HMInferTypeContext e w s r m ki ty pt tm a = (Ord a, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTyHM ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmHM ki ty pt tm)
 
-hmInferRules :: HMInferContext e w s r m ki ty pt tm a
-             => InferInput e w s r m ki ty pt tm a
-hmInferRules =
-  InferInput
+hmInferTypeRules :: HMInferTypeContext e w s r m ki ty pt tm a
+             => InferTypeInput e w s r m ki ty pt tm a
+hmInferTypeRules =
+  InferTypeInput
     [ UnificationMany unifyArr ]
-    [ InferRecurse inferTmLam
-    , InferRecurse inferTmApp
+    [ InferTypeRecurse inferTmLam
+    , InferTypeRecurse inferTmApp
     ]
     []

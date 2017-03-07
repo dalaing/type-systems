@@ -15,17 +15,17 @@ Portability : non-portable
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 module Rules.Type.Infer.Offline (
-    InferRule(..)
+    InferTypeRule(..)
   , PCheckRule(..)
   , mkCheckType
   , UnifyT
   , expectType
   , expectTypeEq
   , expectTypeAllEq
-  , InferInput(..)
-  , InferOutput(..)
-  , InferContext
-  , prepareInfer
+  , InferTypeInput(..)
+  , InferTypeOutput(..)
+  , InferTypeContext
+  , prepareInferType
   ) where
 
 import Control.Monad (unless)
@@ -55,43 +55,43 @@ import Rules.Unification
 
 type UnifyT ki ty a = WriterT [UConstraint (Type ki ty) a]
 
-data InferRule e w s r m ki ty pt tm a =
-    InferBase (Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a)))
-  | InferPCheck ((Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> (Pattern pt a -> Type ki ty a -> UnifyT ki ty a m [Type ki ty a]) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a)))
-  | InferRecurse ((Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a)))
+data InferTypeRule e w s r m ki ty pt tm a =
+    InferTypeBase (Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a)))
+  | InferTypePCheck ((Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> (Pattern pt a -> Type ki ty a -> UnifyT ki ty a m [Type ki ty a]) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a)))
+  | InferTypeRecurse ((Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (UnifyT ki ty a m (Type ki ty a)))
 
-fixInferRule :: (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
+fixInferTypeRule :: (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
              -> (Pattern pt a -> Type ki ty a -> UnifyT ki ty a m [Type ki ty a])
-             -> InferRule e w s r m ki ty pt tm a
+             -> InferTypeRule e w s r m ki ty pt tm a
              -> Term ki ty pt tm a
              -> Maybe (UnifyT ki ty a m (Type ki ty a))
-fixInferRule _ _ (InferBase f) = f
-fixInferRule inferFn checkFn (InferPCheck f) = f inferFn checkFn
-fixInferRule inferFn _ (InferRecurse f) = f inferFn
+fixInferTypeRule _ _ (InferTypeBase f) = f
+fixInferTypeRule inferFn checkFn (InferTypePCheck f) = f inferFn checkFn
+fixInferTypeRule inferFn _ (InferTypeRecurse f) = f inferFn
 
-mkInfer' :: (MonadError e m, AsUnknownTypeError e)
+mkInferType' :: (MonadError e m, AsUnknownTypeError e)
         => (Type ki ty a -> Type ki ty a)
         -> (Pattern pt a -> Type ki ty a -> UnifyT ki ty a m [Type ki ty a])
-        -> [InferRule e w s r m ki ty pt tm a]
+        -> [InferTypeRule e w s r m ki ty pt tm a]
         -> Term ki ty pt tm a
         -> UnifyT ki ty a m (Type ki ty a)
-mkInfer' normalizeFn pc rules =
+mkInferType' normalizeFn pc rules =
   let
     go tm =
       fmap normalizeFn .
       fromMaybe (throwing _UnknownTypeError ()) .
       asum .
-      fmap (\r -> fixInferRule go pc r tm) $
+      fmap (\r -> fixInferTypeRule go pc r tm) $
       rules
   in
     go
 
-mkInfer :: (UnificationContext e m (Type ki ty) a, MonadError e m, AsUnknownTypeError e)
+mkInferType :: (UnificationContext e m (Type ki ty) a, MonadError e m, AsUnknownTypeError e)
         => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
         -> ([UConstraint (Type ki ty) a] -> m (M.Map a (Type ki ty a)))
         -> Term ki ty pt tm a
         -> m (Type ki ty a)
-mkInfer go unifyFn x = do
+mkInferType go unifyFn x = do
   (ty, cs) <- runWriterT $ go x
   s <- unifyFn cs
   return $ mapSubst _TyVar s ty
@@ -161,40 +161,40 @@ expectTypeAllEq n@(ty :| tys) = do
       tell ws
   return ty
 
-data InferInput e w s r m ki ty pt tm a =
-  InferInput {
+data InferTypeInput e w s r m ki ty pt tm a =
+  InferTypeInput {
     iiUnifyRules :: [UnificationRule m (Type ki ty) a]
-  , iiInferRules :: [InferRule e w s r m ki ty pt tm a]
+  , iiInferTypeRules :: [InferTypeRule e w s r m ki ty pt tm a]
   , iiPCheckRules :: [PCheckRule e m pt ki ty a]
   }
 
-instance Monoid (InferInput e w s r m ki ty pt tm a) where
+instance Monoid (InferTypeInput e w s r m ki ty pt tm a) where
   mempty =
-    InferInput mempty mempty mempty
-  mappend (InferInput u1 i1 c1) (InferInput u2 i2 c2) =
-    InferInput
+    InferTypeInput mempty mempty mempty
+  mappend (InferTypeInput u1 i1 c1) (InferTypeInput u2 i2 c2) =
+    InferTypeInput
       (mappend u1 u2)
       (mappend i1 i2)
       (mappend c1 c2)
 
-data InferOutput e w s r m ki ty pt tm a =
-  InferOutput {
+data InferTypeOutput e w s r m ki ty pt tm a =
+  InferTypeOutput {
     ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
 
-type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m (Type ki ty) a)
+type InferTypeContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m (Type ki ty) a)
 
-prepareInfer :: InferContext e w s r m ki ty pt tm a
+prepareInferType :: InferTypeContext e w s r m ki ty pt tm a
              => (Type ki ty a -> Type ki ty a)
-             -> InferInput e w s r m ki ty pt tm a
-             -> InferOutput e w s r m ki ty pt tm a
-prepareInfer normalizeFn ii =
+             -> InferTypeInput e w s r m ki ty pt tm a
+             -> InferTypeOutput e w s r m ki ty pt tm a
+prepareInferType normalizeFn ii =
   let
     u = mkUnify _TyVar normalizeFn . iiUnifyRules $ ii
     pc = mkPCheck . iiPCheckRules $ ii
-    i' = mkInfer' normalizeFn pc . iiInferRules $ ii
-    i = mkInfer i' u
+    i' = mkInferType' normalizeFn pc . iiInferTypeRules $ ii
+    i = mkInferType i' u
     c = mkCheck' i' u
   in
-    InferOutput i c
+    InferTypeOutput i c

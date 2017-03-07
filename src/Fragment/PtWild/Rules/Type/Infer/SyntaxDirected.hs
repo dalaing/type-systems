@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.PtWild.Rules.Type.Infer.SyntaxDirected (
-    PtWildInferContext
-  , ptWildInferRules
+    PtWildInferTypeContext
+  , ptWildInferTypeRules
   ) where
 
 import Control.Lens (preview)
@@ -24,11 +24,11 @@ checkWild p _ = do
   return $
     return []
 
-type PtWildInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsPtWild pt)
+type PtWildInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsPtWild pt)
 
-ptWildInferRules :: PtWildInferContext e w s r m ki ty pt tm a
-                => InferInput e w s r m ki ty pt tm a
-ptWildInferRules =
-  InferInput
+ptWildInferTypeRules :: PtWildInferTypeContext e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m ki ty pt tm a
+ptWildInferTypeRules =
+  InferTypeInput
     []
     [ PCheckBase checkWild ]

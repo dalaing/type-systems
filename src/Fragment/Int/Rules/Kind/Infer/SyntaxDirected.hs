@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Int.Rules.Kind.Infer.SyntaxDirected (
-    IntKindRulesContext
-  , intKindRules
+    IntInferKindContext
+  , intInferKindRules
   ) where
 
 import Control.Lens (review, preview)
@@ -27,10 +27,10 @@ inferTyInt ty = do
   _ <- preview _TyInt ty
   return . return . review _KiBase $ ()
 
-type IntKindRulesContext e w s r m ki ty a = (Monad m, AsKiBase ki, AsTyInt ki ty)
+type IntInferKindContext e w s r m ki ty a = (Monad m, AsKiBase ki, AsTyInt ki ty)
 
-intKindRules :: IntKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-intKindRules =
-  KindRulesInput
+intInferKindRules :: IntInferKindContext e w s r m ki ty a
+                  => InferKindInput e w s r m ki ty a
+intInferKindRules =
+  InferKindInput
     [InferKindBase inferTyInt]

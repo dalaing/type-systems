@@ -26,9 +26,9 @@ import Fragment.Case.Rules.Term
 data RCase
 
 instance RulesIn RCase where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RCase = (() :: Constraint)
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RCase = SD.CaseInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RCase = UO.CaseInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RCase = (() :: Constraint)
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RCase = SD.CaseInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RCase = UO.CaseInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RCase = (() :: Constraint)
   type RuleTermContext ki ty pt tm a RCase = CaseTermContext ki ty pt tm a
   type KindList RCase = '[]
@@ -39,7 +39,7 @@ instance RulesIn RCase where
   type TermList RCase = '[TmFCase]
 
   inferKindInputSyntax _ = mempty
-  inferSyntaxInput _ = SD.caseInferRules
-  inferOfflineInput _ = UO.caseInferRules
+  inferTypeInputSyntax _ = SD.caseInferTypeRules
+  inferTypeInputOffline _ = UO.caseInferTypeRules
   typeInput _ = mempty
   termInput _ = caseTermRules

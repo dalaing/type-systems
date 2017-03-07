@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Pair.Rules.Kind.Infer.SyntaxDirected (
-    PairKindRulesContext
-  , pairKindRules
+    PairInferKindContext
+  , pairInferKindRules
   ) where
 
 import Control.Lens (review, preview)
@@ -35,10 +35,10 @@ inferTyPair inferFn ty = do
     mkCheckKind inferFn ty2 ki
     return . review _KiBase $ ()
 
-type PairKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyPair ki ty)
+type PairInferKindContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyPair ki ty)
 
-pairKindRules :: PairKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-pairKindRules =
-  KindRulesInput
+pairInferKindRules :: PairInferKindContext e w s r m ki ty a
+                   => InferKindInput e w s r m ki ty a
+pairInferKindRules =
+  InferKindInput
     [InferKindRecurse inferTyPair]

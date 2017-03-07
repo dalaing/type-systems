@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.SystemF.Rules.Kind.Infer.SyntaxDirected (
-    SystemFKindRulesContext
-  , systemFKindRules
+    SystemFInferKindContext
+  , systemFInferKindRules
   ) where
 
 import Control.Monad (unless)
@@ -58,12 +58,12 @@ inferTyAll inferFn ty = do
       throwing _UnexpectedKind (ExpectedKind ki, ActualKind ki')
     return ki
 
-type SystemFKindRulesContext e w s r m ki ty a = (Ord a, MonadReader r m, HasTypeContext r ki a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTySystemF ki ty)
+type SystemFInferKindContext e w s r m ki ty a = (Ord a, MonadReader r m, HasTypeContext r ki a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTySystemF ki ty)
 
-systemFKindRules :: SystemFKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-systemFKindRules =
-  KindRulesInput
+systemFInferKindRules :: SystemFInferKindContext e w s r m ki ty a
+                      => InferKindInput e w s r m ki ty a
+systemFInferKindRules =
+  InferKindInput
     [ InferKindRecurse inferTyArr
     , InferKindRecurse inferTyAll
     ]

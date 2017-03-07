@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Bool.Rules.Kind.Infer.SyntaxDirected (
-    BoolKindRulesContext
-  , boolKindRules
+    BoolInferKindContext
+  , boolInferKindRules
   ) where
 
 import Control.Lens (review, preview)
@@ -27,10 +27,10 @@ inferTyBool ty = do
   _ <- preview _TyBool ty
   return . return . review _KiBase $ ()
 
-type BoolKindRulesContext e w s r m ki ty a = (Monad m, AsKiBase ki, AsTyBool ki ty)
+type BoolInferKindContext e w s r m ki ty a = (Monad m, AsKiBase ki, AsTyBool ki ty)
 
-boolKindRules :: BoolKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-boolKindRules =
-  KindRulesInput
+boolInferKindRules :: BoolInferKindContext e w s r m ki ty a
+                   => InferKindInput e w s r m ki ty a
+boolInferKindRules =
+  InferKindInput
     [InferKindBase inferTyBool]

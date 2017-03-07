@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.SystemF.Rules.Type.Infer.SyntaxDirected (
-    SystemFInferContext
-  , systemFInferRules
+    SystemFInferTypeContext
+  , systemFInferTypeRules
   ) where
 
 import Bound (Bound, abstract1, instantiate1)
@@ -70,15 +70,15 @@ inferTmAppTy inferFn tm = do
     s <- expectTyAll tyF
     return $ instantiate1 tyX s
 
-type SystemFInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ki ty a, AsTySystemF ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemF ki ty pt tm)
+type SystemFInferTypeContext e w s r m ki ty pt tm a = (Ord a, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ki ty a, AsTySystemF ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemF ki ty pt tm)
 
-systemFInferRules :: SystemFInferContext e w s r m ki ty pt tm a
-                  => InferInput e w s r m ki ty pt tm a
-systemFInferRules =
-  InferInput
-    [ InferRecurse inferTmLam
-    , InferRecurse inferTmLamTy
-    , InferRecurse inferTmApp
-    , InferRecurse inferTmAppTy
+systemFInferTypeRules :: SystemFInferTypeContext e w s r m ki ty pt tm a
+                  => InferTypeInput e w s r m ki ty pt tm a
+systemFInferTypeRules =
+  InferTypeInput
+    [ InferTypeRecurse inferTmLam
+    , InferTypeRecurse inferTmLamTy
+    , InferTypeRecurse inferTmApp
+    , InferTypeRecurse inferTmAppTy
     ]
     []

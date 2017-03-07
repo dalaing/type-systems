@@ -26,9 +26,9 @@ import Fragment.Pair.Rules.Term
 data RPair
 
 instance RulesIn RPair where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RPair = KSD.PairKindRulesContext e w s r m ki ty a
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RPair = TSD.PairInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RPair = TUO.PairInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RPair = KSD.PairInferKindContext e w s r m ki ty a
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RPair = TSD.PairInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RPair = TUO.PairInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RPair = PairTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RPair = PairTermContext ki ty pt tm a
   type KindList RPair = '[KiFBase]
@@ -38,8 +38,8 @@ instance RulesIn RPair where
   type PatternList RPair = '[PtFPair]
   type TermList RPair = '[TmFPair]
 
-  inferKindInputSyntax _ = KSD.pairKindRules
-  inferSyntaxInput _ = TSD.pairInferRules
-  inferOfflineInput _ = TUO.pairInferRules
+  inferKindInputSyntax _ = KSD.pairInferKindRules
+  inferTypeInputSyntax _ = TSD.pairInferTypeRules
+  inferTypeInputOffline _ = TUO.pairInferTypeRules
   typeInput _ = pairTypeRules
   termInput _ = pairTermRules

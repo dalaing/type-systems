@@ -24,9 +24,9 @@ import Fragment.PtWild.Rules.Term
 data RPtWild
 
 instance RulesIn RPtWild where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RPtWild = (() :: Constraint)
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RPtWild = SD.PtWildInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RPtWild = UO.PtWildInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RPtWild = (() :: Constraint)
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RPtWild = SD.PtWildInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RPtWild = UO.PtWildInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RPtWild = (() :: Constraint)
   type RuleTermContext ki ty pt tm a RPtWild = PtWildTermContext ki ty pt tm a
   type KindList RPtWild = '[]
@@ -37,7 +37,7 @@ instance RulesIn RPtWild where
   type TermList RPtWild = '[]
 
   inferKindInputSyntax _ = mempty
-  inferSyntaxInput _ = SD.ptWildInferRules
-  inferOfflineInput _ = UO.ptWildInferRules
+  inferTypeInputSyntax _ = SD.ptWildInferTypeRules
+  inferTypeInputOffline _ = UO.ptWildInferTypeRules
   typeInput _ = mempty
   termInput _ = ptWildTermRules

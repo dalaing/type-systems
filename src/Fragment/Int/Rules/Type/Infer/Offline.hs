@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Fragment.Int.Rules.Type.Infer.Offline (
-    IntInferContext
-  , intInferRules
+    IntInferTypeContext
+  , intInferTypeRules
   ) where
 
 import Control.Monad.State (MonadState)
@@ -78,15 +78,15 @@ checkInt p ty = do
     expectType (ExpectedType tyI) (ActualType ty)
     return []
 
-type IntInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
+type IntInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
 
-intInferRules :: IntInferContext e w s r m ki ty pt tm a
-              => InferInput e w s r m ki ty pt tm a
-intInferRules =
-  InferInput
+intInferTypeRules :: IntInferTypeContext e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m ki ty pt tm a
+intInferTypeRules =
+  InferTypeInput
     []
-    [ InferBase inferInt
-    , InferRecurse inferAdd
-    , InferRecurse inferMul
+    [ InferTypeBase inferInt
+    , InferTypeRecurse inferAdd
+    , InferTypeRecurse inferMul
     ]
     [ PCheckBase checkInt ]

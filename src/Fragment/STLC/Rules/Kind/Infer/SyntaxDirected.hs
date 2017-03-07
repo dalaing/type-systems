@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.STLC.Rules.Kind.Infer.SyntaxDirected (
-    STLCKindRulesContext
-  , stlcKindRules
+    STLCInferKindContext
+  , stlcInferKindRules
   ) where
 
 import Control.Lens (review, preview)
@@ -35,10 +35,10 @@ inferTyArr inferFn ty = do
     mkCheckKind inferFn ty2 ki
     return . review _KiBase $ ()
 
-type STLCKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTySTLC ki ty)
+type STLCInferKindContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTySTLC ki ty)
 
-stlcKindRules :: STLCKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-stlcKindRules =
-  KindRulesInput
+stlcInferKindRules :: STLCInferKindContext e w s r m ki ty a
+                   => InferKindInput e w s r m ki ty a
+stlcInferKindRules =
+  InferKindInput
     [InferKindRecurse inferTyArr]

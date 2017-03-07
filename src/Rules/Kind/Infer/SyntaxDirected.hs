@@ -13,10 +13,10 @@ module Rules.Kind.Infer.SyntaxDirected (
   , mkCheckKind
   , expectKind
   , expectKindEq
-  , KindRulesInput(..)
-  , KindRulesOutput(..)
-  , KindRulesContext
-  , prepareKindRules
+  , InferKindInput(..)
+  , InferKindOutput(..)
+  , InferKindContext
+  , prepareInferKind
   ) where
 
 import Control.Monad (unless)
@@ -84,33 +84,33 @@ expectKindEq ki1 ki2 =
   unless (ki1 == ki2) $
     throwing _ExpectedKindEq (ki1, ki2)
 
-data KindRulesInput e w s r m ki ty a =
-  KindRulesInput {
+data InferKindInput e w s r m ki ty a =
+  InferKindInput {
     kriInferRules :: [InferKindRule e w s r m ki ty a]
   }
 
-instance Monoid (KindRulesInput e w s r m ki ty a) where
+instance Monoid (InferKindInput e w s r m ki ty a) where
   mempty =
-    KindRulesInput
+    InferKindInput
       mempty
-  mappend (KindRulesInput kri1) (KindRulesInput kri2) =
-    KindRulesInput
+  mappend (InferKindInput kri1) (InferKindInput kri2) =
+    InferKindInput
       (mappend kri1 kri2)
 
-data KindRulesOutput e w s r m ki ty a =
-  KindRulesOutput {
+data InferKindOutput e w s r m ki ty a =
+  InferKindOutput {
     kroInfer :: Type ki ty a -> m (Kind ki)
   , kroCheck :: Type ki ty a -> Kind ki -> m ()
   }
 
-type KindRulesContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a = (Eq a, Eq1 ki, MonadError e m, AsUnexpectedKind e ki, AsUnknownKindError e)
+type InferKindContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a = (Eq a, Eq1 ki, MonadError e m, AsUnexpectedKind e ki, AsUnknownKindError e)
 
-prepareKindRules :: KindRulesContext e w s r m ki ty a
-                 => KindRulesInput e w s r m ki ty a
-                 -> KindRulesOutput e w s r m ki ty a
-prepareKindRules kri =
+prepareInferKind :: InferKindContext e w s r m ki ty a
+                 => InferKindInput e w s r m ki ty a
+                 -> InferKindOutput e w s r m ki ty a
+prepareInferKind kri =
   let
     i = mkInferKind . kriInferRules $ kri
     c = mkCheckKind i
   in
-    KindRulesOutput i c
+    InferKindOutput i c

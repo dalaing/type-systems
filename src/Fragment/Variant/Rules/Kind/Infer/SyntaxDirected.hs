@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Variant.Rules.Kind.Infer.SyntaxDirected (
-    VariantKindRulesContext
-  , variantKindRules
+    VariantInferKindContext
+  , variantInferKindRules
   ) where
 
 import Data.Foldable (traverse_)
@@ -36,10 +36,10 @@ inferTyVariant inferFn ty = do
     traverse_ (\(_, tyV) -> mkCheckKind inferFn tyV ki) tys
     return . review _KiBase $ ()
 
-type VariantKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyVariant ki ty)
+type VariantInferKindContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyVariant ki ty)
 
-variantKindRules :: VariantKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-variantKindRules =
-  KindRulesInput
+variantInferKindRules :: VariantInferKindContext e w s r m ki ty a
+                      => InferKindInput e w s r m ki ty a
+variantInferKindRules =
+  InferKindInput
     [InferKindRecurse inferTyVariant]

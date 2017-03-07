@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Fragment.Pair.Rules.Type.Infer.Offline (
-    PairInferContext
-  , pairInferRules
+    PairInferTypeContext
+  , pairInferTypeRules
   ) where
 
 import Control.Monad.State (MonadState)
@@ -96,15 +96,15 @@ checkPair checkFn p ty = do
     --(ty1, ty2) <- expectTyPair ty
     mappend <$> checkFn p1 tyP1 <*> checkFn p2 tyP2
 
-type PairInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, UnificationContext e m (Type ki ty) a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyPair ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyPair e ki ty a, AsPtPair pt, AsTmPair ki ty pt tm)
+type PairInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, UnificationContext e m (Type ki ty) a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyPair ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyPair e ki ty a, AsPtPair pt, AsTmPair ki ty pt tm)
 
-pairInferRules :: PairInferContext e w s r m ki ty pt tm a
-              => InferInput e w s r m ki ty pt tm a
-pairInferRules =
-  InferInput
+pairInferTypeRules :: PairInferTypeContext e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m ki ty pt tm a
+pairInferTypeRules =
+  InferTypeInput
     [ UnificationMany unifyPair ]
-    [ InferRecurse inferTmPair
-    , InferRecurse inferTmFst
-    , InferRecurse inferTmSnd
+    [ InferTypeRecurse inferTmPair
+    , InferTypeRecurse inferTmFst
+    , InferTypeRecurse inferTmSnd
     ]
     [ PCheckRecurse checkPair ]

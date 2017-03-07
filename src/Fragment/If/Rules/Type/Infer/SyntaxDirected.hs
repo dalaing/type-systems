@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.If.Rules.Type.Infer.SyntaxDirected (
-    IfInferContext
-  , ifInferRules
+    IfInferTypeContext
+  , ifInferTypeRules
   ) where
 
 import Control.Monad.Except (MonadError)
@@ -37,9 +37,9 @@ inferTmIf inferFn tm = do
     expectTypeEq tyT tyF
     return tyT
 
-type IfInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsUnexpectedType e ki ty a, AsExpectedTypeEq e ki ty a, AsTyBool ki ty, AsTmIf ki ty pt tm)
+type IfInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsUnexpectedType e ki ty a, AsExpectedTypeEq e ki ty a, AsTyBool ki ty, AsTmIf ki ty pt tm)
 
-ifInferRules :: IfInferContext e w s r m ki ty pt tm a
-             => InferInput e w s r m ki ty pt tm a
-ifInferRules =
-  InferInput [ InferRecurse inferTmIf ] []
+ifInferTypeRules :: IfInferTypeContext e w s r m ki ty pt tm a
+             => InferTypeInput e w s r m ki ty pt tm a
+ifInferTypeRules =
+  InferTypeInput [ InferTypeRecurse inferTmIf ] []

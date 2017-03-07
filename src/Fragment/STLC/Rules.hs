@@ -25,9 +25,9 @@ import Fragment.STLC.Rules.Term
 data RSTLC
 
 instance RulesIn RSTLC where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RSTLC = STLCKindRulesContext e w s r m ki ty a
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RSTLC = STLCInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RSTLC = (() :: Constraint)
+  type InferKindContextSyntax e w s r m ki ty a RSTLC = STLCInferKindContext e w s r m ki ty a
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RSTLC = STLCInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RSTLC = (() :: Constraint)
   type RuleTypeContext ki ty a RSTLC = STLCTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RSTLC = STLCTermContext ki ty pt tm a
   type KindList RSTLC = '[]
@@ -37,8 +37,8 @@ instance RulesIn RSTLC where
   type PatternList RSTLC = '[]
   type TermList RSTLC = '[TmFSTLC]
 
-  inferKindInputSyntax _ = stlcKindRules
-  inferSyntaxInput _ = stlcInferRules
-  inferOfflineInput _ = mempty
+  inferKindInputSyntax _ = stlcInferKindRules
+  inferTypeInputSyntax _ = stlcInferTypeRules
+  inferTypeInputOffline _ = mempty
   typeInput _ = stlcTypeRules
   termInput _ = stlcTermRules

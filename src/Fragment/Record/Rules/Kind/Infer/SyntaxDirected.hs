@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Record.Rules.Kind.Infer.SyntaxDirected (
-    RecordKindRulesContext
-  , recordKindRules
+    RecordInferKindContext
+  , recordInferKindRules
   ) where
 
 import Data.Foldable (traverse_)
@@ -36,10 +36,10 @@ inferTyRecord inferFn ty = do
     traverse_ (\(_, tyR) -> mkCheckKind inferFn tyR ki) tys
     return . review _KiBase $ ()
 
-type RecordKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyRecord ki ty)
+type RecordInferKindContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyRecord ki ty)
 
-recordKindRules :: RecordKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-recordKindRules =
-  KindRulesInput
+recordInferKindRules :: RecordInferKindContext e w s r m ki ty a
+                     => InferKindInput e w s r m ki ty a
+recordInferKindRules =
+  InferKindInput
     [InferKindRecurse inferTyRecord]

@@ -9,8 +9,8 @@ Portability : non-portable
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.Case.Rules.Type.Infer.SyntaxDirected (
-    CaseInferContext
-  , caseInferRules
+    CaseInferTypeContext
+  , caseInferTypeRules
   ) where
 
 import Control.Monad (replicateM)
@@ -36,7 +36,7 @@ import Fragment.Case.Ast.Error
 import Fragment.Case.Ast.Warning
 import Fragment.Case.Ast.Term
 
-inferTmCase :: CaseInferContext e w s r m ki ty pt tm a
+inferTmCase :: CaseInferTypeContext e w s r m ki ty pt tm a
             => (Term ki ty pt tm a -> m (Type ki ty a))
             -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a])
             -> Term ki ty pt tm a
@@ -68,11 +68,11 @@ inferTmCase inferFn checkFn tm = do
     tys <- mapM (go tyC) alts
     expectTypeAllEq tys
 
-type CaseInferContext e w s r m ki ty pt tm a = (Ord a, AstBound ki ty pt tm, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsExpectedPattern e ki ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsShadowingPatternVariables w a, AsExpectedTypeAllEq e ki ty a, AsTmCase ki ty pt tm)
+type CaseInferTypeContext e w s r m ki ty pt tm a = (Ord a, AstBound ki ty pt tm, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsExpectedPattern e ki ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsShadowingPatternVariables w a, AsExpectedTypeAllEq e ki ty a, AsTmCase ki ty pt tm)
 
-caseInferRules :: CaseInferContext e w s r m ki ty pt tm a
-               => InferInput e w s r m ki ty pt tm a
-caseInferRules =
-  InferInput
-    [ InferPCheck inferTmCase ]
+caseInferTypeRules :: CaseInferTypeContext e w s r m ki ty pt tm a
+               => InferTypeInput e w s r m ki ty pt tm a
+caseInferTypeRules =
+  InferTypeInput
+    [ InferTypePCheck inferTmCase ]
     []

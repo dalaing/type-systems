@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.HM.Rules.Kind.Infer.SyntaxDirected (
-    HMKindRulesContext
-  , hmKindRules
+    HMInferKindContext
+  , hmInferKindRules
   ) where
 
 import Control.Lens (review, preview)
@@ -35,10 +35,10 @@ inferTyArr inferFn ty = do
     mkCheckKind inferFn ty2 ki
     return . review _KiBase $ ()
 
-type HMKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyHM ki ty)
+type HMInferKindContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyHM ki ty)
 
-hmKindRules :: HMKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-hmKindRules =
-  KindRulesInput
+hmInferKindRules :: HMInferKindContext e w s r m ki ty a
+            => InferKindInput e w s r m ki ty a
+hmInferKindRules =
+  InferKindInput
     [InferKindRecurse inferTyArr]

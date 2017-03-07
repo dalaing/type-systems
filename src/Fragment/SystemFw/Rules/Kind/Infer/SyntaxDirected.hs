@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.SystemFw.Rules.Kind.Infer.SyntaxDirected (
-    SystemFwKindRulesContext
-  , systemFwKindRules
+    SystemFwInferKindContext
+  , systemFwInferKindRules
   ) where
 
 import Control.Monad (unless)
@@ -85,12 +85,12 @@ inferTyApp inferFn ty = do
     expectKindEq kiArg kiX
     return kiRet
 
-type SystemFwKindRulesContext e w s r m ki ty a = (Ord a, Eq1 ki, Bound (ty ki), MonadReader r m, HasTypeContext r ki a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsExpectedKindEq e ki, AsUnexpectedKind e ki, AsExpectedKiArr e ki, Eq1 ki, AsKiBase ki, AsKiSystemFw ki, AsTySystemFw ki ty)
+type SystemFwInferKindContext e w s r m ki ty a = (Ord a, Eq1 ki, Bound (ty ki), MonadReader r m, HasTypeContext r ki a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsExpectedKindEq e ki, AsUnexpectedKind e ki, AsExpectedKiArr e ki, Eq1 ki, AsKiBase ki, AsKiSystemFw ki, AsTySystemFw ki ty)
 
-systemFwKindRules :: SystemFwKindRulesContext e w s r m ki ty a
-                  => KindRulesInput e w s r m ki ty a
-systemFwKindRules =
-  KindRulesInput
+systemFwInferKindRules :: SystemFwInferKindContext e w s r m ki ty a
+                       => InferKindInput e w s r m ki ty a
+systemFwInferKindRules =
+  InferKindInput
     [ InferKindRecurse inferTyArr
     , InferKindRecurse inferTyAll
     , InferKindRecurse inferTyLam

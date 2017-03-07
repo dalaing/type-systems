@@ -27,9 +27,9 @@ import Fragment.HM.Rules.Term
 data RHM
 
 instance RulesIn RHM where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RHM = HMKindRulesContext e w s r m ki ty a
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RHM = (() :: Constraint)
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RHM = HMInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RHM = HMInferKindContext e w s r m ki ty a
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RHM = (() :: Constraint)
+  type InferTypeContextOffline e w s r m ki ty pt tm a RHM = HMInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RHM = HMTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RHM = HMTermContext ki ty pt tm a
   type KindList RHM = '[]
@@ -39,8 +39,8 @@ instance RulesIn RHM where
   type PatternList RHM = '[]
   type TermList RHM = '[TmFHM]
 
-  inferKindInputSyntax _ = hmKindRules
-  inferSyntaxInput _ = mempty
-  inferOfflineInput _ = hmInferRules
+  inferKindInputSyntax _ = hmInferKindRules
+  inferTypeInputSyntax _ = mempty
+  inferTypeInputOffline _ = hmInferTypeRules
   typeInput _ = hmTypeRules
   termInput _ = hmTermRules

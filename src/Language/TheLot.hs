@@ -136,22 +136,22 @@ runEvalStrict =
 runInferSyntax :: LTerm -> (Either LError LType, [LWarning])
 runInferSyntax =
   runM (0 :: Int) emptyContext .
-  SD.ioInfer (inferSyntaxOutput rules)
+  SD.ioInfer (inferTypeOutputSyntax rules)
 
 runCheckSyntax :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheckSyntax tm ty =
   runM (0 :: Int) emptyContext $
-  (SD.ioCheck $ inferSyntaxOutput rules) tm ty
+  (SD.ioCheck $ inferTypeOutputSyntax rules) tm ty
 
 runInferOffline :: LTerm -> (Either LError LType, [LWarning])
 runInferOffline =
   runM (0 :: Int) emptyContext .
-  UO.ioInfer (inferOfflineOutput rules)
+  UO.ioInfer (inferTypeOutputOffline rules)
 
 runCheckOffline :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheckOffline tm ty =
   runM (0 :: Int) emptyContext $
-  (UO.ioCheck $ inferOfflineOutput rules) tm ty
+  (UO.ioCheck $ inferTypeOutputOffline rules) tm ty
 
 -- for debugging
 

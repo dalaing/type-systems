@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Int.Rules.Type.Infer.SyntaxDirected (
-    IntInferContext
-  , intInferRules
+    IntInferTypeContext
+  , intInferTypeRules
   ) where
 
 import Control.Monad.Except (MonadError)
@@ -67,14 +67,14 @@ checkInt p ty = do
     expectType (ExpectedType tyI) (ActualType ty)
     return []
 
-type IntInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
+type IntInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
 
-intInferRules :: IntInferContext e w s r m ki ty pt tm a
-              => InferInput e w s r m ki ty pt tm a
-intInferRules =
-  InferInput
-    [ InferBase inferInt
-    , InferRecurse inferAdd
-    , InferRecurse inferMul
+intInferTypeRules :: IntInferTypeContext e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m ki ty pt tm a
+intInferTypeRules =
+  InferTypeInput
+    [ InferTypeBase inferInt
+    , InferTypeRecurse inferAdd
+    , InferTypeRecurse inferMul
     ]
     [ PCheckBase checkInt ]

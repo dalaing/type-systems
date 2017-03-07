@@ -27,9 +27,9 @@ import Fragment.Bool.Rules.Term
 data RBool
 
 instance RulesIn RBool where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RBool = KSD.BoolKindRulesContext e w s r m ki ty a
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RBool = TSD.BoolInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RBool = TUO.BoolInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RBool = KSD.BoolInferKindContext e w s r m ki ty a
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RBool = TSD.BoolInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RBool = TUO.BoolInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RBool = BoolTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RBool = BoolTermContext ki ty pt tm a
   type KindList RBool = '[KiFBase]
@@ -39,9 +39,9 @@ instance RulesIn RBool where
   type PatternList RBool = '[PtFBool]
   type TermList RBool = '[TmFBool]
 
-  inferKindInputSyntax _ = KSD.boolKindRules
-  inferSyntaxInput _ = TSD.boolInferRules
-  inferOfflineInput _ = TUO.boolInferRules
+  inferKindInputSyntax _ = KSD.boolInferKindRules
+  inferTypeInputSyntax _ = TSD.boolInferTypeRules
+  inferTypeInputOffline _ = TUO.boolInferTypeRules
   typeInput _ = boolTypeRules
   termInput _ = boolTermRules
 

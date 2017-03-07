@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Fragment.Tuple.Rules.Type.Infer.Offline (
-    TupleInferContext
-  , tupleInferRules
+    TupleInferTypeContext
+  , tupleInferTypeRules
   ) where
 
 import Control.Monad (zipWithM, replicateM)
@@ -78,14 +78,14 @@ checkTuple checkFn p ty = do
     ms <- zipWithM checkFn pts tys
     return $ mconcat ms
 
-type TupleInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, UnificationContext e m (Type ki ty) a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyTuple ki ty, AsExpectedTyTuple e ki ty a, AsTupleOutOfBounds e, AsPtTuple pt, AsTmTuple ki ty pt tm)
+type TupleInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, UnificationContext e m (Type ki ty) a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyTuple ki ty, AsExpectedTyTuple e ki ty a, AsTupleOutOfBounds e, AsPtTuple pt, AsTmTuple ki ty pt tm)
 
-tupleInferRules :: TupleInferContext e w s r m ki ty pt tm a
-                => InferInput e w s r m ki ty pt tm a
-tupleInferRules =
-  InferInput
+tupleInferTypeRules :: TupleInferTypeContext e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m ki ty pt tm a
+tupleInferTypeRules =
+  InferTypeInput
     [ UnificationMany unifyTuple ]
-    [ InferRecurse inferTmTuple
-    , InferRecurse inferTmTupleIx
+    [ InferTypeRecurse inferTmTuple
+    , InferTypeRecurse inferTmTupleIx
     ]
     [ PCheckRecurse checkTuple ]

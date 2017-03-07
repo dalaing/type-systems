@@ -26,9 +26,9 @@ import Fragment.Tuple.Rules.Term
 data RTuple
 
 instance RulesIn RTuple where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RTuple = KSD.TupleKindRulesContext e w s r m ki ty a
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RTuple = TSD.TupleInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RTuple = TUO.TupleInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RTuple = KSD.TupleInferKindContext e w s r m ki ty a
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RTuple = TSD.TupleInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RTuple = TUO.TupleInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RTuple = TupleTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RTuple = TupleTermContext ki ty pt tm a
   type KindList RTuple = '[KiFBase]
@@ -38,8 +38,8 @@ instance RulesIn RTuple where
   type PatternList RTuple = '[PtFTuple]
   type TermList RTuple = '[TmFTuple]
 
-  inferKindInputSyntax _ = KSD.tupleKindRules
-  inferSyntaxInput _ = TSD.tupleInferRules
-  inferOfflineInput _ = TUO.tupleInferRules
+  inferKindInputSyntax _ = KSD.tupleInferKindRules
+  inferTypeInputSyntax _ = TSD.tupleInferTypeRules
+  inferTypeInputOffline _ = TUO.tupleInferTypeRules
   typeInput _ = tupleTypeRules
   termInput _ = tupleTermRules

@@ -27,9 +27,9 @@ import Fragment.Int.Rules.Term
 data RInt
 
 instance RulesIn RInt where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RInt = KSD.IntKindRulesContext e w s r m ki ty a
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RInt = TSD.IntInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RInt = TUO.IntInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RInt = KSD.IntInferKindContext e w s r m ki ty a
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RInt = TSD.IntInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RInt = TUO.IntInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RInt = IntTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RInt = IntTermContext ki ty pt tm a
   type KindList RInt = '[KiFBase]
@@ -39,8 +39,8 @@ instance RulesIn RInt where
   type PatternList RInt = '[PtFInt]
   type TermList RInt = '[TmFInt]
 
-  inferKindInputSyntax _ = KSD.intKindRules
-  inferSyntaxInput _ = TSD.intInferRules
-  inferOfflineInput _ = TUO.intInferRules
+  inferKindInputSyntax _ = KSD.intInferKindRules
+  inferTypeInputSyntax _ = TSD.intInferTypeRules
+  inferTypeInputOffline _ = TUO.intInferTypeRules
   typeInput _ = intTypeRules
   termInput _ = intTermRules

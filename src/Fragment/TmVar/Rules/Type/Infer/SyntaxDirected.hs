@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.TmVar.Rules.Type.Infer.SyntaxDirected (
-    TmVarInferContext
-  , tmVarInferRules
+    TmVarInferTypeContext
+  , tmVarInferTypeRules
   ) where
 
 import Control.Monad.Reader (MonadReader)
@@ -26,12 +26,12 @@ inferTmVar tm = do
   v <- preview _TmVar tm
   return $ lookupTerm v
 
-type TmVarInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, Ord a, MonadReader r m, HasTermContext r ki ty a, MonadError e m, AsUnboundTermVariable e a)
+type TmVarInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, Ord a, MonadReader r m, HasTermContext r ki ty a, MonadError e m, AsUnboundTermVariable e a)
 
-tmVarInferRules :: TmVarInferContext e w s r m ki ty pt tm a
-                => InferInput e w s r m ki ty pt tm a
-tmVarInferRules =
-  InferInput
-    [ InferBase inferTmVar ]
+tmVarInferTypeRules :: TmVarInferTypeContext e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m ki ty pt tm a
+tmVarInferTypeRules =
+  InferTypeInput
+    [ InferTypeBase inferTmVar ]
     []
 

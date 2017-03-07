@@ -9,16 +9,16 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Rules.Type.Infer.SyntaxDirected (
-    InferRule(..)
+    InferTypeRule(..)
   , PCheckRule(..)
   , mkCheckType
   , expectType
   , expectTypeEq
   , expectTypeAllEq
-  , InferInput(..)
-  , InferOutput(..)
-  , InferContext
-  , prepareInfer
+  , InferTypeInput(..)
+  , InferTypeOutput(..)
+  , InferTypeContext
+  , prepareInferType
   ) where
 
 import Control.Monad (unless)
@@ -40,37 +40,37 @@ import Ast.Error.Common
 
 import Rules.Kind.Infer.SyntaxDirected
 
-data InferRule e w s r m ki ty pt tm a =
-    InferBase (Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
-  | InferPCheck ((Term ki ty pt tm a -> m (Type ki ty a)) -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
-  | InferRecurse ((Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
-  | InferRecurseKind ((Type ki ty a -> m (Kind ki)) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
+data InferTypeRule e w s r m ki ty pt tm a =
+    InferTypeBase (Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
+  | InferTypePCheck ((Term ki ty pt tm a -> m (Type ki ty a)) -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
+  | InferTypeRecurse ((Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
+  | InferTypeRecurseKind ((Type ki ty a -> m (Kind ki)) -> (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
 
-fixInferRule :: (Type ki ty a -> m (Kind ki))
-             -> (Term ki ty pt tm a -> m (Type ki ty a))
-             -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a])
-             -> InferRule e w s r m ki ty pt tm a
-             -> Term ki ty pt tm a
-             -> Maybe (m (Type ki ty a))
-fixInferRule _ _ _ (InferBase f) = f
-fixInferRule _ inferFn checkFn (InferPCheck f) = f inferFn checkFn
-fixInferRule _ inferFn _ (InferRecurse f) = f inferFn
-fixInferRule inferKindFn inferTypeFn _ (InferRecurseKind f) = f inferKindFn inferTypeFn
+fixInferTypeRule :: (Type ki ty a -> m (Kind ki))
+                 -> (Term ki ty pt tm a -> m (Type ki ty a))
+                 -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a])
+                 -> InferTypeRule e w s r m ki ty pt tm a
+                 -> Term ki ty pt tm a
+                 -> Maybe (m (Type ki ty a))
+fixInferTypeRule _ _ _ (InferTypeBase f) = f
+fixInferTypeRule _ inferFn checkFn (InferTypePCheck f) = f inferFn checkFn
+fixInferTypeRule _ inferFn _ (InferTypeRecurse f) = f inferFn
+fixInferTypeRule inferKindFn inferTypeFn _ (InferTypeRecurseKind f) = f inferKindFn inferTypeFn
 
-mkInfer :: (MonadError e m, AsUnknownTypeError e)
-        => (Type ki ty a -> m (Kind ki))
-        -> (Type ki ty a -> Type ki ty a)
-        -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a])
-        -> [InferRule e w s r m ki ty pt tm a]
-        -> Term ki ty pt tm a
-        -> m (Type ki ty a)
-mkInfer inferKindFn normalizeFn pc rules =
+mkInferType :: (MonadError e m, AsUnknownTypeError e)
+            => (Type ki ty a -> m (Kind ki))
+            -> (Type ki ty a -> Type ki ty a)
+            -> (Pattern pt a -> Type ki ty a -> m [Type ki ty a])
+            -> [InferTypeRule e w s r m ki ty pt tm a]
+            -> Term ki ty pt tm a
+            -> m (Type ki ty a)
+mkInferType inferKindFn normalizeFn pc rules =
   let
     go tm =
       fmap normalizeFn .
       fromMaybe (throwing _UnknownTypeError ()) .
       asum .
-      fmap (\r -> fixInferRule inferKindFn go pc r tm) $
+      fmap (\r -> fixInferTypeRule inferKindFn go pc r tm) $
       rules
   in
     go
@@ -80,10 +80,10 @@ mkCheckType :: (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a)
             -> Term ki ty pt tm a
             -> Type ki ty a
             -> m ()
-mkCheckType inferFn =
+mkCheckType inferTypeFn =
   let
     go tm ty = do
-      tyAc <- inferFn tm
+      tyAc <- inferTypeFn tm
       expectType (ExpectedType ty) (ActualType tyAc)
   in
     go
@@ -139,39 +139,39 @@ expectTypeAllEq (ty :| tys) = do
     throwing _ExpectedTypeAllEq (ty :| tys)
   return ty
 
-data InferInput e w s r m ki ty pt tm a =
-  InferInput {
-    iiInferRules :: [InferRule e w s r m ki ty pt tm a]
+data InferTypeInput e w s r m ki ty pt tm a =
+  InferTypeInput {
+    iiInferRules :: [InferTypeRule e w s r m ki ty pt tm a]
   , iiPCheckRules :: [PCheckRule e m pt ki ty a]
   }
 
-instance Monoid (InferInput e w s r m ki ty pt tm a) where
+instance Monoid (InferTypeInput e w s r m ki ty pt tm a) where
   mempty =
-    InferInput
+    InferTypeInput
       mempty
       mempty
-  mappend (InferInput i1 c1) (InferInput i2 c2) =
-    InferInput
+  mappend (InferTypeInput i1 c1) (InferTypeInput i2 c2) =
+    InferTypeInput
       (mappend i1 i2)
       (mappend c1 c2)
 
-data InferOutput e w s r m ki ty pt tm a =
-  InferOutput {
+data InferTypeOutput e w s r m ki ty pt tm a =
+  InferTypeOutput {
     ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
 
-type InferContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, KindRulesContext e w s r m ki ty a)
+type InferTypeContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, InferKindContext e w s r m ki ty a)
 
-prepareInfer :: InferContext e w s r m ki ty pt tm a
+prepareInferType :: InferTypeContext e w s r m ki ty pt tm a
              => (Type ki ty a -> m (Kind ki))
              -> (Type ki ty a -> Type ki ty a)
-             -> InferInput e w s r m ki ty pt tm a
-             -> InferOutput e w s r m ki ty pt tm a
-prepareInfer inferKindFn normalizeFn ii =
+             -> InferTypeInput e w s r m ki ty pt tm a
+             -> InferTypeOutput e w s r m ki ty pt tm a
+prepareInferType inferKindFn normalizeFn ii =
   let
-    i = mkInfer inferKindFn normalizeFn pc . iiInferRules $ ii
+    i = mkInferType inferKindFn normalizeFn pc . iiInferRules $ ii
     c = mkCheckType i
     pc = mkPCheck . iiPCheckRules $ ii
   in
-    InferOutput i c
+    InferTypeOutput i c

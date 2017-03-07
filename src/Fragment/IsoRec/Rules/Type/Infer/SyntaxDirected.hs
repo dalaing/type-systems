@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.IsoRec.Rules.Type.Infer.SyntaxDirected (
-    IsoRecInferContext
-  , isoRecInferRules
+    IsoRecInferTypeContext
+  , isoRecInferTypeRules
   ) where
 
 import Bound (instantiate1)
@@ -24,7 +24,7 @@ import Data.Functor.Rec
 import Fragment.IsoRec.Ast.Type
 import Fragment.IsoRec.Ast.Term
 
-inferTmFold :: IsoRecInferContext e w s r m ki ty pt tm a
+inferTmFold :: IsoRecInferTypeContext e w s r m ki ty pt tm a
             => (Term ki ty pt tm a -> m (Type ki ty a))
             -> Term ki ty pt tm a
             -> Maybe (m (Type ki ty a))
@@ -35,7 +35,7 @@ inferTmFold inferFn tm = do
     mkCheckType inferFn tmF (instantiate1 tyF s)
     return tyF
 
-inferTmUnfold :: IsoRecInferContext e w s r m ki ty pt tm a
+inferTmUnfold :: IsoRecInferTypeContext e w s r m ki ty pt tm a
               => (Term ki ty pt tm a -> m (Type ki ty a))
               -> Term ki ty pt tm a
               -> Maybe (m (Type ki ty a))
@@ -46,13 +46,13 @@ inferTmUnfold inferFn tm = do
     mkCheckType inferFn tmU tyU
     return $ instantiate1 tyU s
 
-type IsoRecInferContext e w s r m ki ty pt tm a = (Eq a, EqRec (ty ki), MonadError e m, InferContext e w s r m ki ty pt tm a, AsTyIsoRec ki ty, AsTmIsoRec ki ty pt tm)
+type IsoRecInferTypeContext e w s r m ki ty pt tm a = (Eq a, EqRec (ty ki), MonadError e m, InferTypeContext e w s r m ki ty pt tm a, AsTyIsoRec ki ty, AsTmIsoRec ki ty pt tm)
 
-isoRecInferRules :: IsoRecInferContext e w s r m ki ty pt tm a
-                  => InferInput e w s r m ki ty pt tm a
-isoRecInferRules =
-  InferInput
-    [ InferRecurse inferTmFold
-    , InferRecurse inferTmUnfold
+isoRecInferTypeRules :: IsoRecInferTypeContext e w s r m ki ty pt tm a
+                  => InferTypeInput e w s r m ki ty pt tm a
+isoRecInferTypeRules =
+  InferTypeInput
+    [ InferTypeRecurse inferTmFold
+    , InferTypeRecurse inferTmUnfold
     ]
     []

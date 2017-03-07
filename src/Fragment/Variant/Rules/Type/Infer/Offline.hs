@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Fragment.Variant.Rules.Type.Infer.Offline (
-    VariantInferContext
-  , variantInferRules
+    VariantInferTypeContext
+  , variantInferTypeRules
   ) where
 
 import Control.Monad.Except (MonadError)
@@ -48,12 +48,12 @@ checkVariant checkFn p ty = do
     tyV <- lookupVariant vs lV
     checkFn pV tyV
 
-type VariantInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyVariant ki ty, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsPtVariant pt, AsTmVariant ki ty pt tm)
+type VariantInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyVariant ki ty, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsPtVariant pt, AsTmVariant ki ty pt tm)
 
-variantInferRules :: VariantInferContext e w s r m ki ty pt tm a
-                => InferInput e w s r m ki ty pt tm a
-variantInferRules =
-  InferInput
+variantInferTypeRules :: VariantInferTypeContext e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m ki ty pt tm a
+variantInferTypeRules =
+  InferTypeInput
     []
-    [ InferRecurse inferTmVariant ]
+    [ InferTypeRecurse inferTmVariant ]
     [ PCheckRecurse checkVariant ]

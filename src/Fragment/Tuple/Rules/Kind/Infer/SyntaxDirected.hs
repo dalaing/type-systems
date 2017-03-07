@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Tuple.Rules.Kind.Infer.SyntaxDirected (
-    TupleKindRulesContext
-  , tupleKindRules
+    TupleInferKindContext
+  , tupleInferKindRules
   ) where
 
 import Data.Foldable (traverse_)
@@ -36,10 +36,10 @@ inferTyTuple inferFn ty = do
     traverse_ (\tyT -> mkCheckKind inferFn tyT ki) tys
     return . review _KiBase $ ()
 
-type TupleKindRulesContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyTuple ki ty)
+type TupleInferKindContext e w s r m ki ty a = (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTyTuple ki ty)
 
-tupleKindRules :: TupleKindRulesContext e w s r m ki ty a
-              => KindRulesInput e w s r m ki ty a
-tupleKindRules =
-  KindRulesInput
+tupleInferKindRules :: TupleInferKindContext e w s r m ki ty a
+                    => InferKindInput e w s r m ki ty a
+tupleInferKindRules =
+  InferKindInput
     [InferKindRecurse inferTyTuple]

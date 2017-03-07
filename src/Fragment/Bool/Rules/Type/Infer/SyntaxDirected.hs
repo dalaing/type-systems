@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Bool.Rules.Type.Infer.SyntaxDirected (
-    BoolInferContext
-  , boolInferRules
+    BoolInferTypeContext
+  , boolInferTypeRules
   ) where
 
 import Control.Monad.Except (MonadError)
@@ -67,14 +67,14 @@ checkBool p ty = do
     expectType (ExpectedType tyB) (ActualType ty)
     return []
 
-type BoolInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)
+type BoolInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)
 
-boolInferRules :: BoolInferContext e w s r m ki ty pt tm a
-              => InferInput e w s r m ki ty pt tm a
-boolInferRules =
-  InferInput
-    [ InferBase inferBool
-    , InferRecurse inferAnd
-    , InferRecurse inferOr
+boolInferTypeRules :: BoolInferTypeContext e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m ki ty pt tm a
+boolInferTypeRules =
+  InferTypeInput
+    [ InferTypeBase inferBool
+    , InferTypeRecurse inferAnd
+    , InferTypeRecurse inferOr
     ]
     [ PCheckBase checkBool ]

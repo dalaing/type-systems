@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Fragment.Record.Rules.Type.Infer.Offline (
-    RecordInferContext
-  , recordInferRules
+    RecordInferTypeContext
+  , recordInferTypeRules
   ) where
 
 import Control.Monad.Except (MonadError)
@@ -51,14 +51,14 @@ checkRecord checkFn p ty = do
           checkFn lp typ
     fmap mconcat . traverse f $ ps
 
-type RecordInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyRecord ki ty, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ki ty pt tm)
+type RecordInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyRecord ki ty, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ki ty pt tm)
 
-recordInferRules :: RecordInferContext e w s r m ki ty pt tm a
-                => InferInput e w s r m ki ty pt tm a
-recordInferRules =
-  InferInput
+recordInferTypeRules :: RecordInferTypeContext e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m ki ty pt tm a
+recordInferTypeRules =
+  InferTypeInput
     []
-    [ InferRecurse inferTmRecord
-    , InferRecurse inferTmRecordIx
+    [ InferTypeRecurse inferTmRecord
+    , InferTypeRecurse inferTmRecordIx
     ]
     [ PCheckRecurse checkRecord ]

@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 module Fragment.Bool.Rules.Type.Infer.Offline (
-    BoolInferContext
-  , boolInferRules
+    BoolInferTypeContext
+  , boolInferTypeRules
   ) where
 
 import Control.Monad.State (MonadState)
@@ -78,15 +78,15 @@ checkBool p ty = do
     expectType (ExpectedType tyB) (ActualType ty)
     return []
 
-type BoolInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)
+type BoolInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)
 
-boolInferRules :: BoolInferContext e w s r m ki ty pt tm a
-              => InferInput e w s r m ki ty pt tm a
-boolInferRules =
-  InferInput
+boolInferTypeRules :: BoolInferTypeContext e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m ki ty pt tm a
+boolInferTypeRules =
+  InferTypeInput
     []
-    [ InferBase inferBool
-    , InferRecurse inferAnd
-    , InferRecurse inferOr
+    [ InferTypeBase inferBool
+    , InferTypeRecurse inferAnd
+    , InferTypeRecurse inferOr
     ]
     [ PCheckBase checkBool ]

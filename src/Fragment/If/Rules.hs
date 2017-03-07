@@ -28,9 +28,9 @@ import Fragment.If.Rules.Term
 data RIf
 
 instance RulesIn RIf where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RIf = (() :: Constraint)
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RIf = SD.IfInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RIf = UO.IfInferContext e w s r m ki ty pt tm a
+  type InferKindContextSyntax e w s r m ki ty a RIf = (() :: Constraint)
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RIf = SD.IfInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RIf = UO.IfInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RIf = (() :: Constraint)
   type RuleTermContext ki ty pt tm a RIf = IfTermContext ki ty pt tm a
   type KindList RIf = '[]
@@ -41,7 +41,7 @@ instance RulesIn RIf where
   type TermList RIf = '[TmFBool, TmFIf]
 
   inferKindInputSyntax _ = mempty
-  inferSyntaxInput _ = SD.ifInferRules
-  inferOfflineInput _ = UO.ifInferRules
+  inferTypeInputSyntax _ = SD.ifInferTypeRules
+  inferTypeInputOffline _ = UO.ifInferTypeRules
   typeInput _ = mempty
   termInput _ = ifTermRules

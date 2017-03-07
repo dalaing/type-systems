@@ -26,9 +26,9 @@ import Fragment.SystemF.Rules.Term
 data RSystemF
 
 instance RulesIn RSystemF where
-  type RuleKindInferSyntaxContext e w s r m ki ty a RSystemF = SystemFKindRulesContext e w s r m ki ty a
-  type RuleInferSyntaxContext e w s r m ki ty pt tm a RSystemF = SystemFInferContext e w s r m ki ty pt tm a
-  type RuleInferOfflineContext e w s r m ki ty pt tm a RSystemF = (() :: Constraint)
+  type InferKindContextSyntax e w s r m ki ty a RSystemF = SystemFInferKindContext e w s r m ki ty a
+  type InferTypeContextSyntax e w s r m ki ty pt tm a RSystemF = SystemFInferTypeContext e w s r m ki ty pt tm a
+  type InferTypeContextOffline e w s r m ki ty pt tm a RSystemF = (() :: Constraint)
   type RuleTypeContext ki ty a RSystemF = SystemFTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RSystemF = SystemFTermContext ki ty pt tm a
   type KindList RSystemF = '[]
@@ -38,8 +38,8 @@ instance RulesIn RSystemF where
   type PatternList RSystemF = '[]
   type TermList RSystemF = '[TmFSystemF]
 
-  inferKindInputSyntax _ = systemFKindRules
-  inferSyntaxInput _ = systemFInferRules
-  inferOfflineInput _ = mempty
+  inferKindInputSyntax _ = systemFInferKindRules
+  inferTypeInputSyntax _ = systemFInferTypeRules
+  inferTypeInputOffline _ = mempty
   typeInput _ = systemFTypeRules
   termInput _ = systemFTermRules

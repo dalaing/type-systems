@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.TyVar.Rules.Kind.Infer.SyntaxDirected (
-    TyVarKindRulesContext
-  , tyVarKindRules
+    TyVarInferKindContext
+  , tyVarInferKindRules
   ) where
 
 import Control.Monad.Reader (MonadReader)
@@ -26,10 +26,10 @@ inferTyVar ty = do
   v <- preview _TyVar ty
   return $ lookupType v
 
-type TyVarKindRulesContext e w s r m ki ty a = (KindRulesContext e w s r m ki ty a, Ord a, MonadReader r m, HasTypeContext r ki a, MonadError e m, AsUnboundTypeVariable e a)
+type TyVarInferKindContext e w s r m ki ty a = (InferKindContext e w s r m ki ty a, Ord a, MonadReader r m, HasTypeContext r ki a, MonadError e m, AsUnboundTypeVariable e a)
 
-tyVarKindRules :: TyVarKindRulesContext e w s r m ki ty a
-                => KindRulesInput e w s r m ki ty a
-tyVarKindRules =
-  KindRulesInput
+tyVarInferKindRules :: TyVarInferKindContext e w s r m ki ty a
+                    => InferKindInput e w s r m ki ty a
+tyVarInferKindRules =
+  InferKindInput
     [ InferKindBase inferTyVar ]

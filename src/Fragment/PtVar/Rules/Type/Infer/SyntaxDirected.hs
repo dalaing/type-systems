@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.PtVar.Rules.Type.Infer.SyntaxDirected (
-    PtVarInferContext
-  , ptVarInferRules
+    PtVarInferTypeContext
+  , ptVarInferTypeRules
   ) where
 
 import Control.Lens (preview)
@@ -24,11 +24,11 @@ checkVar p ty = do
   return $
     return [ty]
 
-type PtVarInferContext e w s r m ki ty pt tm a = InferContext e w s r m ki ty pt tm a
+type PtVarInferTypeContext e w s r m ki ty pt tm a = InferTypeContext e w s r m ki ty pt tm a
 
-ptVarInferRules :: PtVarInferContext e w s r m ki ty pt tm a
-                => InferInput e w s r m ki ty pt tm a
-ptVarInferRules =
-  InferInput
+ptVarInferTypeRules :: PtVarInferTypeContext e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m ki ty pt tm a
+ptVarInferTypeRules =
+  InferTypeInput
     []
     [ PCheckBase checkVar ]

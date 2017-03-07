@@ -8,8 +8,8 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.STLC.Rules.Type.Infer.SyntaxDirected (
-    STLCInferContext
-  , stlcInferRules
+    STLCInferTypeContext
+  , stlcInferTypeRules
   ) where
 
 import Bound (instantiate1)
@@ -53,13 +53,13 @@ inferTmApp inferFn tm = do
     expectTypeEq tyArg tyX
     return tyRet
 
-type STLCInferContext e w s r m ki ty pt tm a = (Ord a, InferContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTySTLC ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmSTLC ki ty pt tm)
+type STLCInferTypeContext e w s r m ki ty pt tm a = (Ord a, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTySTLC ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmSTLC ki ty pt tm)
 
-stlcInferRules :: STLCInferContext e w s r m ki ty pt tm a
-               => InferInput e w s r m ki ty pt tm a
-stlcInferRules =
-  InferInput
-    [ InferRecurse inferTmLam
-    , InferRecurse inferTmApp
+stlcInferTypeRules :: STLCInferTypeContext e w s r m ki ty pt tm a
+               => InferTypeInput e w s r m ki ty pt tm a
+stlcInferTypeRules =
+  InferTypeInput
+    [ InferTypeRecurse inferTmLam
+    , InferTypeRecurse inferTmApp
     ]
     []

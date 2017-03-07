@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Pair.Rules.Type.Infer.SyntaxDirected (
-    PairInferContext
-  , pairInferRules
+    PairInferTypeContext
+  , pairInferTypeRules
   ) where
 
 import Control.Monad.Except (MonadError)
@@ -55,14 +55,14 @@ checkPair checkFn p ty = do
     (ty1, ty2) <- expectTyPair ty
     mappend <$> checkFn p1 ty1 <*> checkFn p2 ty2
 
-type PairInferContext e w s r m ki ty pt tm a = (InferContext e w s r m ki ty pt tm a, AsTyPair ki ty, AsExpectedTyPair e ki ty a, AsPtPair pt, AsTmPair ki ty pt tm)
+type PairInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyPair ki ty, AsExpectedTyPair e ki ty a, AsPtPair pt, AsTmPair ki ty pt tm)
 
-pairInferRules :: PairInferContext e w s r m ki ty pt tm a
-              => InferInput e w s r m ki ty pt tm a
-pairInferRules =
-  InferInput
-    [ InferRecurse inferTmPair
-    , InferRecurse inferTmFst
-    , InferRecurse inferTmSnd
+pairInferTypeRules :: PairInferTypeContext e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m ki ty pt tm a
+pairInferTypeRules =
+  InferTypeInput
+    [ InferTypeRecurse inferTmPair
+    , InferTypeRecurse inferTmFst
+    , InferTypeRecurse inferTmSnd
     ]
     [ PCheckRecurse checkPair ]
