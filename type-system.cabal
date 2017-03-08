@@ -38,7 +38,7 @@ library
                      , Rules.Term
                      , Rules.Type
                      , Rules.Unification
-                     -- , Rules.Infer.Unification
+                     , Rules.Type.Infer.Common
                      , Rules.Type.Infer.SyntaxDirected
                      , Rules.Type.Infer.Offline
                      -- , Rules.Type.Infer.Online
@@ -114,6 +114,7 @@ library
                      , Fragment.Pair.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.Pair.Rules.Type.Infer.SyntaxDirected
                      , Fragment.Pair.Rules.Type.Infer.Offline
+                     , Fragment.Pair.Rules.Type.Infer.Common
                      , Fragment.Pair.Rules.Type
                      , Fragment.Pair.Rules.Term
                      , Fragment.Pair.Helpers

@@ -25,6 +25,8 @@ module Rules (
 import Data.Proxy
 import GHC.Exts (Constraint)
 
+import Control.Monad.Trans (lift)
+
 import Rules.Unification
 import qualified Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Rules.Type.Infer.SyntaxDirected as TSD
@@ -147,6 +149,8 @@ class RulesOut (k :: j) where
                     -> TSD.InferTypeOutput e w s r m ki ty pt tm a
   inferTypeOutputOffline :: ( TUO.InferTypeContext e w s r m ki ty pt tm a
                         , InferTypeContextOffline e w s r m ki ty pt tm a k
+                        , KSD.InferKindContext e w s r m ki ty a
+                        , InferKindContextSyntax e w s r m ki ty a k
                         , RuleTypeContext ki ty a k
                         )
                      => Proxy k
@@ -197,9 +201,29 @@ instance RulesIn k => RulesOut (k :: j) where
      in
        TSD.prepareInferType inferKind normalize .
        inferTypeInputSyntax $ p
+
+  inferTypeOutputOffline :: forall e w s r m ki ty pt tm a.
+                       ( TUO.InferTypeContext e w s r m ki ty pt tm a
+                       , InferTypeContextOffline e w s r m ki ty pt tm a k
+                       , KSD.InferKindContext e w s r m ki ty a
+                       , InferKindContextSyntax e w s r m ki ty a k
+                       , RuleTypeContext ki ty a k
+                       )
+                    => Proxy k
+                    -> TUO.InferTypeOutput e w s r m ki ty pt tm a
   inferTypeOutputOffline p =
-    TUO.prepareInferType (toNormalizeType $ typeOutput p) .
-    inferTypeInputOffline $ p
+     let
+       ikos :: ( KSD.InferKindContext e w s r m ki ty a
+               , InferKindContextSyntax e w s r m ki ty a k
+               )
+            => KSD.InferKindOutput e w s r m ki ty a
+       ikos = inferKindOutputSyntax p
+       inferKind = KSD.kroInfer ikos
+       normalize = toNormalizeType $ typeOutput p
+     in
+       TUO.prepareInferType (lift . inferKind) normalize .
+       inferTypeInputOffline $ p
+
   typeOutput =
     prepareType . typeInput
   termOutput =
