@@ -81,7 +81,7 @@ checkTuple checkFn p ty = do
 type TupleInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, UnificationContext e m (Type ki ty) a, EqRec (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyTuple ki ty, AsExpectedTyTuple e ki ty a, AsTupleOutOfBounds e, AsPtTuple pt, AsTmTuple ki ty pt tm)
 
 tupleInferTypeRules :: TupleInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 tupleInferTypeRules =
   InferTypeInput
     [ UnificationMany unifyTuple ]

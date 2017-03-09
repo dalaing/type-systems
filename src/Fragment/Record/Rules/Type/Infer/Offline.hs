@@ -54,7 +54,7 @@ checkRecord checkFn p ty = do
 type RecordInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyRecord ki ty, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ki ty pt tm)
 
 recordInferTypeRules :: RecordInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 recordInferTypeRules =
   InferTypeInput
     []

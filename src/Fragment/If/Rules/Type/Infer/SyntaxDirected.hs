@@ -40,6 +40,6 @@ inferTmIf inferFn tm = do
 type IfInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsUnexpectedType e ki ty a, AsExpectedTypeEq e ki ty a, AsTyBool ki ty, AsTmIf ki ty pt tm)
 
 ifInferTypeRules :: IfInferTypeContext e w s r m ki ty pt tm a
-             => InferTypeInput e w s r m ki ty pt tm a
+             => InferTypeInput e w s r m m ki ty pt tm a
 ifInferTypeRules =
-  InferTypeInput [ InferTypeRecurse inferTmIf ] []
+  InferTypeInput [] [ InferTypeRecurse inferTmIf ] []

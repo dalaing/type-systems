@@ -79,7 +79,7 @@ inferTmApp inferFn tm = do
 type HMInferTypeContext e w s r m ki ty pt tm a = (Ord a, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTyHM ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmHM ki ty pt tm)
 
 hmInferTypeRules :: HMInferTypeContext e w s r m ki ty pt tm a
-             => InferTypeInput e w s r m ki ty pt tm a
+             => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 hmInferTypeRules =
   InferTypeInput
     [ UnificationMany unifyArr ]

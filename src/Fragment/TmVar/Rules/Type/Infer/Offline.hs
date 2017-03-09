@@ -30,9 +30,6 @@ inferTmVar tm = do
 type TmVarInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, Ord a, MonadReader r m, HasTermContext r ki ty a, MonadError e m, AsUnboundTermVariable e a)
 
 tmVarInferTypeRules :: TmVarInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 tmVarInferTypeRules =
-  InferTypeInput
-    []
-    [ InferTypeBase inferTmVar ]
-    []
+  InferTypeInput [] [ InferTypeBase inferTmVar ] []

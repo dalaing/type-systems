@@ -5,16 +5,26 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+-- {-# LANGUAGE TypeFamilies #-}
+-- {-# LANGUAGE ConstraintKinds #-}
+-- {-# LANGUAGE KindSignatures #-}
+-- {-# LANGUAGE PolyKinds #-}
 module Rules.Type.Infer.Common (
     InferTypeRule(..)
   , mkInferType
   , mkCheckType'
   , PCheckRule(..)
   , mkPCheck
+  , InferTypeInput(..)
+  , InferTypeOutput(..)
   ) where
 
 import Data.Foldable (asum)
 import Data.Maybe (fromMaybe)
+-- import Data.Proxy (Proxy)
+-- import GHC.Exts (Constraint)
+
+-- import Data.List.NonEmpty (NonEmpty)
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
@@ -25,6 +35,8 @@ import Ast.Pattern
 import Ast.Term
 import Ast.Error.Common
 import Data.Functor.Rec
+
+import Rules.Unification
 
 data InferTypeRule e w s r m ki ty pt tm a =
     InferTypeBase (Term ki ty pt tm a -> Maybe (m (Type ki ty a)))
@@ -101,3 +113,49 @@ mkPCheck rules x y =
       rules
   in
     go x y
+
+data InferTypeInput e w s r m mi ki ty pt tm a =
+  InferTypeInput {
+    iiUnifyRules :: [UnificationRule m (Type ki ty) a]
+  , iiInferTypeRules :: [InferTypeRule e w s r mi ki ty pt tm a]
+  , iiPCheckRules :: [PCheckRule e mi pt ki ty a]
+  }
+
+instance Monoid (InferTypeInput e w s r m mi ki ty pt tm a) where
+  mempty =
+    InferTypeInput mempty mempty mempty
+  mappend (InferTypeInput u1 i1 c1) (InferTypeInput u2 i2 c2) =
+    InferTypeInput
+      (mappend u1 u2)
+      (mappend i1 i2)
+      (mappend c1 c2)
+
+data InferTypeOutput e w s r m ki ty pt tm a =
+  InferTypeOutput {
+    ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
+  , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
+  }
+
+{-
+class InferType (k :: j) where
+  type InferTypeConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a k :: Constraint
+  type UnifyMonad (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a (m :: * -> *) k :: (* -> *)
+
+  expectType :: (Eq a, EqRec (ty ki)) => ExpectedType ki ty a -> ActualType ki ty a -> UnifyMonad ki ty a m k ()
+  expectTypeEq :: (Eq a, EqRec (ty ki)) => Type ki ty a -> Type ki ty a -> UnifyMonad ki ty a m k ()
+  expectTypeAllEq :: (Eq a, EqRec (ty ki)) => NonEmpty (Type ki ty a) -> UnifyMonad ki ty a m k (Type ki ty a)
+
+  mkCheckType :: (Eq a, EqRec (ty ki))
+            => (Term ki ty pt tm a -> UnifyMonad ki ty a m k (Type ki ty a))
+            -> Term ki ty pt tm a
+            -> Type ki ty a
+            -> UnifyMonad ki ty a m k ()
+  mkCheckType = mkCheckType' expectType
+
+  prepareInferType :: InferTypeConstraint e w s r m ki ty pt tm a k
+             => (Type ki ty a -> UnifyMonad ki ty a m k (Kind ki))
+             -> (Type ki ty a -> Type ki ty a)
+             -> InferTypeInput e w s r m (UnifyMonad ki ty a m k) ki ty pt tm a
+             -> InferTypeOutput e w s r m ki ty pt tm a
+-}
+

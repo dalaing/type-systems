@@ -35,11 +35,9 @@ expectPair =
 type PairInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyPair ki ty, AsExpectedTyPair e ki ty a, AsPtPair pt, AsTmPair ki ty pt tm)
 
 pairInferTypeRules :: PairInferTypeContext e w s r m ki ty pt tm a
-              => InferTypeInput e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m m ki ty pt tm a
 pairInferTypeRules =
   let
     ph = PairHelper createPair expectPair
   in
-    InferTypeInput
-      (inferTypeRules ph)
-      (checkRules ph)
+    inferTypeInput ph

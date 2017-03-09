@@ -28,9 +28,6 @@ checkVar p ty = do
 type PtVarInferTypeContext e w s r m ki ty pt tm a = InferTypeContext e w s r m ki ty pt tm a
 
 ptVarInferTypeRules :: PtVarInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 ptVarInferTypeRules =
-  InferTypeInput
-    []
-    []
-    [ PCheckBase checkVar ]
+  InferTypeInput [] [] [ PCheckBase checkVar ]

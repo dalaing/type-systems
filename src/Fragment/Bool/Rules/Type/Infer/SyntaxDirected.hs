@@ -70,9 +70,10 @@ checkBool p ty = do
 type BoolInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)
 
 boolInferTypeRules :: BoolInferTypeContext e w s r m ki ty pt tm a
-              => InferTypeInput e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m m ki ty pt tm a
 boolInferTypeRules =
   InferTypeInput
+    []
     [ InferTypeBase inferBool
     , InferTypeRecurse inferAnd
     , InferTypeRecurse inferOr

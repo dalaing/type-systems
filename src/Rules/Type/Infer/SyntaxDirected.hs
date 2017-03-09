@@ -70,6 +70,7 @@ expectTypeAllEq (ty :| tys) = do
     throwing _ExpectedTypeAllEq (ty :| tys)
   return ty
 
+{-
 data InferTypeInput e w s r m ki ty pt tm a =
   InferTypeInput {
     iiInferRules :: [InferTypeRule e w s r m ki ty pt tm a]
@@ -91,17 +92,18 @@ data InferTypeOutput e w s r m ki ty pt tm a =
     ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
+-}
 
 type InferTypeContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, InferKindContext e w s r m ki ty a)
 
 prepareInferType :: InferTypeContext e w s r m ki ty pt tm a
              => (Type ki ty a -> m (Kind ki))
              -> (Type ki ty a -> Type ki ty a)
-             -> InferTypeInput e w s r m ki ty pt tm a
+             -> InferTypeInput e w s r m m ki ty pt tm a
              -> InferTypeOutput e w s r m ki ty pt tm a
 prepareInferType inferKindFn normalizeFn ii =
   let
-    i = mkInferType inferKindFn normalizeFn pc . iiInferRules $ ii
+    i = mkInferType inferKindFn normalizeFn pc . iiInferTypeRules $ ii
     c = mkCheckType i
     pc = mkPCheck . iiPCheckRules $ ii
   in

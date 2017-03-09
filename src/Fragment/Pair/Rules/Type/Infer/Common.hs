@@ -7,8 +7,7 @@ Portability : non-portable
 -}
 module Fragment.Pair.Rules.Type.Infer.Common (
     PairHelper(..)
-  , inferTypeRules
-  , checkRules
+  , inferTypeInput
   ) where
 
 import Control.Lens (preview)
@@ -23,21 +22,17 @@ import Fragment.Pair.Ast.Term
 
 import Rules.Type.Infer.Common
 
-inferTypeRules :: (Monad m, AsTyPair ki ty, AsTmPair ki ty pt tm)
-               => PairHelper m ki ty a
-               -> [InferTypeRule e w s r m ki ty pt tm a]
-inferTypeRules ph =
-  [ InferTypeRecurse $ inferTmPair ph
-  , InferTypeRecurse $ inferTmFst ph
-  , InferTypeRecurse $ inferTmSnd ph
-  ]
-
-checkRules :: (Monad m, AsTyPair ki ty, AsPtPair pt)
-           => PairHelper m ki ty a
-           -> [PCheckRule e m pt ki ty a]
-checkRules ph =
-  [ PCheckRecurse $ checkPair ph
-  ]
+inferTypeInput :: (Monad mi, AsTyPair ki ty, AsPtPair pt, AsTmPair ki ty pt tm)
+               => PairHelper mi ki ty a
+               -> InferTypeInput e w s r m mi ki ty pt tm a
+inferTypeInput ph =
+  InferTypeInput
+    []
+    [ InferTypeRecurse $ inferTmPair ph
+    , InferTypeRecurse $ inferTmFst ph
+    , InferTypeRecurse $ inferTmSnd ph
+    ]
+    [ PCheckRecurse $ checkPair ph]
 
 data PairHelper m ki ty a =
   PairHelper {

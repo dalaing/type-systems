@@ -49,9 +49,10 @@ inferTmUnfold inferFn tm = do
 type IsoRecInferTypeContext e w s r m ki ty pt tm a = (Eq a, EqRec (ty ki), MonadError e m, InferTypeContext e w s r m ki ty pt tm a, AsTyIsoRec ki ty, AsTmIsoRec ki ty pt tm)
 
 isoRecInferTypeRules :: IsoRecInferTypeContext e w s r m ki ty pt tm a
-                  => InferTypeInput e w s r m ki ty pt tm a
+                  => InferTypeInput e w s r m m ki ty pt tm a
 isoRecInferTypeRules =
   InferTypeInput
+    [] 
     [ InferTypeRecurse inferTmFold
     , InferTypeRecurse inferTmUnfold
     ]

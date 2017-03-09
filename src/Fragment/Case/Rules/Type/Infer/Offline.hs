@@ -72,7 +72,7 @@ inferTmCase inferFn checkFn tm = do
 type CaseInferTypeContext e w s r m ki ty pt tm a = (Ord a, AstBound ki ty pt tm, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsExpectedPattern e ki ty pt tm a, AsDuplicatedPatternVariables e a, MonadWriter [w] m, AsUnusedPatternVariables w a, AsShadowingPatternVariables w a, AsExpectedTypeAllEq e ki ty a, AsTmCase ki ty pt tm)
 
 caseInferTypeRules :: CaseInferTypeContext e w s r m ki ty pt tm a
-               => InferTypeInput e w s r m ki ty pt tm a
+               => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 caseInferTypeRules =
   InferTypeInput
     []

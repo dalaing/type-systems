@@ -51,7 +51,7 @@ checkVariant checkFn p ty = do
 type VariantInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyVariant ki ty, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsPtVariant pt, AsTmVariant ki ty pt tm)
 
 variantInferTypeRules :: VariantInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 variantInferTypeRules =
   InferTypeInput
     []

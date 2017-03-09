@@ -104,6 +104,7 @@ expectTypeAllEq n@(ty :| tys) = do
       tell ws
   return ty
 
+{-
 data InferTypeInput e w s r m ki ty pt tm a =
   InferTypeInput {
     iiUnifyRules :: [UnificationRule m (Type ki ty) a]
@@ -125,13 +126,14 @@ data InferTypeOutput e w s r m ki ty pt tm a =
     ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
+-}
 
 type InferTypeContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m (Type ki ty) a)
 
 prepareInferType :: InferTypeContext e w s r m ki ty pt tm a
              => (Type ki ty a -> UnifyT ki ty a m (Kind ki))
              -> (Type ki ty a -> Type ki ty a)
-             -> InferTypeInput e w s r m ki ty pt tm a
+             -> InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
              -> InferTypeOutput e w s r m ki ty pt tm a
 prepareInferType inferKindFn normalizeFn ii =
   let

@@ -56,9 +56,10 @@ inferTmApp inferFn tm = do
 type STLCInferTypeContext e w s r m ki ty pt tm a = (Ord a, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, HasTermContext r ki ty a, AsTySTLC ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsTmSTLC ki ty pt tm)
 
 stlcInferTypeRules :: STLCInferTypeContext e w s r m ki ty pt tm a
-               => InferTypeInput e w s r m ki ty pt tm a
+               => InferTypeInput e w s r m m ki ty pt tm a
 stlcInferTypeRules =
   InferTypeInput
+    []
     [ InferTypeRecurse inferTmLam
     , InferTypeRecurse inferTmApp
     ]

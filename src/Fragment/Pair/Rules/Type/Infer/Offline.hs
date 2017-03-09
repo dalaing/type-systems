@@ -60,13 +60,10 @@ expectPair tyP = do
 type PairInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, UnificationContext e m (Type ki ty) a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyPair ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyPair e ki ty a, AsPtPair pt, AsTmPair ki ty pt tm)
 
 pairInferTypeRules :: PairInferTypeContext e w s r m ki ty pt tm a
-              => InferTypeInput e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 pairInferTypeRules =
   let
     ph = PairHelper createPair expectPair
   in
-    InferTypeInput
-      [ UnificationMany unifyPair ]
-      (inferTypeRules ph)
-      (checkRules ph)
+    InferTypeInput [ UnificationMany unifyPair ] [] [] `mappend` inferTypeInput ph
 

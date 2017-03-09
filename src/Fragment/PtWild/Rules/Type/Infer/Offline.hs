@@ -28,9 +28,6 @@ checkWild p _ = do
 type PtWildInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsPtWild pt)
 
 ptWildInferTypeRules :: PtWildInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 ptWildInferTypeRules =
-  InferTypeInput
-    []
-    []
-    [ PCheckBase checkWild ]
+  InferTypeInput [] [] [ PCheckBase checkWild ]

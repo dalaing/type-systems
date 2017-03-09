@@ -73,10 +73,10 @@ class RulesIn (k :: j) where
                       , RuleTypeContext ki ty a k
                       )
                    => Proxy k
-                   -> TSD.InferTypeInput e w s r m ki ty pt tm a
+                   -> TSD.InferTypeInput e w s r m m ki ty pt tm a
   inferTypeInputOffline :: InferTypeContextOffline e w s r m ki ty pt tm a k
                     => Proxy k
-                    -> TUO.InferTypeInput e w s r m ki ty pt tm a
+                    -> TUO.InferTypeInput e w s r m (TUO.UnifyT ki ty a m) ki ty pt tm a
   typeInput :: RuleTypeContext ki ty a k => Proxy k -> TypeInput ki ty a
   termInput :: (TermContext ki ty pt tm a, RuleTermContext ki ty pt tm a k) => Proxy k -> TermInput ki ty pt tm a
 

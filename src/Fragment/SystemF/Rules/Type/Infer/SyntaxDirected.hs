@@ -73,9 +73,10 @@ inferTmAppTy inferFn tm = do
 type SystemFInferTypeContext e w s r m ki ty pt tm a = (Ord a, InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ki ty a, AsTySystemF ki ty, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemF ki ty pt tm)
 
 systemFInferTypeRules :: SystemFInferTypeContext e w s r m ki ty pt tm a
-                  => InferTypeInput e w s r m ki ty pt tm a
+                  => InferTypeInput e w s r m m ki ty pt tm a
 systemFInferTypeRules =
   InferTypeInput
+    []
     [ InferTypeRecurse inferTmLam
     , InferTypeRecurse inferTmLamTy
     , InferTypeRecurse inferTmApp

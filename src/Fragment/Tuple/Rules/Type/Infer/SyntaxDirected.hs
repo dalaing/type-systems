@@ -52,9 +52,10 @@ checkTuple checkFn p ty = do
 type TupleInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyTuple ki ty, AsExpectedTyTuple e ki ty a, AsTupleOutOfBounds e, AsPtTuple pt, AsTmTuple ki ty pt tm)
 
 tupleInferTypeRules :: TupleInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m ki ty pt tm a
+                => InferTypeInput e w s r m m ki ty pt tm a
 tupleInferTypeRules =
   InferTypeInput
+    []
     [ InferTypeRecurse inferTmTuple
     , InferTypeRecurse inferTmTupleIx
     ]

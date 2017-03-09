@@ -81,7 +81,7 @@ checkInt p ty = do
 type IntInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
 
 intInferTypeRules :: IntInferTypeContext e w s r m ki ty pt tm a
-              => InferTypeInput e w s r m ki ty pt tm a
+              => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 intInferTypeRules =
   InferTypeInput
     []
