@@ -12,22 +12,14 @@ module Fragment.PtWild.Rules.Type.Infer.Offline (
   , ptWildInferTypeRules
   ) where
 
-import Control.Lens (preview)
-
+import Ast.Pattern
 import Rules.Type.Infer.Offline
 
-import Ast.Pattern
-import Ast.Type
-
-checkWild :: (Monad m, AsPtWild pt) => Pattern pt a -> Type ki ty a -> Maybe (m [Type ki ty a])
-checkWild p _ = do
-  _ <- preview _PtWild p
-  return $
-    return []
+import Fragment.PtWild.Rules.Type.Infer.Common
 
 type PtWildInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsPtWild pt)
 
 ptWildInferTypeRules :: PtWildInferTypeContext e w s r m ki ty pt tm a
                 => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 ptWildInferTypeRules =
-  InferTypeInput [] [] [ PCheckBase checkWild ]
+  inferTypeInput

@@ -12,53 +12,14 @@ module Fragment.Record.Rules.Type.Infer.Offline (
   , recordInferTypeRules
   ) where
 
-import Control.Monad.Except (MonadError)
-import Control.Lens (review, preview)
-
 import Rules.Type.Infer.Offline
-import Ast.Type
-import Ast.Pattern
-import Ast.Term
 
-import Fragment.Record.Ast.Type
-import Fragment.Record.Ast.Error
-import Fragment.Record.Ast.Pattern
-import Fragment.Record.Ast.Term
+import qualified Fragment.Record.Rules.Type.Infer.Common as R
 
-inferTmRecord :: (Monad m, AsTyRecord ki ty, AsTmRecord ki ty pt tm) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
-inferTmRecord inferFn tm = do
-  tms <- preview _TmRecord tm
-  return $ do
-    tys <- traverse (traverse inferFn) tms
-    return $ review _TyRecord tys
-
-inferTmRecordIx :: (MonadError e m, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsTyRecord ki ty, AsTmRecord ki ty pt tm) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
-inferTmRecordIx inferFn tm = do
-  (tmT, i) <- preview _TmRecordIx tm
-  return $ do
-    tyT <- inferFn tmT
-    tys <- expectTyRecord tyT
-    lookupRecord tys i
-
-checkRecord :: (MonadError e m, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsPtRecord pt, AsTyRecord ki ty) => (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Pattern pt a -> Type ki ty a -> Maybe (m [Type ki ty a])
-checkRecord checkFn p ty = do
-  ps <- preview _PtRecord p
-  return $ do
-    -- check for duplicate labels in ps
-    ltys <- expectTyRecord ty
-    let f (l, lp) = do
-          typ <- lookupRecord ltys l
-          checkFn lp typ
-    fmap mconcat . traverse f $ ps
-
-type RecordInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyRecord ki ty, AsExpectedTyRecord e ki ty a, AsRecordNotFound e, AsPtRecord pt, AsTmRecord ki ty pt tm)
+type RecordInferTypeContext e w s r m ki ty pt tm a =
+  R.RecordInferTypeContext e w s r m (UnifyT ki ty a m) ki ty pt tm a
 
 recordInferTypeRules :: RecordInferTypeContext e w s r m ki ty pt tm a
-                => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
+                     => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
 recordInferTypeRules =
-  InferTypeInput
-    []
-    [ InferTypeRecurse inferTmRecord
-    , InferTypeRecurse inferTmRecordIx
-    ]
-    [ PCheckRecurse checkRecord ]
+  R.inferTypeInput

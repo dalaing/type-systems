@@ -22,6 +22,12 @@ import Fragment.Pair.Ast.Term
 
 import Rules.Type.Infer.Common
 
+data PairHelper m ki ty a =
+  PairHelper {
+    phCreatePair :: Type ki ty a -> Type ki ty a -> m (Type ki ty a)
+  , phExpectPair :: Type ki ty a -> m (Type ki ty a, Type ki ty a)
+  }
+
 inferTypeInput :: (Monad mi, AsTyPair ki ty, AsPtPair pt, AsTmPair ki ty pt tm)
                => PairHelper mi ki ty a
                -> InferTypeInput e w s r m mi ki ty pt tm a
@@ -33,12 +39,6 @@ inferTypeInput ph =
     , InferTypeRecurse $ inferTmSnd ph
     ]
     [ PCheckRecurse $ checkPair ph]
-
-data PairHelper m ki ty a =
-  PairHelper {
-    phCreatePair :: Type ki ty a -> Type ki ty a -> m (Type ki ty a)
-  , phExpectPair :: Type ki ty a -> m (Type ki ty a, Type ki ty a)
-  }
 
 inferTmPair :: (Monad m, AsTyPair ki ty, AsTmPair ki ty pt tm)
             => PairHelper m ki ty a

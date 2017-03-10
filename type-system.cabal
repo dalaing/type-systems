@@ -49,18 +49,21 @@ library
                      , Fragment.PtVar.Rules
                      , Fragment.PtVar.Rules.Type.Infer.SyntaxDirected
                      , Fragment.PtVar.Rules.Type.Infer.Offline
+                     , Fragment.PtVar.Rules.Type.Infer.Common
                      , Fragment.PtVar.Rules.Term
                      , Fragment.PtVar.Helpers
                      , Fragment.PtWild
                      , Fragment.PtWild.Rules
                      , Fragment.PtWild.Rules.Type.Infer.SyntaxDirected
                      , Fragment.PtWild.Rules.Type.Infer.Offline
+                     , Fragment.PtWild.Rules.Type.Infer.Common
                      , Fragment.PtWild.Rules.Term
                      , Fragment.PtWild.Helpers
                      , Fragment.TmVar
                      , Fragment.TmVar.Rules
                      , Fragment.TmVar.Rules.Type.Infer.SyntaxDirected
                      , Fragment.TmVar.Rules.Type.Infer.Offline
+                     , Fragment.TmVar.Rules.Type.Infer.Common
                      , Fragment.TmVar.Helpers
                      , Fragment.TyVar
                      , Fragment.TyVar.Rules
@@ -81,6 +84,7 @@ library
                      , Fragment.Int.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.Int.Rules.Type.Infer.SyntaxDirected
                      , Fragment.Int.Rules.Type.Infer.Offline
+                     , Fragment.Int.Rules.Type.Infer.Common
                      , Fragment.Int.Rules.Type
                      , Fragment.Int.Rules.Term
                      , Fragment.Int.Helpers
@@ -93,6 +97,7 @@ library
                      , Fragment.Bool.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.Bool.Rules.Type.Infer.SyntaxDirected
                      , Fragment.Bool.Rules.Type.Infer.Offline
+                     , Fragment.Bool.Rules.Type.Infer.Common
                      , Fragment.Bool.Rules.Type
                      , Fragment.Bool.Rules.Term
                      , Fragment.Bool.Helpers
@@ -102,6 +107,7 @@ library
                      , Fragment.If.Rules
                      , Fragment.If.Rules.Type.Infer.SyntaxDirected
                      , Fragment.If.Rules.Type.Infer.Offline
+                     , Fragment.If.Rules.Type.Infer.Common
                      , Fragment.If.Rules.Term
                      , Fragment.If.Helpers
                      , Fragment.Pair
@@ -128,6 +134,7 @@ library
                      , Fragment.Tuple.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.Tuple.Rules.Type.Infer.SyntaxDirected
                      , Fragment.Tuple.Rules.Type.Infer.Offline
+                     , Fragment.Tuple.Rules.Type.Infer.Common
                      , Fragment.Tuple.Rules.Type
                      , Fragment.Tuple.Rules.Term
                      , Fragment.Tuple.Helpers
@@ -141,6 +148,7 @@ library
                      , Fragment.Record.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.Record.Rules.Type.Infer.SyntaxDirected
                      , Fragment.Record.Rules.Type.Infer.Offline
+                     , Fragment.Record.Rules.Type.Infer.Common
                      , Fragment.Record.Rules.Type
                      , Fragment.Record.Rules.Term
                      , Fragment.Record.Helpers
@@ -154,6 +162,7 @@ library
                      , Fragment.Variant.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.Variant.Rules.Type.Infer.SyntaxDirected
                      , Fragment.Variant.Rules.Type.Infer.Offline
+                     , Fragment.Variant.Rules.Type.Infer.Common
                      , Fragment.Variant.Rules.Type
                      , Fragment.Variant.Rules.Term
                      , Fragment.Variant.Helpers
@@ -165,6 +174,7 @@ library
                      , Fragment.Case.Rules
                      , Fragment.Case.Rules.Type.Infer.SyntaxDirected
                      , Fragment.Case.Rules.Type.Infer.Offline
+                     , Fragment.Case.Rules.Type.Infer.Common
                      , Fragment.Case.Rules.Term
                      , Fragment.Case.Helpers
                      -- , Fragment.IsoRec
