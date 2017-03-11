@@ -58,10 +58,14 @@ import Fragment.Pair
 import Fragment.Tuple
 import Fragment.Record
 import Fragment.Variant
+import Fragment.Case
 -- import Fragment.STLC
 -- import Fragment.HM
-import Fragment.SystemFw
-import Fragment.Case
+--import Fragment.SystemFw
+import Fragment.TyArr
+import Fragment.TmLam
+import Fragment.TmApp
+import Fragment.LC
 
 type Rules =
   '[ RPtVar
@@ -77,7 +81,11 @@ type Rules =
    , RVariant
    , RCase
    -- , RHM
-   , RSystemFw
+   -- , RSystemFw
+   , RTyArr
+   , RTmLam
+   , RTmApp
+   , RLC
    ]
 
 rules :: Proxy Rules

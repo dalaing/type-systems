@@ -19,7 +19,7 @@ library
                      , Data.Functor.Rec
                      , Language.TheLot
                      , Ast.Kind
-                     , Ast.Type
+                    , Ast.Type
                      , Ast.Type.Var
                      , Ast.Error
                      , Ast.Error.Common
@@ -177,6 +177,17 @@ library
                      , Fragment.Case.Rules.Type.Infer.Common
                      , Fragment.Case.Rules.Term
                      , Fragment.Case.Helpers
+
+                     , Fragment.Fix
+                     , Fragment.Fix.Ast
+                     , Fragment.Fix.Ast.Term
+                     , Fragment.Fix.Rules
+                     , Fragment.Fix.Rules.Type.Infer.SyntaxDirected
+                     , Fragment.Fix.Rules.Type.Infer.Offline
+                     , Fragment.Fix.Rules.Type.Infer.Common
+                     , Fragment.Fix.Rules.Term
+                     , Fragment.Fix.Helpers
+                       
                      -- , Fragment.IsoRec
                      , Fragment.IsoRec.Ast
                      , Fragment.IsoRec.Ast.Type
@@ -188,28 +199,44 @@ library
                      , Fragment.IsoRec.Rules.Type
                      , Fragment.IsoRec.Rules.Term
                      , Fragment.IsoRec.Helpers
-                     , Fragment.STLC
-                     , Fragment.STLC.Ast
-                     , Fragment.STLC.Ast.Type
-                     , Fragment.STLC.Ast.Error
-                     , Fragment.STLC.Ast.Term
-                     , Fragment.STLC.Rules
-                     , Fragment.STLC.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.STLC.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.STLC.Rules.Type
-                     , Fragment.STLC.Rules.Term
-                     , Fragment.STLC.Helpers
-                     , Fragment.HM
-                     , Fragment.HM.Ast
-                     , Fragment.HM.Ast.Type
-                     , Fragment.HM.Ast.Error
-                     , Fragment.HM.Ast.Term
-                     , Fragment.HM.Rules
-                     , Fragment.HM.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.HM.Rules.Type.Infer.Offline
-                     , Fragment.HM.Rules.Type
-                     , Fragment.HM.Rules.Term
-                     , Fragment.HM.Helpers
+
+                     , Fragment.TyArr
+                     , Fragment.TyArr.Ast
+                     , Fragment.TyArr.Ast.Type
+                     , Fragment.TyArr.Ast.Error
+                     , Fragment.TyArr.Rules
+                     , Fragment.TyArr.Rules.Kind.Infer.SyntaxDirected
+                     , Fragment.TyArr.Rules.Type.Infer.Offline
+                     , Fragment.TyArr.Rules.Type
+                     , Fragment.TyArr.Helpers
+
+                     , Fragment.TmLam
+                     , Fragment.TmLam.Ast
+                     , Fragment.TmLam.Ast.Error
+                     , Fragment.TmLam.Ast.Term
+                     , Fragment.TmLam.Rules
+                     , Fragment.TmLam.Rules.Type.Infer.SyntaxDirected
+                     , Fragment.TmLam.Rules.Type.Infer.Offline
+                     , Fragment.TmLam.Rules.Type.Infer.Common
+                     , Fragment.TmLam.Rules.Term
+                     , Fragment.TmLam.Helpers
+
+                     , Fragment.TmApp
+                     , Fragment.TmApp.Ast
+                     , Fragment.TmApp.Ast.Term
+                     , Fragment.TmApp.Rules
+                     , Fragment.TmApp.Rules.Type.Infer.SyntaxDirected
+                     , Fragment.TmApp.Rules.Type.Infer.Offline
+                     , Fragment.TmApp.Rules.Type.Infer.Common
+                     , Fragment.TmApp.Rules.Term
+                     , Fragment.TmApp.Helpers
+
+                     , Fragment.LC
+                     , Fragment.LC.Ast
+                     , Fragment.LC.Rules
+                     , Fragment.LC.Rules.Term
+                     , Fragment.LC.Helpers
+
                      , Fragment.SystemF
                      , Fragment.SystemF.Ast
                      , Fragment.SystemF.Ast.Type
@@ -221,6 +248,7 @@ library
                      , Fragment.SystemF.Rules.Type
                      , Fragment.SystemF.Rules.Term
                      , Fragment.SystemF.Helpers
+
                      , Fragment.SystemFw.Ast
                      , Fragment.SystemFw.Ast.Kind
                      , Fragment.SystemFw.Ast.Type
