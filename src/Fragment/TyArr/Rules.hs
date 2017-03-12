@@ -49,6 +49,6 @@ instance RulesIn RTyArr where
 
   inferKindInputSyntax _ = tyArrInferKindRules
   inferTypeInputSyntax _ = mempty
-  inferTypeInputOffline _ = mempty
+  inferTypeInputOffline _ = tyArrInferTypeRules
   typeInput _ = tyArrTypeRules
   termInput _ = mempty
