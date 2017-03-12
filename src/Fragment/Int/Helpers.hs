@@ -10,6 +10,7 @@ module Fragment.Int.Helpers (
   , ptInt
   , tmInt
   , tmAdd
+  , tmSub
   , tmMul
   ) where
 
@@ -34,6 +35,9 @@ tmInt = review _TmInt
 
 tmAdd :: AsTmInt ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmAdd = curry $ review _TmAdd
+
+tmSub :: AsTmInt ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
+tmSub = curry $ review _TmSub
 
 tmMul :: AsTmInt ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmMul = curry $ review _TmMul

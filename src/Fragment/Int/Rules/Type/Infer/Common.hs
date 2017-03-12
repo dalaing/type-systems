@@ -37,6 +37,7 @@ inferTypeInput ih =
     []
     [ InferTypeBase inferTmInt
     , InferTypeRecurse $ inferTmAdd ih
+    , InferTypeRecurse $ inferTmSub ih
     , InferTypeRecurse $ inferTmMul ih
     ]
     [ PCheckBase $ checkInt ih]
@@ -55,6 +56,23 @@ inferTmAdd :: (AsTyInt ki ty, AsTmInt ki ty pt tm, Monad m)
            -> Maybe (m (Type ki ty a))
 inferTmAdd (IntHelper createInt expectType) inferFn tm = do
   (tm1, tm2) <- preview _TmAdd tm
+  return $ do
+    let ty = review _TyInt ()
+    ty1 <- inferFn tm1
+    expectType (ExpectedType ty) (ActualType ty1)
+    ty2 <- inferFn tm2
+    expectType (ExpectedType ty) (ActualType ty2)
+    tyV <- createInt
+    expectType (ExpectedType ty) (ActualType tyV)
+    return tyV
+
+inferTmSub :: (AsTyInt ki ty, AsTmInt ki ty pt tm, Monad m)
+           => IntHelper m ki ty a
+           -> (Term ki ty pt tm a -> m (Type ki ty a))
+           -> Term ki ty pt tm a
+           -> Maybe (m (Type ki ty a))
+inferTmSub (IntHelper createInt expectType) inferFn tm = do
+  (tm1, tm2) <- preview _TmSub tm
   return $ do
     let ty = review _TyInt ()
     ty1 <- inferFn tm1

@@ -55,6 +55,34 @@ stepAddInt tm = do
   i2 <- preview _TmInt tm2
   return . review _TmInt $ i1 + i2
 
+stepSub1 :: AsTmInt ki ty pt tm
+         => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+         -> Term ki ty pt tm a
+         -> Maybe (Term ki ty pt tm a)
+stepSub1 stepFn tm = do
+  (tm1, tm2) <- preview _TmSub tm
+  tm1' <- stepFn tm1
+  return . review _TmSub $ (tm1', tm2)
+
+stepSub2 :: AsTmInt ki ty pt tm
+         => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+         -> Term ki ty pt tm a
+         -> Maybe (Term ki ty pt tm a)
+stepSub2 stepFn tm = do
+  (tm1, tm2) <- preview _TmSub tm
+  _ <- preview _TmInt tm1
+  tm2' <- stepFn tm2
+  return . review _TmSub $ (tm1, tm2')
+
+stepSubInt :: AsTmInt ki ty pt tm
+           => Term ki ty pt tm a
+           -> Maybe (Term ki ty pt tm a)
+stepSubInt tm = do
+  (tm1, tm2) <- preview _TmSub tm
+  i1 <- preview _TmInt tm1
+  i2 <- preview _TmInt tm2
+  return . review _TmInt $ i1 - i2
+
 stepMul1 :: AsTmInt ki ty pt tm
          => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
          -> Term ki ty pt tm a
@@ -105,6 +133,9 @@ intEvalRules =
     [ EvalStep stepAdd1
     , EvalStep stepAdd2
     , EvalBase stepAddInt
+    , EvalStep stepSub1
+    , EvalStep stepSub2
+    , EvalBase stepSubInt
     , EvalStep stepMul1
     , EvalStep stepMul2
     , EvalBase stepMulInt

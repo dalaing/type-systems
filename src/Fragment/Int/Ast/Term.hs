@@ -36,6 +36,7 @@ import Data.Functor.Rec
 data TmFInt (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmIntF Int
   | TmAddF (f a) (f a)
+  | TmSubF (f a) (f a)
   | TmMulF (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -48,6 +49,7 @@ deriveShow1 ''TmFInt
 instance EqRec (TmFInt ki ty pt) where
   liftEqRec _ _ (TmIntF i) (TmIntF j) = i == j
   liftEqRec eR _ (TmAddF x1 y1) (TmAddF x2 y2) = eR x1 x2 && eR y1 y2
+  liftEqRec eR _ (TmSubF x1 y1) (TmSubF x2 y2) = eR x1 x2 && eR y1 y2
   liftEqRec eR _ (TmMulF x1 y1) (TmMulF x2 y2) = eR x1 x2 && eR y1 y2
   liftEqRec _ _ _ _ = False
 
@@ -61,6 +63,12 @@ instance OrdRec (TmFInt ki ty pt) where
       z -> z
   liftCompareRec _ _ (TmAddF _ _) _ = LT
   liftCompareRec _ _ _ (TmAddF _ _) = GT
+  liftCompareRec cR _ (TmSubF x1 y1) (TmSubF x2 y2) =
+    case cR x1 x2 of
+      EQ -> cR y1 y2
+      z -> z
+  liftCompareRec _ _ (TmSubF _ _) _ = LT
+  liftCompareRec _ _ _ (TmSubF _ _) = GT
   liftCompareRec cR _ (TmMulF x1 y1) (TmMulF x2 y2) =
     case cR x1 x2 of
       EQ -> cR y1 y2
@@ -71,17 +79,21 @@ instance ShowRec (TmFInt ki ty pt) where
     showsUnaryWith showsPrec "TmIntF" n i
   liftShowsPrecRec sR _ _ _ n (TmAddF x y) =
     showsBinaryWith sR sR "TmAddF" n x y
+  liftShowsPrecRec sR _ _ _ n (TmSubF x y) =
+    showsBinaryWith sR sR "TmSubF" n x y
   liftShowsPrecRec sR _ _ _ n (TmMulF x y) =
     showsBinaryWith sR sR "TmMulF" n x y
 
 instance Bound (TmFInt ki ty pt) where
   TmIntF b >>>= _ = TmIntF b
   TmAddF x y >>>= f = TmAddF (x >>= f) (y >>= f)
+  TmSubF x y >>>= f = TmSubF (x >>= f) (y >>= f)
   TmMulF x y >>>= f = TmMulF (x >>= f) (y >>= f)
 
 instance Bitransversable (TmFInt ki ty pt) where
   bitransverse _ _ (TmIntF i) = pure $ TmIntF i
   bitransverse fT fL (TmAddF x y) = TmAddF <$> fT fL x <*> fT fL y
+  bitransverse fT fL (TmSubF x y) = TmSubF <$> fT fL x <*> fT fL y
   bitransverse fT fL (TmMulF x y) = TmMulF <$> fT fL x <*> fT fL y
 
 class AsTmInt ki ty pt tm where
@@ -92,6 +104,9 @@ class AsTmInt ki ty pt tm where
 
   _TmAdd :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
   _TmAdd = _Wrapped . _ATerm . _TmIntP . _TmAddF . bimapping _Unwrapped _Unwrapped
+
+  _TmSub :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
+  _TmSub = _Wrapped . _ATerm . _TmIntP . _TmSubF . bimapping _Unwrapped _Unwrapped
 
   _TmMul :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
   _TmMul = _Wrapped . _ATerm . _TmIntP . _TmMulF . bimapping _Unwrapped _Unwrapped
