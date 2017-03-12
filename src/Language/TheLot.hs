@@ -59,6 +59,7 @@ import Fragment.Tuple
 import Fragment.Record
 import Fragment.Variant
 import Fragment.Case
+import Fragment.Fix
 -- import Fragment.STLC
 -- import Fragment.HM
 --import Fragment.SystemFw
@@ -80,6 +81,7 @@ type Rules =
    , RRecord
    , RVariant
    , RCase
+   , RFix
    -- , RHM
    -- , RSystemFw
    , RTyArr
