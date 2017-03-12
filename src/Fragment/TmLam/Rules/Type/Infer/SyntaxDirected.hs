@@ -5,22 +5,6 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
-
-{-
-inferTmLam :: (Ord a, AstBound ki ty pt tm, MonadState s m, HasTmVarSupply s, ToTmVar a, MonadReader r m, AsTySTLC ki ty, AsTmSTLC ki ty pt tm, HasTermContext r ki ty a) => (Term ki ty pt tm a -> m (Type ki ty a)) -> Term ki ty pt tm a -> Maybe (m (Type ki ty a))
-inferTmLam inferFn tm = do
-  (tyArg, s) <- preview _TmLam tm
-  return $ do
-    v <- freshTmVar
-    let tmF = review _Wrapped $ instantiate1 (review (_AVar . _ATmVar) v) s
-    tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
-    return $ review _TyArr (tyArg, tyRet)
--}
-
--- expectTmLam, gives a type and a scope
--- - SD: make sure it is annotated
--- - UO: create ty var
-
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
