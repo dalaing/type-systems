@@ -104,30 +104,6 @@ expectTypeAllEq n@(ty :| tys) = do
       tell ws
   return ty
 
-{-
-data InferTypeInput e w s r m ki ty pt tm a =
-  InferTypeInput {
-    iiUnifyRules :: [UnificationRule m (Type ki ty) a]
-  , iiInferTypeRules :: [InferTypeRule e w s r (UnifyT ki ty a m) ki ty pt tm a]
-  , iiPCheckRules :: [PCheckRule e (UnifyT ki ty a m) pt ki ty a]
-  }
-
-instance Monoid (InferTypeInput e w s r m ki ty pt tm a) where
-  mempty =
-    InferTypeInput mempty mempty mempty
-  mappend (InferTypeInput u1 i1 c1) (InferTypeInput u2 i2 c2) =
-    InferTypeInput
-      (mappend u1 u2)
-      (mappend i1 i2)
-      (mappend c1 c2)
-
-data InferTypeOutput e w s r m ki ty pt tm a =
-  InferTypeOutput {
-    ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
-  , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
-  }
--}
-
 type InferTypeContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m (Type ki ty) a)
 
 prepareInferType :: InferTypeContext e w s r m ki ty pt tm a

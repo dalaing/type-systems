@@ -70,30 +70,6 @@ expectTypeAllEq (ty :| tys) = do
     throwing _ExpectedTypeAllEq (ty :| tys)
   return ty
 
-{-
-data InferTypeInput e w s r m ki ty pt tm a =
-  InferTypeInput {
-    iiInferRules :: [InferTypeRule e w s r m ki ty pt tm a]
-  , iiPCheckRules :: [PCheckRule e m pt ki ty a]
-  }
-
-instance Monoid (InferTypeInput e w s r m ki ty pt tm a) where
-  mempty =
-    InferTypeInput
-      mempty
-      mempty
-  mappend (InferTypeInput i1 c1) (InferTypeInput i2 c2) =
-    InferTypeInput
-      (mappend i1 i2)
-      (mappend c1 c2)
-
-data InferTypeOutput e w s r m ki ty pt tm a =
-  InferTypeOutput {
-    ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
-  , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
-  }
--}
-
 type InferTypeContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Eq a, EqRec (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, InferKindContext e w s r m ki ty a)
 
 prepareInferType :: InferTypeContext e w s r m ki ty pt tm a

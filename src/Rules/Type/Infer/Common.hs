@@ -5,10 +5,6 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
--- {-# LANGUAGE TypeFamilies #-}
--- {-# LANGUAGE ConstraintKinds #-}
--- {-# LANGUAGE KindSignatures #-}
--- {-# LANGUAGE PolyKinds #-}
 module Rules.Type.Infer.Common (
     InferTypeRule(..)
   , mkInferType
@@ -21,10 +17,6 @@ module Rules.Type.Infer.Common (
 
 import Data.Foldable (asum)
 import Data.Maybe (fromMaybe)
--- import Data.Proxy (Proxy)
--- import GHC.Exts (Constraint)
-
--- import Data.List.NonEmpty (NonEmpty)
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
@@ -135,27 +127,3 @@ data InferTypeOutput e w s r m ki ty pt tm a =
     ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
-
-{-
-class InferType (k :: j) where
-  type InferTypeConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a k :: Constraint
-  type UnifyMonad (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a (m :: * -> *) k :: (* -> *)
-
-  expectType :: (Eq a, EqRec (ty ki)) => ExpectedType ki ty a -> ActualType ki ty a -> UnifyMonad ki ty a m k ()
-  expectTypeEq :: (Eq a, EqRec (ty ki)) => Type ki ty a -> Type ki ty a -> UnifyMonad ki ty a m k ()
-  expectTypeAllEq :: (Eq a, EqRec (ty ki)) => NonEmpty (Type ki ty a) -> UnifyMonad ki ty a m k (Type ki ty a)
-
-  mkCheckType :: (Eq a, EqRec (ty ki))
-            => (Term ki ty pt tm a -> UnifyMonad ki ty a m k (Type ki ty a))
-            -> Term ki ty pt tm a
-            -> Type ki ty a
-            -> UnifyMonad ki ty a m k ()
-  mkCheckType = mkCheckType' expectType
-
-  prepareInferType :: InferTypeConstraint e w s r m ki ty pt tm a k
-             => (Type ki ty a -> UnifyMonad ki ty a m k (Kind ki))
-             -> (Type ki ty a -> Type ki ty a)
-             -> InferTypeInput e w s r m (UnifyMonad ki ty a m k) ki ty pt tm a
-             -> InferTypeOutput e w s r m ki ty pt tm a
--}
-
