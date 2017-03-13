@@ -126,6 +126,14 @@ mkUnifyMany unify1 ty1 ty2
   | length ty1 == length ty2 = zipWithM_ (\x y -> unify1 (UCEq x y)) ty1 ty2
   | otherwise = throwing _UnificationMismatch (ty1, ty2)
 
+find :: (Eq a, Ord (f a), Monad m)
+     => UConstraint f a
+     -> EquivT s (f a) (f a) m (UConstraint f a)
+find (UCEq ty1 ty2) = do
+  c1 <- classDesc ty1
+  c2 <- classDesc ty2
+  return $ UCEq c1 c2
+
 mkUnify1 :: (Eq a, Ord (f a), Foldable f, MonadError e m, AsUnificationExpectedEq e f a, AsOccursError e f a, AsUnificationMismatch e f a)
          => Prism' (f a) a
          -> (f a -> f a)
@@ -135,11 +143,12 @@ mkUnify1 :: (Eq a, Ord (f a), Foldable f, MonadError e m, AsUnificationExpectedE
 mkUnify1 pVar normalizeFn rules =
   let
     unifyMany = mkUnifyMany unify1
-    unify1 u =
-      fromMaybe (noRuleMatches u) .
-      asum .
-      fmap (\r -> fixUnificationRule (\x y -> unify1 (UCEq x y)) unifyMany r u) $
-      rules
+    unify1 u = do
+      u' <- find u
+      fromMaybe (noRuleMatches u') .
+        asum .
+        fmap (\r -> fixUnificationRule (\x y -> unify1 (UCEq x y)) unifyMany r u') $
+        rules
     noRuleMatches (UCEq ty1 ty2) = do
       c1 <- classDesc ty1
       c2 <- classDesc ty2
