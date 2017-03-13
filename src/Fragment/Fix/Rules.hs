@@ -14,6 +14,7 @@ module Fragment.Fix.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast.Error.Common
 import Rules
 
 import Fragment.TyArr.Ast.Error
@@ -38,7 +39,7 @@ instance RulesIn RFix where
   type RuleTermContext ki ty pt tm a RFix = FixTermContext ki ty pt tm a
   type KindList RFix = '[]
   type TypeList RFix = '[TyFArr]
-  type ErrorList ki ty pt tm a RFix = '[ErrExpectedTyArr ki ty a]
+  type ErrorList ki ty pt tm a RFix = '[ErrExpectedTyArr ki ty a, ErrExpectedTypeEq ki ty a]
   type WarningList ki ty pt tm a RFix = '[]
   type PatternList RFix = '[]
   type TermList RFix = '[TmFFix]
