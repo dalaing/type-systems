@@ -21,6 +21,8 @@ import Data.Maybe (fromMaybe)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
 
+import qualified Data.Map as M
+
 import Ast.Kind
 import Ast.Type
 import Ast.Pattern
@@ -124,6 +126,7 @@ instance Monoid (InferTypeInput e w s r m mi ki ty pt tm a) where
 
 data InferTypeOutput e w s r m ki ty pt tm a =
   InferTypeOutput {
-    ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
+    ioUnify :: [UConstraint (Type ki ty) a] -> m (M.Map a (Type ki ty a))
+  , ioInfer :: Term ki ty pt tm a -> m (Type ki ty a)
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }

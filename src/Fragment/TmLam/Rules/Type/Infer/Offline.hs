@@ -15,7 +15,7 @@ module Fragment.TmLam.Rules.Type.Infer.Offline (
 
 import Bound (Scope)
 import Control.Lens (review, preview)
-import Control.Monad.Except (MonadError)
+
 import Control.Monad.State (MonadState)
 
 import Ast.Type
@@ -25,7 +25,7 @@ import Ast.Term
 import Data.Functor.Rec
 import Rules.Type.Infer.Offline
 
-import Fragment.TyArr.Ast.Error
+
 import Fragment.TmLam.Ast.Term
 
 import qualified Fragment.TmLam.Rules.Type.Infer.Common as L

@@ -36,12 +36,15 @@ import Control.Monad.State
 import Control.Lens ((&), (.~))
 import Control.Lens.TH (makeLenses)
 
+import qualified Data.Map as M
+
 import Ast.Type
 import Ast.Term
 import qualified Context.Type as CTy
 import qualified Context.Term as CTm
 
 import Rules
+import Rules.Unification
 import qualified Rules.Type.Infer.SyntaxDirected as SD
 import qualified Rules.Type.Infer.Offline as UO
 import Rules.Term
@@ -162,6 +165,11 @@ runCheckOffline :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheckOffline tm ty =
   runM (0 :: Int) emptyContext $
   (UO.ioCheck $ inferTypeOutputOffline rules) tm ty
+
+runUnify :: [UConstraint (Type KindF TypeF) String] -> (Either LError (M.Map String (LType)), [LWarning])
+runUnify =
+  runM (0 :: Int) emptyContext .
+  UO.ioUnify (inferTypeOutputOffline rules :: UO.InferTypeOutput LError LWarning Int LContext (M LError LWarning Int LContext) KindF TypeF PatternF TermF String)
 
 -- for debugging
 

@@ -27,6 +27,7 @@ import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
 
 import Data.List.NonEmpty (NonEmpty(..))
+import qualified Data.Map as M
 
 import Data.Functor.Rec
 
@@ -79,8 +80,9 @@ prepareInferType :: InferTypeContext e w s r m ki ty pt tm a
              -> InferTypeOutput e w s r m ki ty pt tm a
 prepareInferType inferKindFn normalizeFn ii =
   let
+    u = const . return $ M.empty
     i = mkInferType inferKindFn normalizeFn pc . iiInferTypeRules $ ii
     c = mkCheckType i
     pc = mkPCheck . iiPCheckRules $ ii
   in
-    InferTypeOutput i c
+    InferTypeOutput u i c

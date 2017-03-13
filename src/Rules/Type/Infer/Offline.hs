@@ -119,4 +119,4 @@ prepareInferType inferKindFn normalizeFn ii =
     i' = mkInferType' i u
     c = mkCheck' i u
   in
-    InferTypeOutput i' c
+    InferTypeOutput u i' c
