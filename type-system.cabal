@@ -178,16 +178,16 @@ library
                      , Fragment.Case.Rules.Term
                      , Fragment.Case.Helpers
 
-                     , Fragment.Fix
-                     , Fragment.Fix.Ast
-                     , Fragment.Fix.Ast.Term
-                     , Fragment.Fix.Rules
-                     , Fragment.Fix.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Fix.Rules.Type.Infer.Offline
-                     , Fragment.Fix.Rules.Type.Infer.Common
-                     , Fragment.Fix.Rules.Term
-                     , Fragment.Fix.Helpers
-                       
+                     , Fragment.Annotation
+                     , Fragment.Annotation.Ast
+                     , Fragment.Annotation.Ast.Term
+                     , Fragment.Annotation.Rules
+                     , Fragment.Annotation.Rules.Type.Infer.SyntaxDirected
+                     , Fragment.Annotation.Rules.Type.Infer.Offline
+                     , Fragment.Annotation.Rules.Type.Infer.Common
+                     , Fragment.Annotation.Rules.Term
+                     , Fragment.Annotation.Helpers
+
                      -- , Fragment.IsoRec
                      , Fragment.IsoRec.Ast
                      , Fragment.IsoRec.Ast.Type
@@ -237,6 +237,16 @@ library
                      , Fragment.LC.Rules.Term
                      , Fragment.LC.Helpers
 
+                     , Fragment.Fix
+                     , Fragment.Fix.Ast
+                     , Fragment.Fix.Ast.Term
+                     , Fragment.Fix.Rules
+                     , Fragment.Fix.Rules.Type.Infer.SyntaxDirected
+                     , Fragment.Fix.Rules.Type.Infer.Offline
+                     , Fragment.Fix.Rules.Type.Infer.Common
+                     , Fragment.Fix.Rules.Term
+                     , Fragment.Fix.Helpers
+                       
                      , Fragment.SystemF
                      , Fragment.SystemF.Ast
                      , Fragment.SystemF.Ast.Type
