@@ -221,6 +221,12 @@ library
                      , Fragment.TmLam.Rules.Term
                      , Fragment.TmLam.Helpers
 
+                     , Fragment.Let
+                     , Fragment.Let.Ast
+                     , Fragment.Let.Ast.Term
+                     -- , Fragment.Let.Rules.Term
+                     , Fragment.Let.Helpers
+
                      , Fragment.TmApp
                      , Fragment.TmApp.Ast
                      , Fragment.TmApp.Ast.Term
