@@ -23,6 +23,12 @@ import Fragment.LC.Rules.Term
 
 data RLC
 
+instance AstIn RLC where
+  type KindList RLC = '[]
+  type TypeList RLC = '[]
+  type PatternList RLC = '[]
+  type TermList RLC = '[TmFLam, TmFApp]
+
 instance RulesIn RLC where
   type InferKindContextSyntax e w s r m ki ty a RLC =
     (() :: Constraint)
@@ -34,12 +40,8 @@ instance RulesIn RLC where
     (() :: Constraint)
   type RuleTermContext ki ty pt tm a RLC =
     LCTermContext ki ty pt tm a
-  type KindList RLC = '[]
-  type TypeList RLC = '[]
   type ErrorList ki ty pt tm a RLC = '[]
   type WarningList ki ty pt tm a RLC = '[]
-  type PatternList RLC = '[]
-  type TermList RLC = '[TmFLam, TmFApp]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = mempty

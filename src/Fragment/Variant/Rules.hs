@@ -25,18 +25,20 @@ import Fragment.Variant.Rules.Term
 
 data RVariant
 
+instance AstIn RVariant where
+  type KindList RVariant = '[KiFBase]
+  type TypeList RVariant = '[TyFVariant]
+  type PatternList RVariant = '[PtFVariant]
+  type TermList RVariant = '[TmFVariant]
+
 instance RulesIn RVariant where
   type InferKindContextSyntax e w s r m ki ty a RVariant = KSD.VariantInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RVariant = TSD.VariantInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RVariant = TUO.VariantInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RVariant = VariantTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RVariant = VariantTermContext ki ty pt tm a
-  type KindList RVariant = '[KiFBase]
-  type TypeList RVariant = '[TyFVariant]
   type ErrorList ki ty pt tm a RVariant = '[ErrExpectedTyVariant ki ty a, ErrVariantNotFound]
   type WarningList ki ty pt tm a RVariant = '[]
-  type PatternList RVariant = '[PtFVariant]
-  type TermList RVariant = '[TmFVariant]
 
   inferKindInputSyntax _ = KSD.variantInferKindRules
   inferTypeInputSyntax _ = TSD.variantInferTypeRules

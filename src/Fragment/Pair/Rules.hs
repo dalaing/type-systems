@@ -25,18 +25,20 @@ import Fragment.Pair.Rules.Term
 
 data RPair
 
+instance AstIn RPair where
+  type KindList RPair = '[KiFBase]
+  type TypeList RPair = '[TyFPair]
+  type PatternList RPair = '[PtFPair]
+  type TermList RPair = '[TmFPair]
+
 instance RulesIn RPair where
   type InferKindContextSyntax e w s r m ki ty a RPair = KSD.PairInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RPair = TSD.PairInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RPair = TUO.PairInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RPair = PairTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RPair = PairTermContext ki ty pt tm a
-  type KindList RPair = '[KiFBase]
-  type TypeList RPair = '[TyFPair]
   type ErrorList ki ty pt tm a RPair = '[ErrExpectedTyPair ki ty a]
   type WarningList ki ty pt tm a RPair = '[]
-  type PatternList RPair = '[PtFPair]
-  type TermList RPair = '[TmFPair]
 
   inferKindInputSyntax _ = KSD.pairInferKindRules
   inferTypeInputSyntax _ = TSD.pairInferTypeRules

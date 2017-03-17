@@ -25,18 +25,20 @@ import Fragment.Case.Rules.Term
 
 data RCase
 
+instance AstIn RCase where
+  type KindList RCase = '[]
+  type TypeList RCase = '[]
+  type PatternList RCase = '[]
+  type TermList RCase = '[TmFCase]
+
 instance RulesIn RCase where
   type InferKindContextSyntax e w s r m ki ty a RCase = (() :: Constraint)
   type InferTypeContextSyntax e w s r m ki ty pt tm a RCase = SD.CaseInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RCase = UO.CaseInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RCase = (() :: Constraint)
   type RuleTermContext ki ty pt tm a RCase = CaseTermContext ki ty pt tm a
-  type KindList RCase = '[]
-  type TypeList RCase = '[]
   type ErrorList ki ty pt tm a RCase = '[ErrExpectedTypeAllEq ki ty a, ErrUnboundTermVariable a, ErrExpectedPattern ki ty pt tm a, ErrDuplicatedPatternVariables a]
   type WarningList ki ty pt tm a RCase = '[WarnUnusedPatternVariables a, WarnShadowingPatternVariables a]
-  type PatternList RCase = '[]
-  type TermList RCase = '[TmFCase]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = SD.caseInferTypeRules

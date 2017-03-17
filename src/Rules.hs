@@ -18,7 +18,9 @@ Portability : non-portable
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 module Rules (
-    RulesIn(..)
+    AstIn(..)
+  , AstOut(..)
+  , RulesIn(..)
   , RulesOut(..)
   ) where
 
@@ -51,19 +53,56 @@ instance TLAppend '[] ys where
 instance TLAppend xs ys => TLAppend (x ': xs) ys where
   type Append (x ': xs) ys = x ': (Append xs ys)
 
-class RulesIn (k :: j) where
+class AstIn (k :: j) where
+  type KindList k :: [* -> *]
+  type TypeList k :: [(* -> *) -> (* -> *) -> * -> *]
+  type PatternList k :: [(* -> *) -> * -> *]
+  type TermList k :: [(* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
+
+instance AstIn '[] where
+  type KindList '[] = '[]
+  type TypeList '[] = '[]
+  type PatternList '[] = '[]
+  type TermList '[] = '[]
+
+instance (AstIn k, AstIn ks) => AstIn (k ': ks) where
+  type KindList (k ': ks) = Append (KindList k) (KindList ks)
+  type TypeList (k ': ks) = Append (TypeList k) (TypeList ks)
+  type PatternList (k ': ks) = Append (PatternList k) (PatternList ks)
+  type TermList (k ': ks) = Append (TermList k) (TermList ks)
+
+class AstOut (k :: j) where
+
+  type RKindF k :: * -> *
+  type RTypeF k :: ((* -> *) -> (* -> *) -> * -> *)
+  type RPatternF k :: ((* -> *) -> * -> *)
+  type RTermF k :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)
+
+  type RKind k :: *
+  type RType k :: (* -> *)
+  type RPattern k :: (* -> *)
+  type RTerm k :: (* -> *)
+
+instance AstIn k => AstOut (k :: j) where
+  type RKindF k = KiSum (KindList k)
+  type RTypeF k = TySum (TypeList k)
+  type RPatternF k = PtSum (PatternList k)
+  type RTermF k = TmSum (TermList k)
+
+  type RKind k = Kind (RKindF k)
+  type RType k = Type (RKindF k) (RTypeF k)
+  type RPattern k = Pattern (RPatternF k)
+  type RTerm k = Term (RKindF k) (RTypeF k) (RPatternF k) (RTermF k)
+
+class AstIn k => RulesIn (k :: j) where
   type InferKindContextSyntax e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
   type InferTypeContextSyntax e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
   type InferTypeContextOffline e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
   type RuleTypeContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
   type RuleTermContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
 
-  type KindList k :: [* -> *]
-  type TypeList k :: [(* -> *) -> (* -> *) -> * -> *]
   type ErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
   type WarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
-  type PatternList k :: [(* -> *) -> * -> *]
-  type TermList k :: [(* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
 
   inferKindInputSyntax :: InferKindContextSyntax e w s r m ki ty a k
                        => Proxy k
@@ -89,12 +128,8 @@ instance RulesIn '[] where
     TUO.InferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a '[] = (() :: Constraint)
   type RuleTermContext ki ty pt tm a '[] = (() :: Constraint)
-  type KindList '[] = '[]
-  type TypeList '[] = '[]
   type ErrorList ki ty pt tm a '[] = '[ErrUnknownKindError, ErrUnknownTypeError, ErrOccursError (Type ki ty) a, ErrUnificationMismatch (Type ki ty) a, ErrUnificationExpectedEq (Type ki ty) a]
   type WarningList ki ty pt tm a '[] = '[]
-  type PatternList '[] = '[]
-  type TermList '[] = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = mempty
@@ -108,12 +143,8 @@ instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
   type InferTypeContextOffline e w s r m ki ty pt tm a (k ': ks) = (InferTypeContextOffline e w s r m ki ty pt tm a k, InferTypeContextOffline e w s r m ki ty pt tm a ks)
   type RuleTypeContext ki ty a (k ': ks) = (RuleTypeContext ki ty a k, RuleTypeContext ki ty a ks)
   type RuleTermContext ki ty pt tm a (k ': ks) = (RuleTermContext ki ty pt tm a k, RuleTermContext ki ty pt tm a ks)
-  type KindList (k ': ks) = Append (KindList k) (KindList ks)
-  type TypeList (k ': ks) = Append (TypeList k) (TypeList ks)
   type ErrorList ki ty pt tm a (k ': ks) = Append (ErrorList ki ty pt tm a k) (ErrorList ki ty pt tm a ks)
   type WarningList ki ty pt tm a (k ': ks) = Append (WarningList ki ty pt tm a k) (WarningList ki ty pt tm a ks)
-  type PatternList (k ': ks) = Append (PatternList k) (PatternList ks)
-  type TermList (k ': ks) = Append (TermList k) (TermList ks)
 
   inferKindInputSyntax _ = inferKindInputSyntax (Proxy :: Proxy k) `mappend` inferKindInputSyntax (Proxy :: Proxy ks)
   inferTypeInputSyntax _ = inferTypeInputSyntax (Proxy :: Proxy k) `mappend` inferTypeInputSyntax (Proxy :: Proxy ks)
@@ -121,18 +152,10 @@ instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
   typeInput _ = typeInput (Proxy :: Proxy k) `mappend` typeInput (Proxy :: Proxy ks)
   termInput _ = termInput (Proxy :: Proxy k) `mappend` termInput (Proxy :: Proxy ks)
 
-class RulesOut (k :: j) where
+class AstOut k => RulesOut (k :: j) where
 
-  type RKindF k :: * -> *
-  type RTypeF k :: ((* -> *) -> (* -> *) -> * -> *)
-  type RPatternF k :: ((* -> *) -> * -> *)
-  type RTermF k :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)
-
-  type RType k :: (* -> *)
   type RError (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: *
   type RWarning (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: *
-  type RPattern k :: (* -> *)
-  type RTerm k :: (* -> *)
 
   inferKindOutputSyntax :: ( KSD.InferKindContext e w s r m ki ty a
                            , InferKindContextSyntax e w s r m ki ty a k
@@ -166,16 +189,8 @@ class RulesOut (k :: j) where
 
 instance RulesIn k => RulesOut (k :: j) where
 
-  type RKindF k = KiSum (KindList k)
-  type RTypeF k = TySum (TypeList k)
-  type RPatternF k = PtSum (PatternList k)
-  type RTermF k = TmSum (TermList k)
-
-  type RType k = Type (RKindF k) (RTypeF k)
   type RError ki ty pt tm a k = ErrSum (ErrorList ki ty pt tm a k)
   type RWarning ki ty pt tm a k = WarnSum (WarningList ki ty pt tm a k)
-  type RPattern k = Pattern (RPatternF k)
-  type RTerm k = Term (RKindF k) (RTypeF k) (RPatternF k) (RTermF k)
 
   inferKindOutputSyntax =
     KSD.prepareInferKind . inferKindInputSyntax

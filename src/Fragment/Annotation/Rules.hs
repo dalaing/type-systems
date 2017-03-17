@@ -23,6 +23,12 @@ import Fragment.Annotation.Rules.Term
 
 data RAnnotation
 
+instance AstIn RAnnotation where
+  type KindList RAnnotation = '[]
+  type TypeList RAnnotation = '[]
+  type PatternList RAnnotation = '[]
+  type TermList RAnnotation = '[TmFAnnotation]
+
 instance RulesIn RAnnotation where
   type InferKindContextSyntax e w s r m ki ty a RAnnotation =
     (() :: Constraint)
@@ -34,12 +40,8 @@ instance RulesIn RAnnotation where
     (() :: Constraint)
   type RuleTermContext ki ty pt tm a RAnnotation =
     AnnotationTermContext ki ty pt tm a
-  type KindList RAnnotation = '[]
-  type TypeList RAnnotation = '[]
   type ErrorList ki ty pt tm a RAnnotation = '[]
   type WarningList ki ty pt tm a RAnnotation = '[]
-  type PatternList RAnnotation = '[]
-  type TermList RAnnotation = '[TmFAnnotation]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = TSD.annotationInferTypeRules

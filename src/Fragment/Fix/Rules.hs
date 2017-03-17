@@ -27,6 +27,12 @@ import Fragment.Fix.Rules.Term
 
 data RFix
 
+instance AstIn RFix where
+  type KindList RFix = '[]
+  type TypeList RFix = '[TyFArr]
+  type PatternList RFix = '[]
+  type TermList RFix = '[TmFFix]
+
 instance RulesIn RFix where
   type InferKindContextSyntax e w s r m ki ty a RFix =
     (() :: Constraint)
@@ -37,12 +43,8 @@ instance RulesIn RFix where
   type RuleTypeContext ki ty a RFix =
     (() :: Constraint)
   type RuleTermContext ki ty pt tm a RFix = FixTermContext ki ty pt tm a
-  type KindList RFix = '[]
-  type TypeList RFix = '[TyFArr]
   type ErrorList ki ty pt tm a RFix = '[ErrExpectedTyArr ki ty a, ErrExpectedTypeEq ki ty a]
   type WarningList ki ty pt tm a RFix = '[]
-  type PatternList RFix = '[]
-  type TermList RFix = '[TmFFix]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = TSD.fixInferTypeRules

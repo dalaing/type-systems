@@ -26,18 +26,20 @@ import Fragment.Int.Rules.Term
 
 data RInt
 
+instance AstIn RInt where
+  type KindList RInt = '[KiFBase]
+  type TypeList RInt = '[TyFInt]
+  type PatternList RInt = '[PtFInt]
+  type TermList RInt = '[TmFInt]
+
 instance RulesIn RInt where
   type InferKindContextSyntax e w s r m ki ty a RInt = KSD.IntInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RInt = TSD.IntInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RInt = TUO.IntInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RInt = IntTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RInt = IntTermContext ki ty pt tm a
-  type KindList RInt = '[KiFBase]
-  type TypeList RInt = '[TyFInt]
   type ErrorList ki ty pt tm a RInt = '[ErrUnexpectedType ki ty a]
   type WarningList ki ty pt tm a RInt = '[]
-  type PatternList RInt = '[PtFInt]
-  type TermList RInt = '[TmFInt]
 
   inferKindInputSyntax _ = KSD.intInferKindRules
   inferTypeInputSyntax _ = TSD.intInferTypeRules

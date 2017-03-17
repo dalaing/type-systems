@@ -25,18 +25,20 @@ import Fragment.Record.Rules.Term
 
 data RRecord
 
+instance AstIn RRecord where
+  type KindList RRecord = '[KiFBase]
+  type TypeList RRecord = '[TyFRecord]
+  type PatternList RRecord = '[PtFRecord]
+  type TermList RRecord = '[TmFRecord]
+
 instance RulesIn RRecord where
   type InferKindContextSyntax e w s r m ki ty a RRecord = KSD.RecordInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RRecord = TSD.RecordInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RRecord = TUO.RecordInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RRecord = RecordTypeContext ki ty a
   type RuleTermContext ki ty pt tm a RRecord = RecordTermContext ki ty pt tm a
-  type KindList RRecord = '[KiFBase]
-  type TypeList RRecord = '[TyFRecord]
   type ErrorList ki ty pt tm a RRecord = '[ErrExpectedTyRecord ki ty a, ErrRecordNotFound]
   type WarningList ki ty pt tm a RRecord = '[]
-  type PatternList RRecord = '[PtFRecord]
-  type TermList RRecord = '[TmFRecord]
 
   inferKindInputSyntax _ = KSD.recordInferKindRules
   inferTypeInputSyntax _ = TSD.recordInferTypeRules

@@ -24,6 +24,12 @@ import Fragment.TyArr.Rules.Type
 
 data RTyArr
 
+instance AstIn RTyArr where
+  type KindList RTyArr = '[]
+  type TypeList RTyArr = '[TyFArr]
+  type PatternList RTyArr = '[]
+  type TermList RTyArr = '[]
+
 instance RulesIn RTyArr where
   type InferKindContextSyntax e w s r m ki ty a RTyArr =
     TyArrInferKindContext e w s r m ki ty a
@@ -40,12 +46,8 @@ instance RulesIn RTyArr where
   type RuleTermContext ki ty pt tm a RTyArr =
     (() :: Constraint)
 
-  type KindList RTyArr = '[]
-  type TypeList RTyArr = '[TyFArr]
   type ErrorList ki ty pt tm a RTyArr = '[ErrExpectedTyArr ki ty a, ErrUnexpectedKind ki]
   type WarningList ki ty pt tm a RTyArr = '[]
-  type PatternList RTyArr = '[]
-  type TermList RTyArr = '[]
 
   inferKindInputSyntax _ = tyArrInferKindRules
   inferTypeInputSyntax _ = mempty

@@ -26,18 +26,20 @@ import Fragment.TmLam.Rules.Term
 
 data RTmLam
 
+instance AstIn RTmLam where
+  type KindList RTmLam = '[]
+  type TypeList RTmLam = '[TyFArr]
+  type PatternList RTmLam = '[]
+  type TermList RTmLam = '[TmFLam]
+
 instance RulesIn RTmLam where
   type InferKindContextSyntax e w s r m ki ty a RTmLam = (() :: Constraint)
   type InferTypeContextSyntax e w s r m ki ty pt tm a RTmLam = TSD.TmLamInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RTmLam = TUO.TmLamInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RTmLam = (() :: Constraint)
   type RuleTermContext ki ty pt tm a RTmLam = TmLamTermContext ki ty pt tm a
-  type KindList RTmLam = '[]
-  type TypeList RTmLam = '[TyFArr]
   type ErrorList ki ty pt tm a RTmLam = '[ErrExpectedTmLamAnnotation, ErrUnboundTypeVariable a]
   type WarningList ki ty pt tm a RTmLam = '[]
-  type PatternList RTmLam = '[]
-  type TermList RTmLam = '[TmFLam]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = TSD.tmLamInferTypeRules

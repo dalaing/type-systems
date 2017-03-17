@@ -21,18 +21,20 @@ import Fragment.TyVar.Rules.Type
 
 data RTyVar
 
+instance AstIn RTyVar where
+  type KindList RTyVar = '[]
+  type TypeList RTyVar = '[]
+  type PatternList RTyVar = '[]
+  type TermList RTyVar = '[]
+
 instance RulesIn RTyVar where
   type InferKindContextSyntax e w s r m ki ty a RTyVar = TyVarInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RTyVar = (() :: Constraint)
   type InferTypeContextOffline e w s r m ki ty pt tm a RTyVar = (() :: Constraint)
   type RuleTypeContext ki ty a RTyVar = (TyVarTypeContext ki ty a)
   type RuleTermContext ki ty tm pt a RTyVar = (() :: Constraint)
-  type KindList RTyVar = '[]
-  type TypeList RTyVar = '[]
   type ErrorList ki ty tm pt a RTyVar = '[]
   type WarningList ki ty tm pt a RTyVar = '[]
-  type PatternList RTyVar = '[]
-  type TermList RTyVar = '[]
 
   inferKindInputSyntax _ = tyVarInferKindRules
   inferTypeInputSyntax _ = mempty
