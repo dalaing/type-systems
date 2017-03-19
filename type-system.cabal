@@ -19,8 +19,9 @@ library
                      , Data.Bitransversable
                      , Data.Functor.Rec
                      , Language.TheLot
+                     , Ast
                      , Ast.Kind
-                    , Ast.Type
+                     , Ast.Type
                      , Ast.Type.Var
                      , Ast.Error
                      , Ast.Error.Common
