@@ -35,6 +35,7 @@ import qualified Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Rules.Type.Infer.Offline as TUO
 import Rules.Type
 import Rules.Term
+import Util.TypeList
 
 import Ast.Kind
 import Ast.Type
@@ -43,15 +44,6 @@ import Ast.Error.Common
 import Ast.Warning
 import Ast.Pattern
 import Ast.Term
-
-class TLAppend (xs :: [k]) (ys :: [k]) where
-  type Append xs ys :: [k]
-
-instance TLAppend '[] ys where
-  type Append '[] ys = ys
-
-instance TLAppend xs ys => TLAppend (x ': xs) ys where
-  type Append (x ': xs) ys = x ': (Append xs ys)
 
 class AstIn (k :: j) where
   type KindList k :: [* -> *]
