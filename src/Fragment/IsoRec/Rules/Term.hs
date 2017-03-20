@@ -7,8 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.IsoRec.Rules.Term (
-    IsoRecTermContext
-  , isoRecTermRules
+    IsoRecEvalConstraint
+  , isoRecEvalRulesStrict
+  , isoRecEvalRulesLazy
   ) where
 
 import Control.Lens (review, preview)
@@ -54,10 +55,11 @@ stepTmUnfoldFoldLazy tm = do
   (_, tmF) <- preview _TmFold tmU
   return tmF
 
-type IsoRecTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmIsoRec ki ty pt tm)
+type IsoRecEvalConstraint ki ty pt tm a =
+  AsTmIsoRec ki ty pt tm
 
-isoRecEvalRulesStrict :: IsoRecTermContext ki ty pt tm a
-                       => EvalInput ki ty pt tm a
+isoRecEvalRulesStrict :: IsoRecEvalConstraint ki ty pt tm a
+                      => EvalInput ki ty pt tm a
 isoRecEvalRulesStrict =
   EvalInput
   [ ValueRecurse valTmFoldStrict ]
@@ -67,8 +69,8 @@ isoRecEvalRulesStrict =
   ]
   []
 
-isoRecEvalRulesLazy :: IsoRecTermContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
+isoRecEvalRulesLazy :: IsoRecEvalConstraint ki ty pt tm a
+                    => EvalInput ki ty pt tm a
 isoRecEvalRulesLazy =
   EvalInput
   [ ValueBase valTmFoldLazy ]
@@ -76,8 +78,3 @@ isoRecEvalRulesLazy =
   , EvalBase stepTmUnfoldFoldLazy
   ]
   []
-
-isoRecTermRules :: IsoRecTermContext ki ty pt tm a
-                 => TermInput ki ty pt tm a
-isoRecTermRules =
-  TermInput isoRecEvalRulesStrict isoRecEvalRulesLazy

@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Annotation.Rules.Term (
-    AnnotationTermContext
-  , annotationTermRules
+    AnnotationEvalConstraint
+  , annotationEvalRules
   ) where
 
 import Control.Lens (review, preview)
@@ -19,7 +19,7 @@ import Ast.Term
 
 import Fragment.Annotation.Ast.Term
 
-type AnnotationTermContext ki ty pt tm a = AsTmAnnotation ki ty pt tm
+type AnnotationEvalConstraint ki ty pt tm a = AsTmAnnotation ki ty pt tm
 
 valueAnnotation :: AsTmAnnotation ki ty pt tm
                 => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
@@ -48,7 +48,7 @@ matchAnnotation matchFn pt tm = do
   (_, tmA) <- preview _TmAnnotation tm
   matchFn pt tmA
 
-annotationEvalRules :: AnnotationTermContext ki ty pt tm a
+annotationEvalRules :: AnnotationEvalConstraint ki ty pt tm a
                     => EvalInput ki ty pt tm a
 annotationEvalRules =
   EvalInput
@@ -56,7 +56,3 @@ annotationEvalRules =
     [ EvalStep stepAnnotation ]
     [ MatchRecurse matchAnnotation ]
 
-annotationTermRules :: AnnotationTermContext ki ty pt tm a
-                    => TermInput ki ty pt tm a
-annotationTermRules =
-  TermInput annotationEvalRules annotationEvalRules

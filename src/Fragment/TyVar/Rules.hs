@@ -33,7 +33,6 @@ instance RulesIn RTyVar where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RTyVar = (() :: Constraint)
   type InferTypeContextOffline e w s r m ki ty pt tm a RTyVar = (() :: Constraint)
   type RuleTypeContext ki ty a RTyVar = (TyVarTypeContext ki ty a)
-  type RuleTermContext ki ty tm pt a RTyVar = (() :: Constraint)
   type ErrorList ki ty tm pt a RTyVar = '[]
   type WarningList ki ty tm pt a RTyVar = '[]
 
@@ -41,4 +40,3 @@ instance RulesIn RTyVar where
   inferTypeInputSyntax _ = mempty
   inferTypeInputOffline _ = mempty
   typeInput _ = tyVarTypeRules
-  termInput _ = mempty

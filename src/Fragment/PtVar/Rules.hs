@@ -19,7 +19,6 @@ import Rules
 
 import qualified Fragment.PtVar.Rules.Type.Infer.SyntaxDirected as SD
 import qualified Fragment.PtVar.Rules.Type.Infer.Offline as UO
-import Fragment.PtVar.Rules.Term
 
 data RPtVar
 
@@ -34,7 +33,6 @@ instance RulesIn RPtVar where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RPtVar = SD.PtVarInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RPtVar = UO.PtVarInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RPtVar = (() :: Constraint)
-  type RuleTermContext ki ty pt tm a RPtVar = PtVarTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RPtVar = '[]
   type WarningList ki ty pt tm a RPtVar = '[]
 
@@ -42,4 +40,3 @@ instance RulesIn RPtVar where
   inferTypeInputSyntax _ = SD.ptVarInferTypeRules
   inferTypeInputOffline _ = UO.ptVarInferTypeRules
   typeInput _ = mempty
-  termInput _ = ptVarTermRules

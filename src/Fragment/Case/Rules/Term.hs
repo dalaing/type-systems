@@ -8,8 +8,9 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE KindSignatures #-}
 module Fragment.Case.Rules.Term (
-    CaseTermContext
-  , caseTermRules
+    CaseEvalConstraint
+  , caseEvalRulesLazy
+  , caseEvalRulesStrict
   ) where
 
 import Bound (instantiate)
@@ -58,9 +59,13 @@ stepCaseValueStrict valueFn matchFn tm = do
   vC <- valueFn tmC
   handleMatch matchFn vC alts
 
-type CaseTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AstBound ki ty pt tm, AstTransversable ki ty pt tm, AsTmCase ki ty pt tm)
+type CaseEvalConstraint ki ty pt tm a =
+  ( AstBound ki ty pt tm
+  , AstTransversable ki ty pt tm
+  , AsTmCase ki ty pt tm
+  )
 
-caseEvalRulesStrict :: CaseTermContext ki ty pt tm a
+caseEvalRulesStrict :: CaseEvalConstraint ki ty pt tm a
                     => EvalInput ki ty pt tm a
 caseEvalRulesStrict =
   EvalInput
@@ -70,15 +75,10 @@ caseEvalRulesStrict =
     ]
     []
 
-caseEvalRulesLazy :: CaseTermContext ki ty pt tm a
+caseEvalRulesLazy :: CaseEvalConstraint ki ty pt tm a
                   => EvalInput ki ty pt tm a
 caseEvalRulesLazy =
   EvalInput
     []
     [EvalMatch stepCaseLazy]
     []
-
-caseTermRules :: CaseTermContext ki ty pt tm a
-              => TermInput ki ty pt tm a
-caseTermRules =
-  TermInput caseEvalRulesStrict caseEvalRulesLazy

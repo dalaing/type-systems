@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.If.Rules.Term (
-    IfTermContext
-  , ifTermRules
+    IfEvalConstraint
+  , ifEvalRules
   ) where
 
 import Control.Lens (review, preview)
@@ -33,14 +33,12 @@ stepIf2 valueFn tm = do
   return $
     if b then tmT else tmF
 
-type IfTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmBool ki ty pt tm, AsTmIf ki ty pt tm)
+type IfEvalConstraint ki ty pt tm a =
+  ( AsTmBool ki ty pt tm
+  , AsTmIf ki ty pt tm
+  )
 
-ifEvalRules :: IfTermContext ki ty pt tm a
+ifEvalRules :: IfEvalConstraint ki ty pt tm a
             => EvalInput ki ty pt tm a
 ifEvalRules =
   EvalInput [] [ EvalStep stepIf1, EvalValue stepIf2] []
-
-ifTermRules :: IfTermContext ki ty pt tm a
-            => TermInput ki ty pt tm a
-ifTermRules =
-  TermInput ifEvalRules ifEvalRules

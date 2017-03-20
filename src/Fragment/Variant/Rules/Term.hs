@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Variant.Rules.Term (
-    VariantTermContext
-  , variantTermRules
+    VariantEvalConstraint
+  , variantEvalRules
   ) where
 
 import Control.Monad (MonadPlus(..))
@@ -42,17 +42,15 @@ matchVariant matchFn p tm = do
   then matchFn pV tmV
   else mzero
 
-type VariantTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtVariant pt, AsTmVariant ki ty pt tm)
+type VariantEvalConstraint ki ty pt tm a =
+  ( AsPtVariant pt
+  , AsTmVariant ki ty pt tm
+  )
 
-variantEvalRules :: VariantTermContext ki ty pt tm a
-                => EvalInput ki ty pt tm a
+variantEvalRules :: VariantEvalConstraint ki ty pt tm a
+                 => EvalInput ki ty pt tm a
 variantEvalRules =
   EvalInput
     [ ValueRecurse valueVariant ]
     [ EvalStep stepVariant ]
     [ MatchRecurse matchVariant ]
-
-variantTermRules :: VariantTermContext ki ty pt tm a
-                 => TermInput ki ty pt tm a
-variantTermRules =
-  TermInput variantEvalRules variantEvalRules

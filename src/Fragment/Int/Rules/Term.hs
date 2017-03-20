@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Int.Rules.Term (
-    IntTermContext
-  , intTermRules
+    IntEvalConstraint
+  , intEvalRules
   ) where
 
 import Control.Monad (MonadPlus(..))
@@ -123,9 +123,10 @@ matchInt eval p tm = do
   then return []
   else mzero
 
-type IntTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtInt pt, AsTmInt ki ty pt tm)
+type IntEvalConstraint ki ty pt tm a =
+  (AsPtInt pt, AsTmInt ki ty pt tm)
 
-intEvalRules :: IntTermContext ki ty pt tm a
+intEvalRules :: IntEvalConstraint ki ty pt tm a
              => EvalInput ki ty pt tm a
 intEvalRules =
   EvalInput
@@ -141,8 +142,3 @@ intEvalRules =
     , EvalBase stepMulInt
     ]
     [ MatchEval matchInt ]
-
-intTermRules :: IntTermContext ki ty pt tm a
-             => TermInput ki ty pt tm a
-intTermRules =
-  TermInput intEvalRules intEvalRules

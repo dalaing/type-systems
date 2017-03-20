@@ -79,11 +79,11 @@ type Rules =
    , RTyVar
    , RInt
    , RBool
-   , RIf
-   , RPair
-   , RTuple
-   , RRecord
-   , RVariant
+   -- , RIf
+   -- , RPair
+   -- , RTuple
+   -- , RRecord
+   -- , RVariant
    , RCase
    , RFix
    -- , RHM
@@ -94,8 +94,32 @@ type Rules =
    , RLC
    ]
 
+type Rules' =
+  '[ PtVarTag
+   , PtWildTag
+   , TmVarTag
+   , TyVarTag
+   , IntTag
+   , BoolTag
+   -- , IfTag
+   -- , PairTag
+   -- , TupleTag
+   -- , RecordTag
+   -- , VariantTag
+   , CaseTag
+   , FixTag
+   -- , SystemFw
+   , TyArrTag
+   , TmLamTag
+   , TmAppTag
+   , LCTag
+   ]
+
 rules :: Proxy Rules
 rules = Proxy
+
+rules' :: Proxy Rules'
+rules' = Proxy
 
 type KindF = RKindF Rules
 type TypeF = RTypeF Rules
@@ -139,13 +163,19 @@ instance CTy.HasTypeContext' LContext where
   type TyCtxVar LContext = String
   typeContext = lTypeContext
 
+eLazy :: Proxy ELazy
+eLazy = Proxy
+
+eStrict :: Proxy EStrict
+eStrict = Proxy
+
 runEvalLazy :: LTerm -> LTerm
 runEvalLazy =
-  eoEval . toEvalLazy . termOutput $ rules
+  eoEval . evalOutput eLazy $ rules'
 
 runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
-  eoEval . toEvalStrict . termOutput $ rules
+  eoEval . evalOutput eStrict $ rules'
 
 runInferSyntax :: LTerm -> (Either LError LType, [LWarning])
 runInferSyntax =
@@ -176,17 +206,17 @@ runUnify =
 
 runStepStrict :: LTerm -> Maybe LTerm
 runStepStrict =
-  eoStep . toEvalStrict . termOutput $ rules
+  eoStep . evalOutput eStrict $ rules'
 
 runStepLazy :: LTerm -> Maybe LTerm
 runStepLazy =
-  eoStep . toEvalLazy . termOutput $ rules
+  eoStep . evalOutput eLazy $ rules'
 
 runValueStrict :: LTerm -> Maybe LTerm
 runValueStrict =
-  eoValue . toEvalStrict . termOutput $ rules
+  eoValue . evalOutput eStrict $ rules'
 
 runValueLazy :: LTerm -> Maybe LTerm
 runValueLazy =
-  eoValue . toEvalLazy . termOutput $ rules
+  eoValue . evalOutput eLazy $ rules'
 

@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Fix.Rules.Term (
-    FixTermContext
-  , fixTermRules
+    FixEvalConstraint
+  , fixEvalRules
   ) where
 
 import Bound (instantiate1)
@@ -38,9 +38,12 @@ stepTmFixBeta tm = do
   (_, s) <- preview _TmLam tmF
   return . review _Wrapped . instantiate1 (review _Unwrapped tm) $ s
 
-type FixTermContext ki ty pt tm a = (AsTmFix ki ty pt tm, AsTmLam ki ty pt tm)
+type FixEvalConstraint ki ty pt tm a =
+  ( AsTmFix ki ty pt tm
+  , AsTmLam ki ty pt tm
+  )
 
-fixEvalRules :: FixTermContext ki ty pt tm a
+fixEvalRules :: FixEvalConstraint ki ty pt tm a
              => EvalInput ki ty pt tm a
 fixEvalRules =
   EvalInput
@@ -49,8 +52,3 @@ fixEvalRules =
     , EvalBase stepTmFixBeta
     ]
     []
-
-fixTermRules :: FixTermContext ki ty pt tm a
-             => TermInput ki ty pt tm a
-fixTermRules =
-  TermInput fixEvalRules fixEvalRules

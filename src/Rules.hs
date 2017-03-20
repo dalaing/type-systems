@@ -32,7 +32,6 @@ import qualified Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Rules.Type.Infer.Offline as TUO
 import Rules.Type
-import Rules.Term
 import Util.TypeList
 
 import Ast
@@ -46,7 +45,6 @@ class AstIn k => RulesIn (k :: j) where
   type InferTypeContextSyntax e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
   type InferTypeContextOffline e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
   type RuleTypeContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
-  type RuleTermContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
 
   type ErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
   type WarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
@@ -64,7 +62,6 @@ class AstIn k => RulesIn (k :: j) where
                     => Proxy k
                     -> TUO.InferTypeInput e w s r m (TUO.UnifyT ki ty a m) ki ty pt tm a
   typeInput :: RuleTypeContext ki ty a k => Proxy k -> TypeInput ki ty a
-  termInput :: (TermContext ki ty pt tm a, RuleTermContext ki ty pt tm a k) => Proxy k -> TermInput ki ty pt tm a
 
 instance RulesIn '[] where
   type InferKindContextSyntax e w s r m ki ty a '[] =
@@ -74,7 +71,6 @@ instance RulesIn '[] where
   type InferTypeContextOffline e w s r m ki ty pt tm a '[] =
     TUO.InferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a '[] = (() :: Constraint)
-  type RuleTermContext ki ty pt tm a '[] = (() :: Constraint)
   type ErrorList ki ty pt tm a '[] = '[ErrUnknownKindError, ErrUnknownTypeError, ErrOccursError (Type ki ty) a, ErrUnificationMismatch (Type ki ty) a, ErrUnificationExpectedEq (Type ki ty) a]
   type WarningList ki ty pt tm a '[] = '[]
 
@@ -82,14 +78,12 @@ instance RulesIn '[] where
   inferTypeInputSyntax _ = mempty
   inferTypeInputOffline _ = mempty
   typeInput _ = mempty
-  termInput _ = mempty
 
 instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
   type InferKindContextSyntax e w s r m ki ty a (k ': ks) = (InferKindContextSyntax e w s r m ki ty a k, InferKindContextSyntax e w s r m ki ty a ks)
   type InferTypeContextSyntax e w s r m ki ty pt tm a (k ': ks) = (InferTypeContextSyntax e w s r m ki ty pt tm a k, InferTypeContextSyntax e w s r m ki ty pt tm a ks)
   type InferTypeContextOffline e w s r m ki ty pt tm a (k ': ks) = (InferTypeContextOffline e w s r m ki ty pt tm a k, InferTypeContextOffline e w s r m ki ty pt tm a ks)
   type RuleTypeContext ki ty a (k ': ks) = (RuleTypeContext ki ty a k, RuleTypeContext ki ty a ks)
-  type RuleTermContext ki ty pt tm a (k ': ks) = (RuleTermContext ki ty pt tm a k, RuleTermContext ki ty pt tm a ks)
   type ErrorList ki ty pt tm a (k ': ks) = Append (ErrorList ki ty pt tm a k) (ErrorList ki ty pt tm a ks)
   type WarningList ki ty pt tm a (k ': ks) = Append (WarningList ki ty pt tm a k) (WarningList ki ty pt tm a ks)
 
@@ -97,7 +91,6 @@ instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
   inferTypeInputSyntax _ = inferTypeInputSyntax (Proxy :: Proxy k) `mappend` inferTypeInputSyntax (Proxy :: Proxy ks)
   inferTypeInputOffline _ = inferTypeInputOffline (Proxy :: Proxy k) `mappend` inferTypeInputOffline (Proxy :: Proxy ks)
   typeInput _ = typeInput (Proxy :: Proxy k) `mappend` typeInput (Proxy :: Proxy ks)
-  termInput _ = termInput (Proxy :: Proxy k) `mappend` termInput (Proxy :: Proxy ks)
 
 class AstOut k => RulesOut (k :: j) where
 
@@ -128,11 +121,6 @@ class AstOut k => RulesOut (k :: j) where
   typeOutput :: RuleTypeContext ki ty a k
              => Proxy k
              -> TypeOutput ki ty a
-  termOutput :: ( TermContext ki ty pt tm a
-                , RuleTermContext ki ty pt tm a k
-                )
-             => Proxy k
-             -> TermOutput ki ty pt tm a
 
 instance RulesIn k => RulesOut (k :: j) where
 
@@ -188,5 +176,3 @@ instance RulesIn k => RulesOut (k :: j) where
 
   typeOutput =
     prepareType . typeInput
-  termOutput =
-    prepareTerm . termInput

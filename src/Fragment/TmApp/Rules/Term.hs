@@ -7,8 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.TmApp.Rules.Term (
-    TmAppTermContext
-  , tmAppTermRules
+    TmAppEvalConstraint
+  , tmAppEvalRulesStrict
+  , tmAppEvalRulesLazy
   ) where
 
 import Control.Lens (review, preview)
@@ -31,10 +32,11 @@ stepTmApp2 valueFn stepFn tm = do
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-type TmAppTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmApp ki ty pt tm)
+type TmAppEvalConstraint ki ty pt tm a =
+  AsTmApp ki ty pt tm
 
-tmAppEvalRulesStrict :: TmAppTermContext ki ty pt tm a
-                    => EvalInput ki ty pt tm a
+tmAppEvalRulesStrict :: TmAppEvalConstraint ki ty pt tm a
+                     => EvalInput ki ty pt tm a
 tmAppEvalRulesStrict =
   EvalInput
     []
@@ -43,7 +45,7 @@ tmAppEvalRulesStrict =
     ]
     []
 
-tmAppEvalRulesLazy :: TmAppTermContext ki ty pt tm a
+tmAppEvalRulesLazy :: TmAppEvalConstraint ki ty pt tm a
                   => EvalInput ki ty pt tm a
 tmAppEvalRulesLazy =
   EvalInput
@@ -51,7 +53,3 @@ tmAppEvalRulesLazy =
     [ EvalStep stepTmApp1 ]
     []
 
-tmAppTermRules :: TmAppTermContext ki ty pt tm a
-              => TermInput ki ty pt tm a
-tmAppTermRules =
-  TermInput tmAppEvalRulesStrict tmAppEvalRulesLazy

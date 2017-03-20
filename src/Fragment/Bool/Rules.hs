@@ -23,7 +23,6 @@ import qualified Fragment.Bool.Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Fragment.Bool.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Bool.Rules.Type.Infer.Offline as TUO
 import Fragment.Bool.Rules.Type
-import Fragment.Bool.Rules.Term
 
 data RBool
 
@@ -38,7 +37,6 @@ instance RulesIn RBool where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RBool = TSD.BoolInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RBool = TUO.BoolInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RBool = BoolTypeContext ki ty a
-  type RuleTermContext ki ty pt tm a RBool = BoolTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RBool = '[ErrUnexpectedType ki ty a]
   type WarningList ki ty pt tm a RBool = '[]
 
@@ -46,5 +44,4 @@ instance RulesIn RBool where
   inferTypeInputSyntax _ = TSD.boolInferTypeRules
   inferTypeInputOffline _ = TUO.boolInferTypeRules
   typeInput _ = boolTypeRules
-  termInput _ = boolTermRules
 

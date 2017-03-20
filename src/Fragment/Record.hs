@@ -5,10 +5,43 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Fragment.Record (
-  module X
+    module X
+  , RecordTag
   ) where
+
+import Ast
+import Rules.Term
+import Fragment.KiBase.Ast.Kind
 
 import Fragment.Record.Ast as X
 import Fragment.Record.Rules as X
 import Fragment.Record.Helpers as X
+
+import Fragment.Record.Rules.Term
+
+data RecordTag
+
+instance AstIn RecordTag where
+  type KindList RecordTag = '[KiFBase]
+  type TypeList RecordTag = '[TyFRecord]
+  type PatternList RecordTag = '[PtFRecord]
+  type TermList RecordTag = '[TmFRecord]
+
+instance EvalRules EStrict RecordTag where
+  type EvalConstraint ki ty pt tm a EStrict RecordTag =
+    RecordEvalConstraint ki ty pt tm a
+
+  evalInput _ _ =
+    recordEvalRulesStrict
+
+instance EvalRules ELazy RecordTag where
+  type EvalConstraint ki ty pt tm a ELazy RecordTag =
+    RecordEvalConstraint ki ty pt tm a
+
+  evalInput _ _ =
+    recordEvalRulesLazy

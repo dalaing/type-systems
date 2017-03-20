@@ -7,8 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.LC.Rules.Term (
-    LCTermContext
-  , lcTermRules
+    LCEvalConstraint
+  , lcEvalRulesStrict
+  , lcEvalRulesLazy
   ) where
 
 import Bound (instantiate1)
@@ -34,25 +35,23 @@ stepTmLamAppStrict valueFn tm = do
   vX <- valueFn tmX
   return . review _Wrapped . instantiate1 (review _Unwrapped vX) $ s
 
-type LCTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmLam ki ty pt tm, AsTmApp ki ty pt tm)
+type LCEvalConstraint ki ty pt tm a =
+  ( AsTmLam ki ty pt tm
+  , AsTmApp ki ty pt tm
+  )
 
-lcEvalRulesStrict :: LCTermContext ki ty pt tm a
-                    => EvalInput ki ty pt tm a
+lcEvalRulesStrict :: LCEvalConstraint ki ty pt tm a
+                  => EvalInput ki ty pt tm a
 lcEvalRulesStrict =
   EvalInput
   []
   [ EvalValue stepTmLamAppStrict ]
   []
 
-lcEvalRulesLazy :: LCTermContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
+lcEvalRulesLazy :: LCEvalConstraint ki ty pt tm a
+                => EvalInput ki ty pt tm a
 lcEvalRulesLazy =
   EvalInput
   []
   [ EvalBase stepTmLamAppLazy ]
   []
-
-lcTermRules :: LCTermContext ki ty pt tm a
-            => TermInput ki ty pt tm a
-lcTermRules =
-  TermInput lcEvalRulesStrict lcEvalRulesLazy

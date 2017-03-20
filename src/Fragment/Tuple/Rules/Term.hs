@@ -7,8 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Tuple.Rules.Term (
-    TupleTermContext
-  , tupleTermRules
+    TupleEvalConstraint
+  , tupleEvalRulesStrict
+  , tupleEvalRulesLazy
   ) where
 
 import Control.Monad (zipWithM)
@@ -69,9 +70,12 @@ matchTuple matchFn p tm = do
   tmss <- zipWithM matchFn pts tms
   return $ mconcat tmss
 
-type TupleTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtTuple pt, AsTmTuple ki ty pt tm)
+type TupleEvalConstraint ki ty pt tm a =
+  ( AsPtTuple pt
+  , AsTmTuple ki ty pt tm
+  )
 
-tupleEvalRulesStrict :: TupleTermContext ki ty pt tm a
+tupleEvalRulesStrict :: TupleEvalConstraint ki ty pt tm a
                      => EvalInput ki ty pt tm a
 tupleEvalRulesStrict =
   EvalInput
@@ -82,13 +86,8 @@ tupleEvalRulesStrict =
     ]
     [ MatchRecurse matchTuple ]
 
-tupleEvalRulesLazy :: TupleTermContext ki ty pt tm a
+tupleEvalRulesLazy :: TupleEvalConstraint ki ty pt tm a
                    => EvalInput ki ty pt tm a
 tupleEvalRulesLazy =
   EvalInput
   [] [EvalBase stepTupleIxLazy] [ MatchRecurse matchTuple ]
-
-tupleTermRules :: TupleTermContext ki ty pt tm a
-               => TermInput ki ty pt tm a
-tupleTermRules =
-  TermInput tupleEvalRulesStrict tupleEvalRulesLazy

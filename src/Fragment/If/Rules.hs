@@ -24,7 +24,6 @@ import Fragment.Bool.Ast.Term
 import Fragment.If.Ast
 import qualified Fragment.If.Rules.Type.Infer.SyntaxDirected as SD
 import qualified Fragment.If.Rules.Type.Infer.Offline as UO
-import Fragment.If.Rules.Term
 
 data RIf
 
@@ -39,7 +38,6 @@ instance RulesIn RIf where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RIf = SD.IfInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RIf = UO.IfInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RIf = (() :: Constraint)
-  type RuleTermContext ki ty pt tm a RIf = IfTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RIf = '[ErrUnexpectedType ki ty a, ErrExpectedTypeEq ki ty a]
   type WarningList ki ty pt tm a RIf = '[]
 
@@ -47,4 +45,3 @@ instance RulesIn RIf where
   inferTypeInputSyntax _ = SD.ifInferTypeRules
   inferTypeInputOffline _ = UO.ifInferTypeRules
   typeInput _ = mempty
-  termInput _ = ifTermRules

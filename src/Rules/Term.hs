@@ -7,16 +7,24 @@ Portability : non-portable
 -}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Rules.Term (
     ValueRule(..)
   , EvalRule(..)
   , MatchRule(..)
   , EvalInput(..)
   , EvalOutput(..)
-  , TermInput(..)
-  , TermOutput(..)
-  , TermContext
-  , prepareTerm
+  , ELazy
+  , EStrict
+  , BasicEvalConstraint
+  , EvalRules(..)
+  , evalOutput
   ) where
 
 -- TODO it might be worth having both lazy and strict eval rules in the one structure
@@ -24,6 +32,7 @@ module Rules.Term (
 -- - for bonus points, we could annotate types and functions as strict / lazy / marked with an evaluation variable which can participate in unification etc..
 
 import Data.Foldable (asum)
+import Data.Proxy (Proxy(..))
 import GHC.Exts (Constraint)
 
 import Ast.Term
@@ -137,13 +146,60 @@ data EvalOutput ki ty pt tm a =
   , eoEval :: Term ki ty pt tm a -> Term ki ty pt tm a
   }
 
-type TermContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (() :: Constraint)
+data ELazy
+data EStrict
 
-prepareEval :: TermContext ki ty pt tm a
-            => (Term ki ty pt tm a -> Term ki ty pt tm a)
+class MkEval e where
+  prepareEval :: Proxy e
+               -> EvalInput ki ty pt tm a
+               -> EvalOutput ki ty pt tm a
+
+instance MkEval ELazy where
+  prepareEval _ = prepareEvalLazy
+
+instance MkEval EStrict where
+  prepareEval _ = prepareEvalStrict
+
+-- We use this to keep the kinds happy elsewhere
+type BasicEvalConstraint (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a = (() :: Constraint)
+
+class EvalRules e (k :: j) where
+  type EvalConstraint (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a e k :: Constraint
+
+  evalInput :: EvalConstraint ki ty pt tm a e k
+            => Proxy e
+            -> Proxy k
             -> EvalInput ki ty pt tm a
-            -> EvalOutput ki ty pt tm a
-prepareEval innerMatchEval ei =
+
+instance EvalRules e '[] where
+  type EvalConstraint ki ty pt tm a e '[] =
+    (() :: Constraint)
+
+  evalInput _ _ =
+    mempty
+
+instance (EvalRules e k, EvalRules e ks) => EvalRules e (k ': ks) where
+  type EvalConstraint ki ty pt tm a e (k ': ks) =
+    ( EvalConstraint ki ty pt tm a e k
+    , EvalConstraint ki ty pt tm a e ks
+    )
+
+  evalInput e _ =
+    mappend
+      (evalInput e (Proxy :: Proxy k))
+      (evalInput e (Proxy :: Proxy ks))
+
+evalOutput :: (MkEval e, EvalRules e k, EvalConstraint ki ty pt tm a e k)
+           => Proxy e
+           -> Proxy k
+           -> EvalOutput ki ty pt tm a
+evalOutput e k =
+  prepareEval e (evalInput e k)
+
+prepareEval' :: (Term ki ty pt tm a -> Term ki ty pt tm a)
+             -> EvalInput ki ty pt tm a
+             -> EvalOutput ki ty pt tm a
+prepareEval' innerMatchEval ei =
   let
     v = mkValue . eiValueRules $ ei
     s = mkStep v m . eiEvalRules $ ei
@@ -152,47 +208,15 @@ prepareEval innerMatchEval ei =
   in
     EvalOutput v s e
 
-prepareEvalStrict :: TermContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
+prepareEvalStrict :: EvalInput ki ty pt tm a
                   -> EvalOutput ki ty pt tm a
-prepareEvalStrict = prepareEval id
+prepareEvalStrict = prepareEval' id
 
-prepareEvalLazy :: TermContext ki ty pt tm a
-                => EvalInput ki ty pt tm a
+prepareEvalLazy :: EvalInput ki ty pt tm a
                 -> EvalOutput ki ty pt tm a
 prepareEvalLazy ei =
   let
-    fo = prepareEval e ei
+    fo = prepareEval' e ei
     e = eoEval fo
   in
     fo
-
-data TermInput ki ty pt tm a =
-  TermInput {
-    tiEvalStrict :: EvalInput ki ty pt tm a
-  , tiEvalLazy :: EvalInput ki ty pt tm a
-  }
-
-instance Monoid (TermInput ki ty pt tm a) where
-  mempty =
-    TermInput
-      mempty
-      mempty
-  mappend (TermInput es1 el1) (TermInput es2 el2) =
-    TermInput
-      (mappend es1 es2)
-      (mappend el1 el2)
-
-data TermOutput ki ty pt tm a =
-  TermOutput {
-    toEvalStrict :: EvalOutput ki ty pt tm a
-  , toEvalLazy :: EvalOutput ki ty pt tm a
-  }
-
-prepareTerm :: TermContext ki ty pt tm a
-            => TermInput ki ty pt tm a
-            -> TermOutput ki ty pt tm a
-prepareTerm (TermInput esi eli) =
-  TermOutput
-    (prepareEvalStrict esi)
-    (prepareEvalLazy eli)

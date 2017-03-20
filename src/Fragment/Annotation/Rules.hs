@@ -20,7 +20,6 @@ import Rules
 import Fragment.Annotation.Ast
 import qualified Fragment.Annotation.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Annotation.Rules.Type.Infer.Offline as TUO
-import Fragment.Annotation.Rules.Term
 
 data RAnnotation
 
@@ -39,8 +38,6 @@ instance RulesIn RAnnotation where
     TUO.AnnotationInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RAnnotation =
     (() :: Constraint)
-  type RuleTermContext ki ty pt tm a RAnnotation =
-    AnnotationTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RAnnotation = '[]
   type WarningList ki ty pt tm a RAnnotation = '[]
 
@@ -48,4 +45,3 @@ instance RulesIn RAnnotation where
   inferTypeInputSyntax _ = TSD.annotationInferTypeRules
   inferTypeInputOffline _ = TUO.annotationInferTypeRules
   typeInput _ = mempty
-  termInput _ = annotationTermRules

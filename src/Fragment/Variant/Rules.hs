@@ -22,7 +22,6 @@ import qualified Fragment.Variant.Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Fragment.Variant.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Variant.Rules.Type.Infer.Offline as TUO
 import Fragment.Variant.Rules.Type
-import Fragment.Variant.Rules.Term
 
 data RVariant
 
@@ -37,7 +36,6 @@ instance RulesIn RVariant where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RVariant = TSD.VariantInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RVariant = TUO.VariantInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RVariant = VariantTypeContext ki ty a
-  type RuleTermContext ki ty pt tm a RVariant = VariantTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RVariant = '[ErrExpectedTyVariant ki ty a, ErrVariantNotFound]
   type WarningList ki ty pt tm a RVariant = '[]
 
@@ -45,4 +43,3 @@ instance RulesIn RVariant where
   inferTypeInputSyntax _ = TSD.variantInferTypeRules
   inferTypeInputOffline _ = TUO.variantInferTypeRules
   typeInput _ = variantTypeRules
-  termInput _ = variantTermRules

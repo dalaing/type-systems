@@ -20,7 +20,6 @@ import Rules
 
 import qualified Fragment.PtWild.Rules.Type.Infer.SyntaxDirected as SD
 import qualified Fragment.PtWild.Rules.Type.Infer.Offline as UO
-import Fragment.PtWild.Rules.Term
 
 data RPtWild
 
@@ -35,7 +34,6 @@ instance RulesIn RPtWild where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RPtWild = SD.PtWildInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RPtWild = UO.PtWildInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RPtWild = (() :: Constraint)
-  type RuleTermContext ki ty pt tm a RPtWild = PtWildTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RPtWild = '[]
   type WarningList ki ty pt tm a RPtWild = '[]
 
@@ -43,4 +41,3 @@ instance RulesIn RPtWild where
   inferTypeInputSyntax _ = SD.ptWildInferTypeRules
   inferTypeInputOffline _ = UO.ptWildInferTypeRules
   typeInput _ = mempty
-  termInput _ = ptWildTermRules

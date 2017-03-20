@@ -20,8 +20,6 @@ import Rules
 import Fragment.TmLam.Ast.Term
 import Fragment.TmApp.Ast.Term
 
-import Fragment.LC.Rules.Term
-
 data RLC
 
 instance AstIn RLC where
@@ -39,8 +37,6 @@ instance RulesIn RLC where
     (() :: Constraint)
   type RuleTypeContext ki ty a RLC =
     (() :: Constraint)
-  type RuleTermContext ki ty pt tm a RLC =
-    LCTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RLC = '[]
   type WarningList ki ty pt tm a RLC = '[]
 
@@ -48,4 +44,3 @@ instance RulesIn RLC where
   inferTypeInputSyntax _ = mempty
   inferTypeInputOffline _ = mempty
   typeInput _ = mempty
-  termInput _ = lcTermRules

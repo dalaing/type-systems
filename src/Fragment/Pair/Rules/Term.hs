@@ -7,8 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Pair.Rules.Term (
-    PairTermContext
-  , pairTermRules
+    PairEvalConstraint
+  , pairEvalRulesStrict
+  , pairEvalRulesLazy
   ) where
 
 import Control.Lens (review, preview)
@@ -88,9 +89,12 @@ matchPair matchFn p tm = do
   tms2 <- matchFn p2 tm2
   return $ tms1 ++ tms2
 
-type PairTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtPair pt, AsTmPair ki ty pt tm)
+type PairEvalConstraint ki ty pt tm a =
+  ( AsPtPair pt
+  , AsTmPair ki ty pt tm
+  )
 
-pairEvalRulesStrict :: PairTermContext ki ty pt tm a
+pairEvalRulesStrict :: PairEvalConstraint ki ty pt tm a
                     => EvalInput ki ty pt tm a
 pairEvalRulesStrict =
   EvalInput
@@ -104,7 +108,7 @@ pairEvalRulesStrict =
     ]
     [ MatchRecurse matchPair ]
 
-pairEvalRulesLazy :: PairTermContext ki ty pt tm a
+pairEvalRulesLazy :: PairEvalConstraint ki ty pt tm a
                   => EvalInput ki ty pt tm a
 pairEvalRulesLazy =
   EvalInput
@@ -113,8 +117,3 @@ pairEvalRulesLazy =
     , EvalBase stepSndLazy
     ]
     [ MatchRecurse matchPair ]
-
-pairTermRules :: PairTermContext ki ty pt tm a
-              => TermInput ki ty pt tm a
-pairTermRules =
-  TermInput pairEvalRulesStrict pairEvalRulesLazy

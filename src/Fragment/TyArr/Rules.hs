@@ -44,9 +44,6 @@ instance RulesIn RTyArr where
   type RuleTypeContext ki ty a RTyArr =
     TyArrTypeContext ki ty a
 
-  type RuleTermContext ki ty pt tm a RTyArr =
-    (() :: Constraint)
-
   type ErrorList ki ty pt tm a RTyArr = '[ErrExpectedTyArr ki ty a, ErrUnexpectedKind ki]
   type WarningList ki ty pt tm a RTyArr = '[]
 
@@ -54,4 +51,3 @@ instance RulesIn RTyArr where
   inferTypeInputSyntax _ = mempty
   inferTypeInputOffline _ = tyArrInferTypeRules
   typeInput _ = tyArrTypeRules
-  termInput _ = mempty

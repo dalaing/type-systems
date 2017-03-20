@@ -24,7 +24,6 @@ import Fragment.TyArr.Ast.Type
 import Fragment.Fix.Ast
 import qualified Fragment.Fix.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Fix.Rules.Type.Infer.Offline as TUO
-import Fragment.Fix.Rules.Term
 
 data RFix
 
@@ -43,7 +42,6 @@ instance RulesIn RFix where
     TUO.FixInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RFix =
     (() :: Constraint)
-  type RuleTermContext ki ty pt tm a RFix = FixTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RFix = '[ErrExpectedTyArr ki ty a, ErrExpectedTypeEq ki ty a]
   type WarningList ki ty pt tm a RFix = '[]
 
@@ -51,4 +49,3 @@ instance RulesIn RFix where
   inferTypeInputSyntax _ = TSD.fixInferTypeRules
   inferTypeInputOffline _ = TUO.fixInferTypeRules
   typeInput _ = mempty
-  termInput _ = fixTermRules

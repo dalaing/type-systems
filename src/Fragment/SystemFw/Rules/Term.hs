@@ -7,8 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.SystemFw.Rules.Term (
-    SystemFwTermContext
-  , systemFwTermRules
+    SystemFwEvalConstraint
+  , systemFwEvalRulesStrict
+  , systemFwEvalRulesLazy
   ) where
 
 import Bound (Bound, instantiate1)
@@ -68,10 +69,11 @@ stepTmApp2 valueFn stepFn tm = do
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-type SystemFwTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmSystemFw ki ty pt tm)
+type SystemFwEvalConstraint ki ty pt tm a =
+  AsTmSystemFw ki ty pt tm
 
-systemFwEvalRulesStrict :: SystemFwTermContext ki ty pt tm a
-                       => EvalInput ki ty pt tm a
+systemFwEvalRulesStrict :: SystemFwEvalConstraint ki ty pt tm a
+                        => EvalInput ki ty pt tm a
 systemFwEvalRulesStrict =
   EvalInput
   [ ValueBase valTmLam
@@ -85,8 +87,8 @@ systemFwEvalRulesStrict =
   ]
   []
 
-systemFwEvalRulesLazy :: SystemFwTermContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
+systemFwEvalRulesLazy :: SystemFwEvalConstraint ki ty pt tm a
+                      => EvalInput ki ty pt tm a
 systemFwEvalRulesLazy =
   EvalInput
   [ ValueBase valTmLam
@@ -98,8 +100,3 @@ systemFwEvalRulesLazy =
   , EvalBase stepTmLamTyAppTy
   ]
   []
-
-systemFwTermRules :: SystemFwTermContext ki ty pt tm a
-                 => TermInput ki ty pt tm a
-systemFwTermRules =
-  TermInput systemFwEvalRulesStrict systemFwEvalRulesLazy

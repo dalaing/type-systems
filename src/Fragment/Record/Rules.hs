@@ -22,7 +22,6 @@ import qualified Fragment.Record.Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Fragment.Record.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Record.Rules.Type.Infer.Offline as TUO
 import Fragment.Record.Rules.Type
-import Fragment.Record.Rules.Term
 
 data RRecord
 
@@ -37,7 +36,6 @@ instance RulesIn RRecord where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RRecord = TSD.RecordInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RRecord = TUO.RecordInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RRecord = RecordTypeContext ki ty a
-  type RuleTermContext ki ty pt tm a RRecord = RecordTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RRecord = '[ErrExpectedTyRecord ki ty a, ErrRecordNotFound]
   type WarningList ki ty pt tm a RRecord = '[]
 
@@ -45,4 +43,3 @@ instance RulesIn RRecord where
   inferTypeInputSyntax _ = TSD.recordInferTypeRules
   inferTypeInputOffline _ = TUO.recordInferTypeRules
   typeInput _ = recordTypeRules
-  termInput _ = recordTermRules

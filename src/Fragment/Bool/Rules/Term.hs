@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Bool.Rules.Term (
-    BoolTermContext
-  , boolTermRules
+    BoolEvalConstraint
+  , boolEvalRules
   ) where
 
 import Control.Monad (MonadPlus(..))
@@ -95,9 +95,10 @@ matchBool eval p tm = do
   then return []
   else mzero
 
-type BoolTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsPtBool pt, AsTmBool ki ty pt tm)
+type BoolEvalConstraint ki ty pt tm a =
+  (AsPtBool pt, AsTmBool ki ty pt tm)
 
-boolEvalRules :: BoolTermContext ki ty pt tm a
+boolEvalRules :: BoolEvalConstraint ki ty pt tm a
                => EvalInput ki ty pt tm a
 boolEvalRules =
   EvalInput
@@ -110,8 +111,3 @@ boolEvalRules =
     , EvalBase stepOrBool
     ]
     [ MatchEval matchBool ]
-
-boolTermRules :: BoolTermContext ki ty pt tm a
-              => TermInput ki ty pt tm a
-boolTermRules =
-  TermInput boolEvalRules boolEvalRules

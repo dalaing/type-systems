@@ -7,8 +7,9 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.SystemF.Rules.Term (
-    SystemFTermContext
-  , systemFTermRules
+    SystemFEvalConstraint
+  , systemFEvalRulesStrict
+  , systemFEvalRulesLazy
   ) where
 
 import Bound (Bound, instantiate1)
@@ -68,9 +69,10 @@ stepTmApp2 valueFn stepFn tm = do
   tmX' <- stepFn tmX
   return $ review _TmApp (vF, tmX')
 
-type SystemFTermContext ki ty pt tm a = (TermContext ki ty pt tm a, AsTmSystemF ki ty pt tm)
+type SystemFEvalConstraint ki ty pt tm a =
+  AsTmSystemF ki ty pt tm
 
-systemFEvalRulesStrict :: SystemFTermContext ki ty pt tm a
+systemFEvalRulesStrict :: SystemFEvalConstraint ki ty pt tm a
                        => EvalInput ki ty pt tm a
 systemFEvalRulesStrict =
   EvalInput
@@ -85,8 +87,8 @@ systemFEvalRulesStrict =
   ]
   []
 
-systemFEvalRulesLazy :: SystemFTermContext ki ty pt tm a
-                  => EvalInput ki ty pt tm a
+systemFEvalRulesLazy :: SystemFEvalConstraint ki ty pt tm a
+                     => EvalInput ki ty pt tm a
 systemFEvalRulesLazy =
   EvalInput
   [ ValueBase valTmLam
@@ -98,9 +100,3 @@ systemFEvalRulesLazy =
   , EvalBase stepTmLamTyAppTy
   ]
   []
-
-systemFTermRules :: SystemFTermContext ki ty pt tm a
-                 => TermInput ki ty pt tm a
-systemFTermRules =
-  TermInput systemFEvalRulesStrict systemFEvalRulesLazy
-

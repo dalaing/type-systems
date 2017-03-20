@@ -22,7 +22,6 @@ import Context.Term.Error
 import Fragment.Case.Ast
 import qualified Fragment.Case.Rules.Type.Infer.SyntaxDirected as SD
 import qualified Fragment.Case.Rules.Type.Infer.Offline as UO
-import Fragment.Case.Rules.Term
 
 data RCase
 
@@ -37,7 +36,6 @@ instance RulesIn RCase where
   type InferTypeContextSyntax e w s r m ki ty pt tm a RCase = SD.CaseInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RCase = UO.CaseInferTypeContext e w s r m ki ty pt tm a
   type RuleTypeContext ki ty a RCase = (() :: Constraint)
-  type RuleTermContext ki ty pt tm a RCase = CaseTermContext ki ty pt tm a
   type ErrorList ki ty pt tm a RCase = '[ErrExpectedTypeAllEq ki ty a, ErrUnboundTermVariable a, ErrExpectedPattern ki ty pt tm a, ErrDuplicatedPatternVariables a]
   type WarningList ki ty pt tm a RCase = '[WarnUnusedPatternVariables a, WarnShadowingPatternVariables a]
 
@@ -45,4 +43,3 @@ instance RulesIn RCase where
   inferTypeInputSyntax _ = SD.caseInferTypeRules
   inferTypeInputOffline _ = UO.caseInferTypeRules
   typeInput _ = mempty
-  termInput _ = caseTermRules
