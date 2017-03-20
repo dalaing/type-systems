@@ -15,6 +15,7 @@ module Fragment.SystemFw (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
@@ -22,6 +23,7 @@ import Fragment.SystemFw.Ast as X
 import Fragment.SystemFw.Rules as X
 import Fragment.SystemFw.Helpers as X
 
+import Fragment.SystemFw.Rules.Type
 import Fragment.SystemFw.Rules.Term
 
 data SystemFwTag
@@ -45,3 +47,10 @@ instance EvalRules ELazy SystemFwTag where
 
   evalInput _ _ =
     systemFwEvalRulesLazy
+
+instance NormalizeRules SystemFwTag where
+  type NormalizeConstraint ki ty a SystemFwTag =
+    SystemFwNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    systemFwNormalizeRules

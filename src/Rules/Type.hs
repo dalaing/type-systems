@@ -6,15 +6,29 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Rules.Type (
     NormalizeTypeRule(..)
-  , TypeInput(..)
-  , TypeOutput(..)
-  , prepareType
+  , NormalizeInput(..)
+  , NormalizeOutput(..)
+  , BasicNormalizeConstraint
+  , NormalizeRules(..)
+  , normalizeOutput
   ) where
 
 import Data.Foldable (asum)
 import Data.Maybe (fromMaybe)
+import Data.Proxy (Proxy(..))
+
+import GHC.Exts (Constraint)
 
 import Ast.Type
 
@@ -41,24 +55,58 @@ mkNormalizeType rules =
   in
     go
 
-data TypeInput ki ty a =
-  TypeInput {
-    tiNormalizeTypeRules :: [NormalizeTypeRule ki ty]
+data NormalizeInput ki ty a =
+  NormalizeInput {
+    niNormalizeTypeRules :: [NormalizeTypeRule ki ty]
   }
 
-instance Monoid (TypeInput ki ty a) where
+instance Monoid (NormalizeInput ki ty a) where
   mempty =
-    TypeInput
+    NormalizeInput
       mempty
-  mappend (TypeInput n1) (TypeInput n2) =
-    TypeInput
+  mappend (NormalizeInput n1) (NormalizeInput n2) =
+    NormalizeInput
       (mappend n1 n2)
 
-data TypeOutput ki ty a =
-  TypeOutput {
-    toNormalizeType :: Type ki ty a -> Type ki ty a
+data NormalizeOutput ki ty a =
+  NormalizeOutput {
+    noNormalizeType :: Type ki ty a -> Type ki ty a
   }
 
-prepareType :: TypeInput ki ty a -> TypeOutput ki ty a
-prepareType (TypeInput nt) =
-  TypeOutput (mkNormalizeType nt)
+prepareNormalize :: NormalizeInput ki ty a -> NormalizeOutput ki ty a
+prepareNormalize (NormalizeInput nt) =
+  NormalizeOutput (mkNormalizeType nt)
+
+-- We use this to keep the kinds happy elsewhere
+type BasicNormalizeConstraint (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a = (() :: Constraint)
+
+class NormalizeRules (k :: j) where
+  type NormalizeConstraint (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
+
+  normalizeInput :: NormalizeConstraint ki ty a k
+                 => Proxy k
+                 -> NormalizeInput ki ty a
+
+instance NormalizeRules '[] where
+  type NormalizeConstraint ki ty a '[] =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty
+
+instance (NormalizeRules k, NormalizeRules ks) => NormalizeRules (k ': ks) where
+  type NormalizeConstraint ki ty a (k ': ks) =
+    ( NormalizeConstraint ki ty a k
+    , NormalizeConstraint ki ty a ks
+    )
+
+  normalizeInput _ =
+    mappend
+      (normalizeInput (Proxy :: Proxy k))
+      (normalizeInput (Proxy :: Proxy ks))
+
+normalizeOutput :: (NormalizeRules k, NormalizeConstraint ki ty a k)
+                => Proxy k
+                -> NormalizeOutput ki ty a
+normalizeOutput k =
+  prepareNormalize (normalizeInput k)

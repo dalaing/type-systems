@@ -15,6 +15,7 @@ module Fragment.Bool (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
@@ -22,6 +23,7 @@ import Fragment.Bool.Ast as X
 import Fragment.Bool.Rules as X
 import Fragment.Bool.Helpers as X
 
+import Fragment.Bool.Rules.Type
 import Fragment.Bool.Rules.Term
 
 data BoolTag
@@ -38,3 +40,10 @@ instance EvalRules e BoolTag where
 
   evalInput _ _ =
     boolEvalRules
+
+instance NormalizeRules BoolTag where
+  type NormalizeConstraint ki ty a BoolTag =
+    BoolNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    boolNormalizeRules

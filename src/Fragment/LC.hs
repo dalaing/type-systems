@@ -14,7 +14,10 @@ module Fragment.LC (
   , LCTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.TmLam.Ast.Term
 import Fragment.TmApp.Ast.Term
@@ -46,3 +49,10 @@ instance EvalRules ELazy LCTag where
 
   evalInput _ _ =
     lcEvalRulesLazy
+
+instance NormalizeRules LCTag where
+  type NormalizeConstraint ki ty a LCTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

@@ -15,12 +15,14 @@ module Fragment.SystemF (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.SystemF.Ast as X
 import Fragment.SystemF.Rules as X
 import Fragment.SystemF.Helpers as X
 
+import Fragment.SystemF.Rules.Type
 import Fragment.SystemF.Rules.Term
 
 data SystemFTag
@@ -44,3 +46,10 @@ instance EvalRules ELazy SystemFTag where
 
   evalInput _ _ =
     systemFEvalRulesLazy
+
+instance NormalizeRules SystemFTag where
+  type NormalizeConstraint ki ty a SystemFTag =
+    SystemFNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    systemFNormalizeRules

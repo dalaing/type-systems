@@ -15,6 +15,7 @@ module Fragment.Record (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
@@ -22,6 +23,7 @@ import Fragment.Record.Ast as X
 import Fragment.Record.Rules as X
 import Fragment.Record.Helpers as X
 
+import Fragment.Record.Rules.Type
 import Fragment.Record.Rules.Term
 
 data RecordTag
@@ -45,3 +47,10 @@ instance EvalRules ELazy RecordTag where
 
   evalInput _ _ =
     recordEvalRulesLazy
+
+instance NormalizeRules RecordTag where
+  type NormalizeConstraint ki ty a RecordTag =
+    RecordNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    recordNormalizeRules

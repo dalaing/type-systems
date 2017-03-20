@@ -37,11 +37,9 @@ instance RulesIn RIf where
   type InferKindContextSyntax e w s r m ki ty a RIf = (() :: Constraint)
   type InferTypeContextSyntax e w s r m ki ty pt tm a RIf = SD.IfInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RIf = UO.IfInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RIf = (() :: Constraint)
   type ErrorList ki ty pt tm a RIf = '[ErrUnexpectedType ki ty a, ErrExpectedTypeEq ki ty a]
   type WarningList ki ty pt tm a RIf = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = SD.ifInferTypeRules
   inferTypeInputOffline _ = UO.ifInferTypeRules
-  typeInput _ = mempty

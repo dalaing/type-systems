@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Bool.Rules.Type (
-    BoolTypeContext
-  , boolTypeRules
+    BoolNormalizeConstraint
+  , boolNormalizeRules
   ) where
 
 import Control.Lens (preview)
@@ -18,16 +18,16 @@ import Ast.Type
 
 import Fragment.Bool.Ast.Type
 
-type BoolTypeContext ki ty a = AsTyBool ki ty
+type BoolNormalizeConstraint ki ty a = AsTyBool ki ty
 
-normalizeBool :: BoolTypeContext ki ty a
+normalizeBool :: BoolNormalizeConstraint ki ty a
               => Type ki ty a
               -> Maybe (Type ki ty a)
 normalizeBool ty = do
   _ <- preview _TyBool ty
   return ty
 
-boolTypeRules :: BoolTypeContext ki ty a
-              => TypeInput ki ty a
-boolTypeRules =
-  TypeInput [ NormalizeTypeBase normalizeBool ]
+boolNormalizeRules :: BoolNormalizeConstraint ki ty a
+              => NormalizeInput ki ty a
+boolNormalizeRules =
+  NormalizeInput [ NormalizeTypeBase normalizeBool ]

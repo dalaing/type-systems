@@ -21,7 +21,6 @@ import Rules
 import Fragment.SystemF.Ast
 import Fragment.SystemF.Rules.Kind.Infer.SyntaxDirected
 import Fragment.SystemF.Rules.Type.Infer.SyntaxDirected
-import Fragment.SystemF.Rules.Type
 
 data RSystemF
 
@@ -35,11 +34,9 @@ instance RulesIn RSystemF where
   type InferKindContextSyntax e w s r m ki ty a RSystemF = SystemFInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RSystemF = SystemFInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RSystemF = (() :: Constraint)
-  type RuleTypeContext ki ty a RSystemF = SystemFTypeContext ki ty a
   type ErrorList ki ty pt tm a RSystemF = '[ErrUnexpectedKind ki, ErrExpectedTyArr ki ty a, ErrExpectedTyAll ki ty a]
   type WarningList ki ty pt tm a RSystemF = '[]
 
   inferKindInputSyntax _ = systemFInferKindRules
   inferTypeInputSyntax _ = systemFInferTypeRules
   inferTypeInputOffline _ = mempty
-  typeInput _ = systemFTypeRules

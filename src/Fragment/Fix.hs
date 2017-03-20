@@ -14,7 +14,10 @@ module Fragment.Fix (
   , FixTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.TyArr.Ast.Type
 
@@ -38,3 +41,10 @@ instance EvalRules e FixTag where
 
   evalInput _ _ =
     fixEvalRules
+
+instance NormalizeRules FixTag where
+  type NormalizeConstraint ki ty a FixTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

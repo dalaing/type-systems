@@ -14,7 +14,10 @@ module Fragment.TmApp (
   , TmAppTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.TmApp.Ast as X
@@ -44,3 +47,10 @@ instance EvalRules ELazy TmAppTag where
 
   evalInput _ _ =
     tmAppEvalRulesLazy
+
+instance NormalizeRules TmAppTag where
+  type NormalizeConstraint ki ty a TmAppTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

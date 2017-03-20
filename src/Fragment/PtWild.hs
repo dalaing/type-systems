@@ -14,8 +14,11 @@ module Fragment.PtWild (
   , PtWildTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
 import Ast.Pattern
+import Rules.Type
 import Rules.Term
 
 import Fragment.PtWild.Rules as X
@@ -37,3 +40,10 @@ instance EvalRules e PtWildTag where
 
   evalInput _ _ =
     ptWildEvalRules
+
+instance NormalizeRules PtWildTag where
+  type NormalizeConstraint ki ty a PtWildTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

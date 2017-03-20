@@ -21,7 +21,6 @@ import Rules
 import Fragment.TyArr.Ast
 import Fragment.TyArr.Rules.Kind.Infer.SyntaxDirected
 import Fragment.TyArr.Rules.Type.Infer.Offline
-import Fragment.TyArr.Rules.Type
 
 data RTyArr
 
@@ -41,13 +40,9 @@ instance RulesIn RTyArr where
   type InferTypeContextOffline e w s r m ki ty pt tm a RTyArr =
     TyArrInferTypeContext e w s r m ki ty pt tm a
 
-  type RuleTypeContext ki ty a RTyArr =
-    TyArrTypeContext ki ty a
-
   type ErrorList ki ty pt tm a RTyArr = '[ErrExpectedTyArr ki ty a, ErrUnexpectedKind ki]
   type WarningList ki ty pt tm a RTyArr = '[]
 
   inferKindInputSyntax _ = tyArrInferKindRules
   inferTypeInputSyntax _ = mempty
   inferTypeInputOffline _ = tyArrInferTypeRules
-  typeInput _ = tyArrTypeRules

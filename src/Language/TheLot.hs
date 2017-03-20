@@ -48,6 +48,7 @@ import Rules
 import Rules.Unification
 import qualified Rules.Type.Infer.SyntaxDirected as SD
 import qualified Rules.Type.Infer.Offline as UO
+import Rules.Type
 import Rules.Term
 
 import Fragment.PtVar
@@ -177,30 +178,34 @@ runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
   eoEval . evalOutput eStrict $ rules'
 
+normalize :: LType -> LType
+normalize =
+  noNormalizeType . normalizeOutput $ rules'
+
 runInferSyntax :: LTerm -> (Either LError LType, [LWarning])
 runInferSyntax =
   runM (0 :: Int) emptyContext .
-  SD.ioInfer (inferTypeOutputSyntax rules)
+  SD.ioInfer (inferTypeOutputSyntax rules normalize)
 
 runCheckSyntax :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheckSyntax tm ty =
   runM (0 :: Int) emptyContext $
-  (SD.ioCheck $ inferTypeOutputSyntax rules) tm ty
+  (SD.ioCheck $ inferTypeOutputSyntax rules normalize) tm ty
 
 runInferOffline :: LTerm -> (Either LError LType, [LWarning])
 runInferOffline =
   runM (0 :: Int) emptyContext .
-  UO.ioInfer (inferTypeOutputOffline rules)
+  UO.ioInfer (inferTypeOutputOffline rules normalize)
 
 runCheckOffline :: LTerm -> LType -> (Either LError (), [LWarning])
 runCheckOffline tm ty =
   runM (0 :: Int) emptyContext $
-  (UO.ioCheck $ inferTypeOutputOffline rules) tm ty
+  (UO.ioCheck $ inferTypeOutputOffline rules normalize) tm ty
 
 runUnify :: [UConstraint (Type KindF TypeF) String] -> (Either LError (M.Map String (LType)), [LWarning])
 runUnify =
   runM (0 :: Int) emptyContext .
-  UO.ioUnify (inferTypeOutputOffline rules :: UO.InferTypeOutput LError LWarning Int LContext (M LError LWarning Int LContext) KindF TypeF PatternF TermF String)
+  UO.ioUnify (inferTypeOutputOffline rules normalize :: UO.InferTypeOutput LError LWarning Int LContext (M LError LWarning Int LContext) KindF TypeF PatternF TermF String)
 
 -- for debugging
 

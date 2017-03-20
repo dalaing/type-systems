@@ -14,7 +14,10 @@ module Fragment.If (
   , IfTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.Bool.Ast
 
@@ -38,3 +41,10 @@ instance EvalRules e IfTag where
 
   evalInput _ _ =
     ifEvalRules
+
+instance NormalizeRules IfTag where
+  type NormalizeConstraint ki ty a IfTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

@@ -34,11 +34,9 @@ instance RulesIn RTmApp where
   type InferKindContextSyntax e w s r m ki ty a RTmApp = (() :: Constraint)
   type InferTypeContextSyntax e w s r m ki ty pt tm a RTmApp = TSD.TmAppInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RTmApp = TUO.TmAppInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RTmApp = (() :: Constraint)
   type ErrorList ki ty pt tm a RTmApp = '[ErrUnboundTypeVariable a]
   type WarningList ki ty pt tm a RTmApp = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = TSD.tmAppInferTypeRules
   inferTypeInputOffline _ = TUO.tmAppInferTypeRules
-  typeInput _ = mempty

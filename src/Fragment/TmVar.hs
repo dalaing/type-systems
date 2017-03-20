@@ -17,6 +17,7 @@ module Fragment.TmVar (
 import GHC.Exts (Constraint)
 
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.TmVar.Rules as X
@@ -35,4 +36,11 @@ instance EvalRules e TmVarTag where
     (() :: Constraint)
 
   evalInput _ _ =
+    mempty
+
+instance NormalizeRules TmVarTag where
+  type NormalizeConstraint ki ty a TmVarTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
     mempty

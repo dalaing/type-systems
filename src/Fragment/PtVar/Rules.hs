@@ -32,11 +32,9 @@ instance RulesIn RPtVar where
   type InferKindContextSyntax e w s r m ki ty a RPtVar = (() :: Constraint)
   type InferTypeContextSyntax e w s r m ki ty pt tm a RPtVar = SD.PtVarInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RPtVar = UO.PtVarInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RPtVar = (() :: Constraint)
   type ErrorList ki ty pt tm a RPtVar = '[]
   type WarningList ki ty pt tm a RPtVar = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = SD.ptVarInferTypeRules
   inferTypeInputOffline _ = UO.ptVarInferTypeRules
-  typeInput _ = mempty

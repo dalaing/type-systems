@@ -35,12 +35,9 @@ instance RulesIn RLC where
     (() :: Constraint)
   type InferTypeContextOffline e w s r m ki ty pt tm a RLC =
     (() :: Constraint)
-  type RuleTypeContext ki ty a RLC =
-    (() :: Constraint)
   type ErrorList ki ty pt tm a RLC = '[]
   type WarningList ki ty pt tm a RLC = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = mempty
   inferTypeInputOffline _ = mempty
-  typeInput _ = mempty

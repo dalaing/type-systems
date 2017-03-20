@@ -33,11 +33,9 @@ instance RulesIn RPtWild where
   type InferKindContextSyntax e w s r m ki ty a RPtWild = (() :: Constraint)
   type InferTypeContextSyntax e w s r m ki ty pt tm a RPtWild = SD.PtWildInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RPtWild = UO.PtWildInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RPtWild = (() :: Constraint)
   type ErrorList ki ty pt tm a RPtWild = '[]
   type WarningList ki ty pt tm a RPtWild = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = SD.ptWildInferTypeRules
   inferTypeInputOffline _ = UO.ptWildInferTypeRules
-  typeInput _ = mempty

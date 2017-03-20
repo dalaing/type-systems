@@ -22,7 +22,6 @@ import Fragment.Int.Ast
 import qualified Fragment.Int.Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Fragment.Int.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Int.Rules.Type.Infer.Offline as TUO
-import Fragment.Int.Rules.Type
 
 data RInt
 
@@ -36,11 +35,9 @@ instance RulesIn RInt where
   type InferKindContextSyntax e w s r m ki ty a RInt = KSD.IntInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RInt = TSD.IntInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RInt = TUO.IntInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RInt = IntTypeContext ki ty a
   type ErrorList ki ty pt tm a RInt = '[ErrUnexpectedType ki ty a]
   type WarningList ki ty pt tm a RInt = '[]
 
   inferKindInputSyntax _ = KSD.intInferKindRules
   inferTypeInputSyntax _ = TSD.intInferTypeRules
   inferTypeInputOffline _ = TUO.intInferTypeRules
-  typeInput _ = intTypeRules

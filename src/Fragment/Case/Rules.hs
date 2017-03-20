@@ -35,11 +35,9 @@ instance RulesIn RCase where
   type InferKindContextSyntax e w s r m ki ty a RCase = (() :: Constraint)
   type InferTypeContextSyntax e w s r m ki ty pt tm a RCase = SD.CaseInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RCase = UO.CaseInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RCase = (() :: Constraint)
   type ErrorList ki ty pt tm a RCase = '[ErrExpectedTypeAllEq ki ty a, ErrUnboundTermVariable a, ErrExpectedPattern ki ty pt tm a, ErrDuplicatedPatternVariables a]
   type WarningList ki ty pt tm a RCase = '[WarnUnusedPatternVariables a, WarnShadowingPatternVariables a]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = SD.caseInferTypeRules
   inferTypeInputOffline _ = UO.caseInferTypeRules
-  typeInput _ = mempty

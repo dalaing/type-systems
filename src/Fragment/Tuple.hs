@@ -15,6 +15,7 @@ module Fragment.Tuple (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
@@ -22,6 +23,7 @@ import Fragment.Tuple.Ast as X
 import Fragment.Tuple.Rules as X
 import Fragment.Tuple.Helpers as X
 
+import Fragment.Tuple.Rules.Type
 import Fragment.Tuple.Rules.Term
 
 data TupleTag
@@ -45,3 +47,10 @@ instance EvalRules ELazy TupleTag where
 
   evalInput _ _ =
     tupleEvalRulesLazy
+
+instance NormalizeRules TupleTag where
+  type NormalizeConstraint ki ty a TupleTag =
+    TupleNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    tupleNormalizeRules

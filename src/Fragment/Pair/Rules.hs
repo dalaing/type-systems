@@ -21,7 +21,6 @@ import Fragment.Pair.Ast
 import qualified Fragment.Pair.Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Fragment.Pair.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Pair.Rules.Type.Infer.Offline as TUO
-import Fragment.Pair.Rules.Type
 
 data RPair
 
@@ -35,11 +34,9 @@ instance RulesIn RPair where
   type InferKindContextSyntax e w s r m ki ty a RPair = KSD.PairInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RPair = TSD.PairInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RPair = TUO.PairInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RPair = PairTypeContext ki ty a
   type ErrorList ki ty pt tm a RPair = '[ErrExpectedTyPair ki ty a]
   type WarningList ki ty pt tm a RPair = '[]
 
   inferKindInputSyntax _ = KSD.pairInferKindRules
   inferTypeInputSyntax _ = TSD.pairInferTypeRules
   inferTypeInputOffline _ = TUO.pairInferTypeRules
-  typeInput _ = pairTypeRules

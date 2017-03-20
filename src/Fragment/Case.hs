@@ -14,7 +14,10 @@ module Fragment.Case (
   , CaseTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.Case.Ast as X
@@ -44,3 +47,10 @@ instance EvalRules ELazy CaseTag where
 
   evalInput _ _ =
     caseEvalRulesLazy
+
+instance NormalizeRules CaseTag where
+  type NormalizeConstraint ki ty a CaseTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

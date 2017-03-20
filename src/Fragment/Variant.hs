@@ -15,6 +15,7 @@ module Fragment.Variant (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
@@ -22,6 +23,7 @@ import Fragment.Variant.Ast as X
 import Fragment.Variant.Rules as X
 import Fragment.Variant.Helpers as X
 
+import Fragment.Variant.Rules.Type
 import Fragment.Variant.Rules.Term
 
 data VariantTag
@@ -38,3 +40,10 @@ instance EvalRules e VariantTag where
 
   evalInput _ _ =
     variantEvalRules
+
+instance NormalizeRules VariantTag where
+  type NormalizeConstraint ki ty a VariantTag =
+    VariantNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    variantNormalizeRules

@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Tuple.Rules.Type (
-    TupleTypeContext
-  , tupleTypeRules
+    TupleNormalizeConstraint
+  , tupleNormalizeRules
   ) where
 
 import Control.Lens (review, preview)
@@ -18,9 +18,9 @@ import Ast.Type
 
 import Fragment.Tuple.Ast.Type
 
-type TupleTypeContext ki ty a = AsTyTuple ki ty
+type TupleNormalizeConstraint ki ty a = AsTyTuple ki ty
 
-normalizeTuple :: TupleTypeContext ki ty a
+normalizeTuple :: TupleNormalizeConstraint ki ty a
                => (Type ki ty a -> Type ki ty a)
                -> Type ki ty a
                -> Maybe (Type ki ty a)
@@ -28,7 +28,7 @@ normalizeTuple normalizeFn ty = do
   tys <- preview _TyTuple ty
   return $ review _TyTuple (fmap normalizeFn tys)
 
-tupleTypeRules :: TupleTypeContext ki ty a
-              => TypeInput ki ty a
-tupleTypeRules =
-  TypeInput [ NormalizeTypeRecurse normalizeTuple ]
+tupleNormalizeRules :: TupleNormalizeConstraint ki ty a
+                    => NormalizeInput ki ty a
+tupleNormalizeRules =
+  NormalizeInput [ NormalizeTypeRecurse normalizeTuple ]

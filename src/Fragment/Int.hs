@@ -15,6 +15,7 @@ module Fragment.Int (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
@@ -22,6 +23,7 @@ import Fragment.Int.Ast as X
 import Fragment.Int.Rules as X
 import Fragment.Int.Helpers as X
 
+import Fragment.Int.Rules.Type
 import Fragment.Int.Rules.Term
 
 data IntTag
@@ -38,3 +40,10 @@ instance EvalRules e IntTag where
 
   evalInput _ _ =
     intEvalRules
+
+instance NormalizeRules IntTag where
+  type NormalizeConstraint ki ty a IntTag =
+    IntNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    intNormalizeRules

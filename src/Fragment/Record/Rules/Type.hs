@@ -7,8 +7,8 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.Record.Rules.Type (
-    RecordTypeContext
-  , recordTypeRules
+    RecordNormalizeConstraint
+  , recordNormalizeRules
   ) where
 
 import Data.List (sortOn)
@@ -20,9 +20,9 @@ import Ast.Type
 
 import Fragment.Record.Ast.Type
 
-type RecordTypeContext ki ty a = AsTyRecord ki ty
+type RecordNormalizeConstraint ki ty a = AsTyRecord ki ty
 
-normalizeRecord :: RecordTypeContext ki ty a
+normalizeRecord :: RecordNormalizeConstraint ki ty a
                => (Type ki ty a -> Type ki ty a)
                -> Type ki ty a
                -> Maybe (Type ki ty a)
@@ -30,7 +30,7 @@ normalizeRecord normalizeFn ty = do
   tys <- preview _TyRecord ty
   return $ review _TyRecord (sortOn fst . fmap (fmap normalizeFn) $ tys)
 
-recordTypeRules :: RecordTypeContext ki ty a
-              => TypeInput ki ty a
-recordTypeRules =
-  TypeInput [ NormalizeTypeRecurse normalizeRecord ]
+recordNormalizeRules :: RecordNormalizeConstraint ki ty a
+                     => NormalizeInput ki ty a
+recordNormalizeRules =
+  NormalizeInput [ NormalizeTypeRecurse normalizeRecord ]

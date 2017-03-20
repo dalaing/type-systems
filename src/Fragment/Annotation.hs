@@ -14,7 +14,10 @@ module Fragment.Annotation (
   , AnnotationTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.Annotation.Ast as X
@@ -37,3 +40,10 @@ instance EvalRules e AnnotationTag where
 
   evalInput _ _ =
     annotationEvalRules
+
+instance NormalizeRules AnnotationTag where
+  type NormalizeConstraint ki ty a AnnotationTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

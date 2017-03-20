@@ -17,12 +17,15 @@ module Fragment.TyArr (
 import GHC.Exts (Constraint)
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
 import Fragment.TyArr.Ast as X
 import Fragment.TyArr.Rules as X
 import Fragment.TyArr.Helpers as X
+
+import Fragment.TyArr.Rules.Type
 
 data TyArrTag
 
@@ -38,3 +41,10 @@ instance EvalRules e TyArrTag where
 
   evalInput _ _ =
     mempty
+
+instance NormalizeRules TyArrTag where
+  type NormalizeConstraint ki ty a TyArrTag =
+    TyArrNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    tyArrNormalizeRules

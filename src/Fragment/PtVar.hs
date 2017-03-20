@@ -14,7 +14,10 @@ module Fragment.PtVar (
   , PtVarTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.PtVar.Rules as X
@@ -36,3 +39,10 @@ instance EvalRules e PtVarTag where
 
   evalInput _ _ =
     ptVarEvalRules
+
+instance NormalizeRules PtVarTag where
+  type NormalizeConstraint ki ty a PtVarTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

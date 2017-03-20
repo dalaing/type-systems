@@ -31,7 +31,6 @@ import Rules.Unification
 import qualified Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Rules.Type.Infer.Offline as TUO
-import Rules.Type
 import Util.TypeList
 
 import Ast
@@ -44,7 +43,6 @@ class AstIn k => RulesIn (k :: j) where
   type InferKindContextSyntax e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
   type InferTypeContextSyntax e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
   type InferTypeContextOffline e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: Constraint
-  type RuleTypeContext (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
 
   type ErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
   type WarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a k :: [*]
@@ -54,14 +52,12 @@ class AstIn k => RulesIn (k :: j) where
                        -> KSD.InferKindInput e w s r m ki ty a
   inferTypeInputSyntax :: ( InferTypeContextSyntax e w s r m ki ty pt tm a k
                       , InferKindContextSyntax e w s r m ki ty a k
-                      , RuleTypeContext ki ty a k
                       )
                    => Proxy k
                    -> TSD.InferTypeInput e w s r m m ki ty pt tm a
   inferTypeInputOffline :: InferTypeContextOffline e w s r m ki ty pt tm a k
                     => Proxy k
                     -> TUO.InferTypeInput e w s r m (TUO.UnifyT ki ty a m) ki ty pt tm a
-  typeInput :: RuleTypeContext ki ty a k => Proxy k -> TypeInput ki ty a
 
 instance RulesIn '[] where
   type InferKindContextSyntax e w s r m ki ty a '[] =
@@ -70,27 +66,23 @@ instance RulesIn '[] where
     TSD.InferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a '[] =
     TUO.InferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a '[] = (() :: Constraint)
   type ErrorList ki ty pt tm a '[] = '[ErrUnknownKindError, ErrUnknownTypeError, ErrOccursError (Type ki ty) a, ErrUnificationMismatch (Type ki ty) a, ErrUnificationExpectedEq (Type ki ty) a]
   type WarningList ki ty pt tm a '[] = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = mempty
   inferTypeInputOffline _ = mempty
-  typeInput _ = mempty
 
 instance (RulesIn k, RulesIn ks) => RulesIn (k ': ks) where
   type InferKindContextSyntax e w s r m ki ty a (k ': ks) = (InferKindContextSyntax e w s r m ki ty a k, InferKindContextSyntax e w s r m ki ty a ks)
   type InferTypeContextSyntax e w s r m ki ty pt tm a (k ': ks) = (InferTypeContextSyntax e w s r m ki ty pt tm a k, InferTypeContextSyntax e w s r m ki ty pt tm a ks)
   type InferTypeContextOffline e w s r m ki ty pt tm a (k ': ks) = (InferTypeContextOffline e w s r m ki ty pt tm a k, InferTypeContextOffline e w s r m ki ty pt tm a ks)
-  type RuleTypeContext ki ty a (k ': ks) = (RuleTypeContext ki ty a k, RuleTypeContext ki ty a ks)
   type ErrorList ki ty pt tm a (k ': ks) = Append (ErrorList ki ty pt tm a k) (ErrorList ki ty pt tm a ks)
   type WarningList ki ty pt tm a (k ': ks) = Append (WarningList ki ty pt tm a k) (WarningList ki ty pt tm a ks)
 
   inferKindInputSyntax _ = inferKindInputSyntax (Proxy :: Proxy k) `mappend` inferKindInputSyntax (Proxy :: Proxy ks)
   inferTypeInputSyntax _ = inferTypeInputSyntax (Proxy :: Proxy k) `mappend` inferTypeInputSyntax (Proxy :: Proxy ks)
   inferTypeInputOffline _ = inferTypeInputOffline (Proxy :: Proxy k) `mappend` inferTypeInputOffline (Proxy :: Proxy ks)
-  typeInput _ = typeInput (Proxy :: Proxy k) `mappend` typeInput (Proxy :: Proxy ks)
 
 class AstOut k => RulesOut (k :: j) where
 
@@ -106,21 +98,18 @@ class AstOut k => RulesOut (k :: j) where
                        , InferTypeContextSyntax e w s r m ki ty pt tm a k
                        , KSD.InferKindContext e w s r m ki ty a
                        , InferKindContextSyntax e w s r m ki ty a k
-                       , RuleTypeContext ki ty a k
                        )
                     => Proxy k
+                    -> (Type ki ty a -> Type ki ty a)
                     -> TSD.InferTypeOutput e w s r m ki ty pt tm a
   inferTypeOutputOffline :: ( TUO.InferTypeContext e w s r m ki ty pt tm a
                         , InferTypeContextOffline e w s r m ki ty pt tm a k
                         , KSD.InferKindContext e w s r m ki ty a
                         , InferKindContextSyntax e w s r m ki ty a k
-                        , RuleTypeContext ki ty a k
                         )
                      => Proxy k
+                     -> (Type ki ty a -> Type ki ty a)
                      -> TUO.InferTypeOutput e w s r m ki ty pt tm a
-  typeOutput :: RuleTypeContext ki ty a k
-             => Proxy k
-             -> TypeOutput ki ty a
 
 instance RulesIn k => RulesOut (k :: j) where
 
@@ -135,11 +124,11 @@ instance RulesIn k => RulesOut (k :: j) where
                        , InferTypeContextSyntax e w s r m ki ty pt tm a k
                        , KSD.InferKindContext e w s r m ki ty a
                        , InferKindContextSyntax e w s r m ki ty a k
-                       , RuleTypeContext ki ty a k
                        )
                     => Proxy k
+                    -> (Type ki ty a -> Type ki ty a)
                     -> TSD.InferTypeOutput e w s r m ki ty pt tm a
-  inferTypeOutputSyntax p =
+  inferTypeOutputSyntax p normalize =
      let
        ikos :: ( KSD.InferKindContext e w s r m ki ty a
                , InferKindContextSyntax e w s r m ki ty a k
@@ -147,7 +136,6 @@ instance RulesIn k => RulesOut (k :: j) where
             => KSD.InferKindOutput e w s r m ki ty a
        ikos = inferKindOutputSyntax p
        inferKind = KSD.kroInfer ikos
-       normalize = toNormalizeType $ typeOutput p
      in
        TSD.prepareInferType inferKind normalize .
        inferTypeInputSyntax $ p
@@ -157,11 +145,11 @@ instance RulesIn k => RulesOut (k :: j) where
                        , InferTypeContextOffline e w s r m ki ty pt tm a k
                        , KSD.InferKindContext e w s r m ki ty a
                        , InferKindContextSyntax e w s r m ki ty a k
-                       , RuleTypeContext ki ty a k
                        )
                     => Proxy k
+                    -> (Type ki ty a -> Type ki ty a)
                     -> TUO.InferTypeOutput e w s r m ki ty pt tm a
-  inferTypeOutputOffline p =
+  inferTypeOutputOffline p normalize =
      let
        ikos :: ( KSD.InferKindContext e w s r m ki ty a
                , InferKindContextSyntax e w s r m ki ty a k
@@ -169,10 +157,6 @@ instance RulesIn k => RulesOut (k :: j) where
             => KSD.InferKindOutput e w s r m ki ty a
        ikos = inferKindOutputSyntax p
        inferKind = KSD.kroInfer ikos
-       normalize = toNormalizeType $ typeOutput p
      in
        TUO.prepareInferType (lift . inferKind) normalize .
        inferTypeInputOffline $ p
-
-  typeOutput =
-    prepareType . typeInput

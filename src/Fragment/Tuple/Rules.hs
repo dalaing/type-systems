@@ -21,7 +21,6 @@ import Fragment.Tuple.Ast
 import qualified Fragment.Tuple.Rules.Kind.Infer.SyntaxDirected as KSD
 import qualified Fragment.Tuple.Rules.Type.Infer.SyntaxDirected as TSD
 import qualified Fragment.Tuple.Rules.Type.Infer.Offline as TUO
-import Fragment.Tuple.Rules.Type
 
 data RTuple
 
@@ -35,11 +34,9 @@ instance RulesIn RTuple where
   type InferKindContextSyntax e w s r m ki ty a RTuple = KSD.TupleInferKindContext e w s r m ki ty a
   type InferTypeContextSyntax e w s r m ki ty pt tm a RTuple = TSD.TupleInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RTuple = TUO.TupleInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RTuple = TupleTypeContext ki ty a
   type ErrorList ki ty pt tm a RTuple = '[ErrExpectedTyTuple ki ty a, ErrTupleOutOfBounds]
   type WarningList ki ty pt tm a RTuple = '[]
 
   inferKindInputSyntax _ = KSD.tupleInferKindRules
   inferTypeInputSyntax _ = TSD.tupleInferTypeRules
   inferTypeInputOffline _ = TUO.tupleInferTypeRules
-  typeInput _ = tupleTypeRules

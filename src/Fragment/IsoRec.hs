@@ -15,12 +15,14 @@ module Fragment.IsoRec (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.IsoRec.Ast as X
 import Fragment.IsoRec.Rules as X
 import Fragment.IsoRec.Helpers as X
 
+import Fragment.IsoRec.Rules.Type
 import Fragment.IsoRec.Rules.Term
 
 data IsoRecTag
@@ -44,3 +46,10 @@ instance EvalRules ELazy IsoRecTag where
 
   evalInput _ _ =
     isoRecEvalRulesLazy
+
+instance NormalizeRules IsoRecTag where
+  type NormalizeConstraint ki ty a IsoRecTag =
+    IsoRecNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    isoRecNormalizeRules

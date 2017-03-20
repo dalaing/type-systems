@@ -17,10 +17,13 @@ module Fragment.TyVar (
 import GHC.Exts (Constraint)
 
 import Ast
+import Rules.Type
 import Rules.Term
 
 import Fragment.TyVar.Rules as X
 import Fragment.TyVar.Helpers as X
+
+import Fragment.TyVar.Rules.Type
 
 data TyVarTag
 
@@ -36,3 +39,10 @@ instance EvalRules e TyVarTag where
 
   evalInput _ _ =
     mempty
+
+instance NormalizeRules TyVarTag where
+  type NormalizeConstraint ki ty a TyVarTag =
+    BasicNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    tyVarNormalizeRules

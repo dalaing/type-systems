@@ -14,7 +14,10 @@ module Fragment.TmLam (
   , TmLamTag
   ) where
 
+import GHC.Exts (Constraint)
+
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.TyArr.Ast.Type
 
@@ -38,3 +41,10 @@ instance EvalRules e TmLamTag where
 
   evalInput _ _ =
     tmLamEvalRules
+
+instance NormalizeRules TmLamTag where
+  type NormalizeConstraint ki ty a TmLamTag =
+    (() :: Constraint)
+
+  normalizeInput _ =
+    mempty

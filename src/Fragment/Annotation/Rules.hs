@@ -36,12 +36,9 @@ instance RulesIn RAnnotation where
     TSD.AnnotationInferTypeContext e w s r m ki ty pt tm a
   type InferTypeContextOffline e w s r m ki ty pt tm a RAnnotation =
     TUO.AnnotationInferTypeContext e w s r m ki ty pt tm a
-  type RuleTypeContext ki ty a RAnnotation =
-    (() :: Constraint)
   type ErrorList ki ty pt tm a RAnnotation = '[]
   type WarningList ki ty pt tm a RAnnotation = '[]
 
   inferKindInputSyntax _ = mempty
   inferTypeInputSyntax _ = TSD.annotationInferTypeRules
   inferTypeInputOffline _ = TUO.annotationInferTypeRules
-  typeInput _ = mempty

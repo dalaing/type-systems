@@ -15,6 +15,7 @@ module Fragment.Pair (
   ) where
 
 import Ast
+import Rules.Type
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
@@ -22,6 +23,7 @@ import Fragment.Pair.Ast as X
 import Fragment.Pair.Rules as X
 import Fragment.Pair.Helpers as X
 
+import Fragment.Pair.Rules.Type
 import Fragment.Pair.Rules.Term
 
 data PairTag
@@ -45,3 +47,10 @@ instance EvalRules ELazy PairTag where
 
   evalInput _ _ =
     pairEvalRulesLazy
+
+instance NormalizeRules PairTag where
+  type NormalizeConstraint ki ty a PairTag =
+    PairNormalizeConstraint ki ty a
+
+  normalizeInput _ =
+    pairNormalizeRules
