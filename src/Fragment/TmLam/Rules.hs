@@ -14,8 +14,9 @@ module Fragment.TmLam.Rules (
 
 import GHC.Exts (Constraint)
 
-import Rules
+import Ast
 import Context.Type.Error
+import Rules
 
 import Fragment.TyArr.Ast.Type
 

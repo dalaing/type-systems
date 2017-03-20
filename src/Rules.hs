@@ -18,9 +18,7 @@ Portability : non-portable
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 module Rules (
-    AstIn(..)
-  , AstOut(..)
-  , RulesIn(..)
+    RulesIn(..)
   , RulesOut(..)
   ) where
 

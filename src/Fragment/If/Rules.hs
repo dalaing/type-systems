@@ -14,8 +14,9 @@ module Fragment.If.Rules (
 
 import GHC.Exts (Constraint)
 
-import Rules
+import Ast
 import Ast.Error.Common
+import Rules
 
 import Fragment.Bool.Ast.Type
 import Fragment.Bool.Ast.Term

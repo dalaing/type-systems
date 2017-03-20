@@ -14,6 +14,7 @@ module Fragment.Annotation.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast
 import Rules
 
 import Fragment.Annotation.Ast

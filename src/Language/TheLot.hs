@@ -43,6 +43,7 @@ import Ast.Term
 import qualified Context.Type as CTy
 import qualified Context.Term as CTm
 
+import Ast
 import Rules
 import Rules.Unification
 import qualified Rules.Type.Infer.SyntaxDirected as SD

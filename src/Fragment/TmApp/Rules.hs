@@ -14,8 +14,9 @@ module Fragment.TmApp.Rules (
 
 import GHC.Exts (Constraint)
 
-import Rules
+import Ast
 import Context.Type.Error
+import Rules
 
 import Fragment.TmApp.Ast
 import qualified Fragment.TmApp.Rules.Type.Infer.SyntaxDirected as TSD

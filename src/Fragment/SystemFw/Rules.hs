@@ -14,9 +14,10 @@ module Fragment.SystemFw.Rules (
 
 import GHC.Exts (Constraint)
 
-import Rules
+import Ast
 import Ast.Error.Common
 import Context.Type.Error
+import Rules
 
 import Fragment.SystemFw.Ast
 import Fragment.SystemFw.Rules.Kind.Infer.SyntaxDirected

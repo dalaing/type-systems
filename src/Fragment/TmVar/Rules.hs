@@ -14,8 +14,9 @@ module Fragment.TmVar.Rules (
 
 import GHC.Exts (Constraint)
 
-import Rules
+import Ast
 import Context.Term.Error
+import Rules
 
 import qualified Fragment.TmVar.Rules.Type.Infer.SyntaxDirected as SD
 import qualified Fragment.TmVar.Rules.Type.Infer.Offline as UO

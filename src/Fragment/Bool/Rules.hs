@@ -12,6 +12,7 @@ module Fragment.Bool.Rules (
     RBool
   ) where
 
+import Ast
 import Rules
 import Ast.Error.Common
 

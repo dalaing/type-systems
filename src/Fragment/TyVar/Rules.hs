@@ -14,6 +14,7 @@ module Fragment.TyVar.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast
 import Rules
 
 import Fragment.TyVar.Rules.Kind.Infer.SyntaxDirected

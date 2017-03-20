@@ -14,6 +14,7 @@ module Fragment.Case.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast
 import Rules
 import Ast.Error.Common
 import Context.Term.Error

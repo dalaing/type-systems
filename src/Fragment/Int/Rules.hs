@@ -12,8 +12,9 @@ module Fragment.Int.Rules (
     RInt
   ) where
 
-import Rules
+import Ast
 import Ast.Error.Common
+import Rules
 
 import Fragment.KiBase.Ast.Kind
 

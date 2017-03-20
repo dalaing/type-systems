@@ -12,6 +12,7 @@ module Fragment.Tuple.Rules (
     RTuple
   ) where
 
+import Ast
 import Rules
 
 import Fragment.KiBase.Ast.Kind

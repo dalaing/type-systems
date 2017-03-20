@@ -14,6 +14,7 @@ module Fragment.LC.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast
 import Rules
 
 import Fragment.TmLam.Ast.Term

@@ -14,6 +14,7 @@ module Fragment.TyArr.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast
 import Ast.Error.Common
 import Rules
 

@@ -14,6 +14,7 @@ module Fragment.Fix.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast
 import Ast.Error.Common
 import Rules
 

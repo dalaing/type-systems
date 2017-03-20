@@ -12,6 +12,7 @@ module Fragment.Record.Rules (
     RRecord
   ) where
 
+import Ast
 import Rules
 
 import Fragment.KiBase.Ast.Kind

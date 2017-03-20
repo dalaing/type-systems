@@ -14,6 +14,7 @@ module Fragment.PtVar.Rules (
 
 import GHC.Exts (Constraint)
 
+import Ast
 import Rules
 
 import qualified Fragment.PtVar.Rules.Type.Infer.SyntaxDirected as SD

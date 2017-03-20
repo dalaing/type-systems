@@ -14,8 +14,9 @@ module Fragment.PtWild.Rules (
 
 import GHC.Exts (Constraint)
 
-import Rules
+import Ast
 import Ast.Pattern
+import Rules
 
 import qualified Fragment.PtWild.Rules.Type.Infer.SyntaxDirected as SD
 import qualified Fragment.PtWild.Rules.Type.Infer.Offline as UO
