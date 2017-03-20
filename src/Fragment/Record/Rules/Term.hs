@@ -83,9 +83,9 @@ recordEvalRulesStrict :: RecordEvalConstraint ki ty pt tm a
 recordEvalRulesStrict =
   EvalInput
     [ ValueRecurse valueRecord ]
-    [ EvalStep stepRecordIxStrict
-    , EvalValue stepRecordElimIxStrict
-    , EvalValueStep stepRecord
+    [ StepRecurse stepRecordIxStrict
+    , StepValue stepRecordElimIxStrict
+    , StepValueRecurse stepRecord
     ]
     [ MatchRecurse matchRecord ]
 
@@ -93,4 +93,4 @@ recordEvalRulesLazy :: RecordEvalConstraint ki ty pt tm a
                     => EvalInput ki ty pt tm a
 recordEvalRulesLazy =
   EvalInput
-  [] [EvalBase stepRecordIxLazy] [ MatchRecurse matchRecord ]
+  [] [StepBase stepRecordIxLazy] [ MatchRecurse matchRecord ]

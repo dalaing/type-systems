@@ -131,14 +131,14 @@ intEvalRules :: IntEvalConstraint ki ty pt tm a
 intEvalRules =
   EvalInput
     [ValueBase valInt]
-    [ EvalStep stepAdd1
-    , EvalStep stepAdd2
-    , EvalBase stepAddInt
-    , EvalStep stepSub1
-    , EvalStep stepSub2
-    , EvalBase stepSubInt
-    , EvalStep stepMul1
-    , EvalStep stepMul2
-    , EvalBase stepMulInt
+    [ StepRecurse stepAdd1
+    , StepRecurse stepAdd2
+    , StepBase stepAddInt
+    , StepRecurse stepSub1
+    , StepRecurse stepSub2
+    , StepBase stepSubInt
+    , StepRecurse stepMul1
+    , StepRecurse stepMul2
+    , StepBase stepMulInt
     ]
     [ MatchEval matchInt ]

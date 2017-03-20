@@ -80,9 +80,9 @@ tupleEvalRulesStrict :: TupleEvalConstraint ki ty pt tm a
 tupleEvalRulesStrict =
   EvalInput
     [ ValueRecurse valueTuple ]
-    [ EvalStep stepTupleIxStrict
-    , EvalValue stepTupleElimIxStrict
-    , EvalValueStep stepTuple
+    [ StepRecurse stepTupleIxStrict
+    , StepValue stepTupleElimIxStrict
+    , StepValueRecurse stepTuple
     ]
     [ MatchRecurse matchTuple ]
 
@@ -90,4 +90,4 @@ tupleEvalRulesLazy :: TupleEvalConstraint ki ty pt tm a
                    => EvalInput ki ty pt tm a
 tupleEvalRulesLazy =
   EvalInput
-  [] [EvalBase stepTupleIxLazy] [ MatchRecurse matchTuple ]
+  [] [StepBase stepTupleIxLazy] [ MatchRecurse matchTuple ]

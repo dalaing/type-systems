@@ -53,6 +53,6 @@ annotationEvalRules :: AnnotationEvalConstraint ki ty pt tm a
 annotationEvalRules =
   EvalInput
     [ ValueRecurse valueAnnotation ]
-    [ EvalStep stepAnnotation ]
+    [ StepRecurse stepAnnotation ]
     [ MatchRecurse matchAnnotation ]
 

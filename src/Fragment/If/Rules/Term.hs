@@ -41,4 +41,4 @@ type IfEvalConstraint ki ty pt tm a =
 ifEvalRules :: IfEvalConstraint ki ty pt tm a
             => EvalInput ki ty pt tm a
 ifEvalRules =
-  EvalInput [] [ EvalStep stepIf1, EvalValue stepIf2] []
+  EvalInput [] [ StepRecurse stepIf1, StepValue stepIf2] []

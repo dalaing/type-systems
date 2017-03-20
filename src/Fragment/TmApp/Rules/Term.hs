@@ -40,8 +40,8 @@ tmAppEvalRulesStrict :: TmAppEvalConstraint ki ty pt tm a
 tmAppEvalRulesStrict =
   EvalInput
     []
-    [ EvalStep stepTmApp1
-    , EvalValueStep stepTmApp2
+    [ StepRecurse stepTmApp1
+    , StepValueRecurse stepTmApp2
     ]
     []
 
@@ -50,6 +50,6 @@ tmAppEvalRulesLazy :: TmAppEvalConstraint ki ty pt tm a
 tmAppEvalRulesLazy =
   EvalInput
     []
-    [ EvalStep stepTmApp1 ]
+    [ StepRecurse stepTmApp1 ]
     []
 

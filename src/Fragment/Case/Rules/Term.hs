@@ -70,15 +70,12 @@ caseEvalRulesStrict :: CaseEvalConstraint ki ty pt tm a
 caseEvalRulesStrict =
   EvalInput
     []
-    [ EvalStep stepCaseStepStrict
-    , EvalValueMatch stepCaseValueStrict
+    [ StepRecurse stepCaseStepStrict
+    , StepValueMatch stepCaseValueStrict
     ]
     []
 
 caseEvalRulesLazy :: CaseEvalConstraint ki ty pt tm a
                   => EvalInput ki ty pt tm a
 caseEvalRulesLazy =
-  EvalInput
-    []
-    [EvalMatch stepCaseLazy]
-    []
+  EvalInput [] [ StepMatch stepCaseLazy ] []

@@ -52,5 +52,5 @@ variantEvalRules :: VariantEvalConstraint ki ty pt tm a
 variantEvalRules =
   EvalInput
     [ ValueRecurse valueVariant ]
-    [ EvalStep stepVariant ]
+    [ StepRecurse stepVariant ]
     [ MatchRecurse matchVariant ]

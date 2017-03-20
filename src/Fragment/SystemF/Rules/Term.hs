@@ -79,11 +79,11 @@ systemFEvalRulesStrict =
   [ ValueBase valTmLam
   , ValueBase valTmLamTy
   ]
-  [ EvalStep stepTmApp1
-  , EvalStep stepTmAppTy1
-  , EvalValue stepTmLamAppStrict
-  , EvalBase stepTmLamTyAppTy
-  , EvalValueStep stepTmApp2
+  [ StepRecurse stepTmApp1
+  , StepRecurse stepTmAppTy1
+  , StepValue stepTmLamAppStrict
+  , StepBase stepTmLamTyAppTy
+  , StepValueRecurse stepTmApp2
   ]
   []
 
@@ -94,9 +94,9 @@ systemFEvalRulesLazy =
   [ ValueBase valTmLam
   , ValueBase valTmLamTy
   ]
-  [ EvalStep stepTmApp1
-  , EvalStep stepTmAppTy1
-  , EvalBase stepTmLamAppLazy
-  , EvalBase stepTmLamTyAppTy
+  [ StepRecurse stepTmApp1
+  , StepRecurse stepTmAppTy1
+  , StepBase stepTmLamAppLazy
+  , StepBase stepTmLamTyAppTy
   ]
   []

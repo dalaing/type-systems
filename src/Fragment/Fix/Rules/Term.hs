@@ -48,7 +48,7 @@ fixEvalRules :: FixEvalConstraint ki ty pt tm a
 fixEvalRules =
   EvalInput
     []
-    [ EvalStep stepTmFix1
-    , EvalBase stepTmFixBeta
+    [ StepRecurse stepTmFix1
+    , StepBase stepTmFixBeta
     ]
     []

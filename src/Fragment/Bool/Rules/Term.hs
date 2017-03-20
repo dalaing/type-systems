@@ -103,11 +103,11 @@ boolEvalRules :: BoolEvalConstraint ki ty pt tm a
 boolEvalRules =
   EvalInput
     [ValueBase valBool]
-    [ EvalStep stepAnd1
-    , EvalStep stepAnd2
-    , EvalBase stepAndBool
-    , EvalStep stepOr1
-    , EvalStep stepOr2
-    , EvalBase stepOrBool
+    [ StepRecurse stepAnd1
+    , StepRecurse stepAnd2
+    , StepBase stepAndBool
+    , StepRecurse stepOr1
+    , StepRecurse stepOr2
+    , StepBase stepOrBool
     ]
     [ MatchEval matchBool ]

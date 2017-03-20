@@ -99,12 +99,12 @@ pairEvalRulesStrict :: PairEvalConstraint ki ty pt tm a
 pairEvalRulesStrict =
   EvalInput
     [ ValueRecurse valuePair ]
-    [ EvalStep stepFstStrict
-    , EvalStep stepSndStrict
-    , EvalValue stepElimFstStrict
-    , EvalValue stepElimSndStrict
-    , EvalStep stepPair1
-    , EvalValueStep stepPair2
+    [ StepRecurse stepFstStrict
+    , StepRecurse stepSndStrict
+    , StepValue stepElimFstStrict
+    , StepValue stepElimSndStrict
+    , StepRecurse stepPair1
+    , StepValueRecurse stepPair2
     ]
     [ MatchRecurse matchPair ]
 
@@ -113,7 +113,7 @@ pairEvalRulesLazy :: PairEvalConstraint ki ty pt tm a
 pairEvalRulesLazy =
   EvalInput
     []
-    [ EvalBase stepFstLazy
-    , EvalBase stepSndLazy
+    [ StepBase stepFstLazy
+    , StepBase stepSndLazy
     ]
     [ MatchRecurse matchPair ]

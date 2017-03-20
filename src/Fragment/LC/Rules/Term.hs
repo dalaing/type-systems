@@ -43,15 +43,9 @@ type LCEvalConstraint ki ty pt tm a =
 lcEvalRulesStrict :: LCEvalConstraint ki ty pt tm a
                   => EvalInput ki ty pt tm a
 lcEvalRulesStrict =
-  EvalInput
-  []
-  [ EvalValue stepTmLamAppStrict ]
-  []
+  EvalInput [] [ StepValue stepTmLamAppStrict ] []
 
 lcEvalRulesLazy :: LCEvalConstraint ki ty pt tm a
                 => EvalInput ki ty pt tm a
 lcEvalRulesLazy =
-  EvalInput
-  []
-  [ EvalBase stepTmLamAppLazy ]
-  []
+  EvalInput [] [ StepBase stepTmLamAppLazy ] []

@@ -16,7 +16,7 @@ Portability : non-portable
 {-# LANGUAGE ScopedTypeVariables #-}
 module Rules.Term (
     ValueRule(..)
-  , EvalRule(..)
+  , StepRule(..)
   , MatchRule(..)
   , EvalInput(..)
   , EvalOutput(..)
@@ -60,30 +60,30 @@ mkValue rules =
   in
     go
 
-data EvalRule ki ty pt tm a =
-    EvalBase (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
-  | EvalValue ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
-  | EvalStep ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
-  | EvalMatch ((Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
-  | EvalValueMatch ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
-  | EvalValueStep ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+data StepRule ki ty pt tm a =
+    StepBase (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | StepValue ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | StepRecurse ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | StepMatch ((Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | StepValueMatch ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a]) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
+  | StepValueRecurse ((Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
 
 fixEvalRule :: (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
             -> (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
             -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
-            -> EvalRule ki ty pt tm a
+            -> StepRule ki ty pt tm a
             -> Term ki ty pt tm a
             -> Maybe (Term ki ty pt tm a )
-fixEvalRule _ _ _ (EvalBase f) = f
-fixEvalRule valueFn _ _ (EvalValue f) = f valueFn
-fixEvalRule _ evalFn _ (EvalStep f) = f evalFn
-fixEvalRule _ _ matchFn (EvalMatch f) = f matchFn
-fixEvalRule valueFn _ matchFn (EvalValueMatch f) = f valueFn matchFn
-fixEvalRule valueFn evalFn _ (EvalValueStep f) = f valueFn evalFn
+fixEvalRule _ _ _ (StepBase f) = f
+fixEvalRule valueFn _ _ (StepValue f) = f valueFn
+fixEvalRule _ evalFn _ (StepRecurse f) = f evalFn
+fixEvalRule _ _ matchFn (StepMatch f) = f matchFn
+fixEvalRule valueFn _ matchFn (StepValueMatch f) = f valueFn matchFn
+fixEvalRule valueFn evalFn _ (StepValueRecurse f) = f valueFn evalFn
 
 mkStep :: (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a))
        -> (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
-       -> [EvalRule ki ty pt tm a]
+       -> [StepRule ki ty pt tm a]
        -> Term ki ty pt tm a
        -> Maybe (Term ki ty pt tm a)
 mkStep valueFn matchFn rules =
@@ -126,17 +126,17 @@ mkMatch innerEval rules x y =
 data EvalInput ki ty pt tm a =
   EvalInput {
     eiValueRules :: [ValueRule ki ty pt tm a]
-  , eiEvalRules :: [EvalRule ki ty pt tm a]
+  , eiStepRules :: [StepRule ki ty pt tm a]
   , eiMatchRules :: [MatchRule ki ty pt tm a]
   }
 
 instance Monoid (EvalInput ki ty pt tm a) where
   mempty =
     EvalInput mempty mempty mempty
-  mappend (EvalInput v1 e1 m1) (EvalInput v2 e2 m2) =
+  mappend (EvalInput v1 s1 m1) (EvalInput v2 s2 m2) =
     EvalInput
       (mappend v1 v2)
-      (mappend e1 e2)
+      (mappend s1 s2)
       (mappend m1 m2)
 
 data EvalOutput ki ty pt tm a =
@@ -202,7 +202,7 @@ prepareEval' :: (Term ki ty pt tm a -> Term ki ty pt tm a)
 prepareEval' innerMatchEval ei =
   let
     v = mkValue . eiValueRules $ ei
-    s = mkStep v m . eiEvalRules $ ei
+    s = mkStep v m . eiStepRules $ ei
     e = mkEval s
     m = mkMatch innerMatchEval . eiMatchRules $ ei
   in

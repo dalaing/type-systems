@@ -63,9 +63,9 @@ isoRecEvalRulesStrict :: IsoRecEvalConstraint ki ty pt tm a
 isoRecEvalRulesStrict =
   EvalInput
   [ ValueRecurse valTmFoldStrict ]
-  [ EvalStep stepTmUnfold
-  , EvalStep stepTmFold
-  , EvalValue stepTmUnfoldFoldStrict
+  [ StepRecurse stepTmUnfold
+  , StepRecurse stepTmFold
+  , StepValue stepTmUnfoldFoldStrict
   ]
   []
 
@@ -74,7 +74,7 @@ isoRecEvalRulesLazy :: IsoRecEvalConstraint ki ty pt tm a
 isoRecEvalRulesLazy =
   EvalInput
   [ ValueBase valTmFoldLazy ]
-  [ EvalStep stepTmUnfold
-  , EvalBase stepTmUnfoldFoldLazy
+  [ StepRecurse stepTmUnfold
+  , StepBase stepTmUnfoldFoldLazy
   ]
   []
