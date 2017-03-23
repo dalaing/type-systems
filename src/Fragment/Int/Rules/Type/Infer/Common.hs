@@ -5,10 +5,20 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Int.Rules.Type.Infer.Common (
-    IntHelper(..)
-  , inferTypeInput
+    IntInferTypeHelper(..)
+  , IntInferTypeConstraint
+  , intInferTypeInput
   ) where
+
+import Data.Proxy (Proxy(..))
+import GHC.Exts (Constraint)
 
 import Control.Lens (review, preview)
 
@@ -23,91 +33,145 @@ import Fragment.Int.Ast.Term
 
 import Rules.Type.Infer.Common
 
-data IntHelper m ki ty a =
-  IntHelper {
-    ihCreateInt :: m (Type ki ty a)
-  , ihExpectType :: ExpectedType ki ty a -> ActualType ki ty a -> m ()
-  }
+import Rules.Type.Infer.SyntaxDirected (ISyntax)
 
-inferTypeInput :: (Monad mi, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
-               => IntHelper mi ki ty a
-               -> InferTypeInput e w s r m mi ki ty pt tm a
-inferTypeInput ih =
+import Rules.Type.Infer.Offline (IOffline)
+import Ast.Type.Var
+import Control.Monad.State (MonadState)
+ 
+
+class MkInferType i => IntInferTypeHelper i where
+  type IntInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+
+  createInt :: IntInferTypeHelperConstraint e w s r m ki ty a i
+            => Proxy (MonadProxy e w s r m)
+            -> Proxy i
+            -> InferTypeMonad ki ty a m i (Type ki ty a)
+
+instance IntInferTypeHelper ISyntax where
+  type IntInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+    ( AsTyInt ki ty
+    , Monad m
+    )
+
+  createInt _ _ =
+    return . review _TyInt $ ()
+
+instance IntInferTypeHelper IOffline where
+  type IntInferTypeHelperConstraint e w s r m ki ty a IOffline =
+    ( MonadState s m
+    , HasTyVarSupply s
+    , ToTyVar a
+    )
+
+  createInt _ _ =
+    fmap (review _TyVar) freshTyVar
+
+type IntInferTypeConstraint e w s r m ki ty pt tm a i =
+  ( IntInferConstraint e w s r m ki ty pt tm a i
+  , IntCheckConstraint e w s r m ki ty pt tm a i
+  )
+
+type IntInferConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , IntInferTypeHelper i
+  , IntInferTypeHelperConstraint e w s r m ki ty a i
+  , AsTmInt ki ty pt tm
+  , AsTyInt ki ty
+  )
+
+type IntCheckConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , AsPtInt pt
+  , AsTyInt ki ty
+  )
+
+intInferTypeInput :: IntInferTypeConstraint e w s r m ki ty pt tm a i
+                   => Proxy (MonadProxy e w s r m)
+                   -> Proxy i
+                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+intInferTypeInput m i =
   InferTypeInput
     []
-    [ InferTypeBase inferTmInt
-    , InferTypeRecurse $ inferTmAdd ih
-    , InferTypeRecurse $ inferTmSub ih
-    , InferTypeRecurse $ inferTmMul ih
+    [ InferTypeBase $ inferTmInt m i
+    , InferTypeRecurse $ inferTmAdd m i
+    , InferTypeRecurse $ inferTmSub m i
+    , InferTypeRecurse $ inferTmMul m i
     ]
-    [ PCheckBase $ checkInt ih]
+    [ PCheckBase $ checkInt m i]
 
-inferTmInt :: (AsTyInt ki ty, AsTmInt ki ty pt tm, Monad m)
-           => Term ki ty pt tm a
-           -> Maybe (m (Type ki ty a))
-inferTmInt tm = do
+inferTmInt :: IntInferConstraint e w s r m ki ty pt tm a i
+           => Proxy (MonadProxy e w s r m)
+           -> Proxy i
+           -> Term ki ty pt tm a
+           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmInt _ _ tm = do
   _ <- preview _TmInt tm
   return . return . review _TyInt $ ()
 
-inferTmAdd :: (AsTyInt ki ty, AsTmInt ki ty pt tm, Monad m)
-           => IntHelper m ki ty a
-           -> (Term ki ty pt tm a -> m (Type ki ty a))
+inferTmAdd :: IntInferConstraint e w s r m ki ty pt tm a i
+           => Proxy (MonadProxy e w s r m)
+           -> Proxy i
+           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (m (Type ki ty a))
-inferTmAdd (IntHelper createInt expectType) inferFn tm = do
+           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmAdd m i inferFn tm = do
   (tm1, tm2) <- preview _TmAdd tm
   return $ do
     let ty = review _TyInt ()
     ty1 <- inferFn tm1
-    expectType (ExpectedType ty) (ActualType ty1)
+    expectType m i (ExpectedType ty) (ActualType ty1)
     ty2 <- inferFn tm2
-    expectType (ExpectedType ty) (ActualType ty2)
-    tyV <- createInt
-    expectType (ExpectedType ty) (ActualType tyV)
+    expectType m i (ExpectedType ty) (ActualType ty2)
+    tyV <- createInt m i
+    expectType m i (ExpectedType ty) (ActualType tyV)
     return tyV
 
-inferTmSub :: (AsTyInt ki ty, AsTmInt ki ty pt tm, Monad m)
-           => IntHelper m ki ty a
-           -> (Term ki ty pt tm a -> m (Type ki ty a))
+inferTmSub :: IntInferConstraint e w s r m ki ty pt tm a i
+           => Proxy (MonadProxy e w s r m)
+           -> Proxy i
+           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (m (Type ki ty a))
-inferTmSub (IntHelper createInt expectType) inferFn tm = do
+           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmSub m i inferFn tm = do
   (tm1, tm2) <- preview _TmSub tm
   return $ do
     let ty = review _TyInt ()
     ty1 <- inferFn tm1
-    expectType (ExpectedType ty) (ActualType ty1)
+    expectType m i (ExpectedType ty) (ActualType ty1)
     ty2 <- inferFn tm2
-    expectType (ExpectedType ty) (ActualType ty2)
-    tyV <- createInt
-    expectType (ExpectedType ty) (ActualType tyV)
+    expectType m i (ExpectedType ty) (ActualType ty2)
+    tyV <- createInt m i
+    expectType m i (ExpectedType ty) (ActualType tyV)
     return tyV
 
-inferTmMul :: (AsTyInt ki ty, AsTmInt ki ty pt tm, Monad m)
-           => IntHelper m ki ty a
-           -> (Term ki ty pt tm a -> m (Type ki ty a))
+inferTmMul :: IntInferConstraint e w s r m ki ty pt tm a i
+           => Proxy (MonadProxy e w s r m)
+           -> Proxy i
+           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (m (Type ki ty a))
-inferTmMul (IntHelper createInt expectType) inferFn tm = do
+           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmMul m i inferFn tm = do
   (tm1, tm2) <- preview _TmMul tm
   return $ do
     let ty = review _TyInt ()
     ty1 <- inferFn tm1
-    expectType (ExpectedType ty) (ActualType ty1)
+    expectType m i (ExpectedType ty) (ActualType ty1)
     ty2 <- inferFn tm2
-    expectType (ExpectedType ty) (ActualType ty2)
-    tyV <- createInt
-    expectType (ExpectedType ty) (ActualType tyV)
+    expectType m i (ExpectedType ty) (ActualType ty2)
+    tyV <- createInt m i
+    expectType m i (ExpectedType ty) (ActualType tyV)
     return tyV
 
-checkInt :: (AsPtInt pt, AsTyInt ki ty, Monad m)
-         => IntHelper m ki ty a
+checkInt :: IntCheckConstraint e w s r m ki ty pt tm a i
+         => Proxy (MonadProxy e w s r m)
+         -> Proxy i
          -> Pattern pt a
          -> Type ki ty a
-         -> Maybe (m [Type ki ty a])
-checkInt (IntHelper _ expectType) p ty = do
+         -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+checkInt m i p ty = do
   _ <- preview _PtInt p
   return $ do
     let tyI = review _TyInt ()
-    expectType (ExpectedType tyI) (ActualType ty)
+    expectType m i (ExpectedType tyI) (ActualType ty)
     return []

@@ -18,14 +18,18 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
-import Fragment.TyArr.Ast.Type
 
 import Fragment.Fix.Ast as X
-import Fragment.Fix.Rules as X
 import Fragment.Fix.Helpers as X
 
+import Fragment.TyArr.Ast.Type
+import Fragment.TyArr.Ast.Error
+import Fragment.TmLam.Ast.Term
+
 import Fragment.Fix.Rules.Term
+import Fragment.Fix.Rules.Type.Infer.Common
 
 data FixTag
 
@@ -33,7 +37,7 @@ instance AstIn FixTag where
   type KindList FixTag = '[]
   type TypeList FixTag = '[TyFArr]
   type PatternList FixTag = '[]
-  type TermList FixTag = '[TmFFix]
+  type TermList FixTag = '[TmFFix, TmFLam]
 
 instance EvalRules e FixTag where
   type EvalConstraint ki ty pt tm a e FixTag =
@@ -48,3 +52,14 @@ instance NormalizeRules FixTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i FixTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i FixTag =
+    FixInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i FixTag =
+    '[ ErrExpectedTyArr ki ty a ]
+  type WarningList ki ty pt tm a i FixTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    fixInferTypeInput m i

@@ -18,13 +18,14 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.TyArr.Ast.Type
 
 import Fragment.TmLam.Ast as X
-import Fragment.TmLam.Rules as X
 import Fragment.TmLam.Helpers as X
 
+import Fragment.TmLam.Rules.Type.Infer.Common
 import Fragment.TmLam.Rules.Term
 
 data TmLamTag
@@ -48,3 +49,14 @@ instance NormalizeRules TmLamTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i TmLamTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i TmLamTag =
+    TmLamInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i TmLamTag =
+    '[ ErrExpectedTmLamAnnotation ]
+  type WarningList ki ty pt tm a i TmLamTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    tmLamInferTypeInput m i

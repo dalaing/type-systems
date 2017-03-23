@@ -14,22 +14,21 @@ Portability : non-portable
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 module Rules.Type.Infer.Offline (
     InferTypeRule(..)
   , PCheckRule(..)
-  , mkCheckType
   , UnifyT
-  , expectType
-  , expectTypeEq
-  , expectTypeAllEq
   , InferTypeInput(..)
   , InferTypeOutput(..)
-  , InferTypeContext
-  , prepareInferType
+  , IOffline
   ) where
 
 import Control.Monad (unless)
 import Data.List (tails)
+import Data.Proxy (Proxy(..))
+import GHC.Exts (Constraint)
 
 import Bound (Bound)
 import Control.Monad.Except (MonadError)
@@ -54,13 +53,6 @@ import Rules.Type.Infer.Common
 
 type UnifyT ki ty a = WriterT [UConstraint (Type ki ty) a]
 
-mkCheckType :: (Eq a, EqRec (ty ki), Monad m)
-            => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
-            -> Term ki ty pt tm a
-            -> Type ki ty a
-            -> UnifyT ki ty a m ()
-mkCheckType = mkCheckType' expectType
-
 mkInferType' :: (UnificationContext e m (Type ki ty) a, MonadError e m, AsUnknownTypeError e)
         => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
         -> ([UConstraint (Type ki ty) a] -> m (M.Map a (Type ki ty a)))
@@ -71,52 +63,70 @@ mkInferType' go unifyFn x = do
   s <- unifyFn cs
   return $ mapSubst _TyVar s ty
 
-mkCheck' :: (Eq a, EqRec (ty ki), Monad m)
-        => (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
+mkCheck' :: MkInferTypeConstraint e w s r m ki ty a IOffline
+        => Proxy (MonadProxy e w s r m)
+        -> (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
         -> ([UConstraint (Type ki ty) a] -> m (M.Map a (Type ki ty a)))
         -> Term ki ty pt tm a
         -> Type ki ty a
         -> m ()
-mkCheck' inferFn unifyFn x y = do
-  cs <- execWriterT $ (mkCheckType inferFn) x y
+mkCheck' m inferFn unifyFn x y = do
+  cs <- execWriterT $ (mkCheckType m (Proxy :: Proxy IOffline) inferFn) x y
   _ <- unifyFn cs
   return ()
 
-expectType :: (Eq a, EqRec (ty ki), Monad m) => ExpectedType ki ty a -> ActualType ki ty a -> UnifyT ki ty a m ()
-expectType (ExpectedType ty1) (ActualType ty2) =
-  unless (ty1 == ty2) $
-    tell [UCEq ty1 ty2]
+data IOffline
 
-expectTypeEq :: (Eq a, EqRec (ty ki), Monad m) => Type ki ty a -> Type ki ty a -> UnifyT ki ty a m ()
-expectTypeEq ty1 ty2 =
-  unless (ty1 == ty2) $
-    tell [UCEq ty1 ty2]
+instance MkInferType IOffline where
+  type MkInferTypeConstraint e w s r m ki ty a IOffline =
+    ( Ord a
+    , OrdRec (ty ki)
+    , MonadError e m
+    , AsUnknownTypeError e
+    , AsOccursError e (Type ki ty) a
+    , AsUnificationMismatch e (Type ki ty) a
+    , AsUnificationExpectedEq e (Type ki ty) a
+    , Bound (ty ki)
+    , Bitransversable (ty ki)
+    )
+  type InferTypeMonad ki ty a m IOffline =
+    UnifyT ki ty a m
+  type MkInferErrorList ki ty pt tm a IOffline =
+    '[ ErrOccursError (Type ki ty) a
+     , ErrUnificationMismatch (Type ki ty) a
+     , ErrUnificationExpectedEq (Type ki ty) a
+     ]
+  type MkInferWarningList ki ty pt tm a IOffline =
+    '[]
 
-expectTypeAllEq :: (Eq a, EqRec (ty ki), Monad m) => NonEmpty (Type ki ty a) -> UnifyT ki ty a m (Type ki ty a)
-expectTypeAllEq n@(ty :| tys) = do
-  unless (all (== ty) tys ) $
+  mkCheckType m i =
+    mkCheckType' (expectType m i)
+
+  expectType _ _ (ExpectedType ty1) (ActualType ty2) =
+    unless (ty1 == ty2) $
+      tell [UCEq ty1 ty2]
+
+  expectTypeEq _ _ ty1 ty2 =
+    unless (ty1 == ty2) $
+      tell [UCEq ty1 ty2]
+
+  expectTypeAllEq _ _ n@(ty :| tys) = do
+    unless (all (== ty) tys ) $
+      let
+        xss = tails . N.toList $ n
+        f [] = []
+        f (x : xs) = fmap (UCEq x) xs
+        ws = xss >>= f
+      in
+        tell ws
+    return ty
+
+  prepareInferType pm pi inferKindFn normalizeFn ii =
     let
-      xss = tails . N.toList $ n
-      f [] = []
-      f (x : xs) = fmap (UCEq x) xs
-      ws = xss >>= f
+      u = mkUnify _TyVar normalizeFn . iiUnifyRules $ ii
+      pc = mkPCheck . iiPCheckRules $ ii
+      i = mkInferType inferKindFn normalizeFn pc . iiInferTypeRules $ ii
+      i' = mkInferType' i u
+      c = mkCheck' pm i u
     in
-      tell ws
-  return ty
-
-type InferTypeContext e w s r m (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (Ord a, OrdRec (ty ki), Bound (ty ki), Bitransversable (ty ki), MonadError e m, AsUnexpectedType e ki ty a, AsUnknownTypeError e, UnificationContext e m (Type ki ty) a)
-
-prepareInferType :: InferTypeContext e w s r m ki ty pt tm a
-             => (Type ki ty a -> UnifyT ki ty a m (Kind ki))
-             -> (Type ki ty a -> Type ki ty a)
-             -> InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
-             -> InferTypeOutput e w s r m ki ty pt tm a
-prepareInferType inferKindFn normalizeFn ii =
-  let
-    u = mkUnify _TyVar normalizeFn . iiUnifyRules $ ii
-    pc = mkPCheck . iiPCheckRules $ ii
-    i = mkInferType inferKindFn normalizeFn pc . iiInferTypeRules $ ii
-    i' = mkInferType' i u
-    c = mkCheck' i u
-  in
-    InferTypeOutput u i' c
+      InferTypeOutput u i' c

@@ -19,11 +19,12 @@ import GHC.Exts (Constraint)
 import Ast
 import Ast.Pattern
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 
-import Fragment.PtWild.Rules as X
 import Fragment.PtWild.Helpers as X
 
+import Fragment.PtWild.Rules.Type.Infer.Common
 import Fragment.PtWild.Rules.Term
 
 data PtWildTag
@@ -47,3 +48,14 @@ instance NormalizeRules PtWildTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i PtWildTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i PtWildTag =
+    PtWildInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i PtWildTag =
+    '[]
+  type WarningList ki ty pt tm a i PtWildTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    ptWildInferTypeInput m i

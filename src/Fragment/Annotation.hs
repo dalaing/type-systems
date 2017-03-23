@@ -18,12 +18,13 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 
 import Fragment.Annotation.Ast as X
-import Fragment.Annotation.Rules as X
 import Fragment.Annotation.Helpers as X
 
+import Fragment.Annotation.Rules.Type.Infer.Common
 import Fragment.Annotation.Rules.Term
 
 data AnnotationTag
@@ -47,3 +48,14 @@ instance NormalizeRules AnnotationTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i AnnotationTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i AnnotationTag =
+    AnnotationInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i AnnotationTag =
+    '[]
+  type WarningList ki ty pt tm a i AnnotationTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    annotationInferTypeInput m i

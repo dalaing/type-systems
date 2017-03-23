@@ -5,10 +5,15 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment.If.Rules.Type.Infer.Common (
-    IfHelper(..)
-  , inferTypeInput
+    IfInferTypeConstraint
+  , ifInferTypeInput
   ) where
+
+import Data.Proxy (Proxy(..))
+import GHC.Exts (Constraint)
 
 import Control.Lens (review, preview)
 
@@ -21,30 +26,32 @@ import Fragment.If.Ast.Term
 
 import Rules.Type.Infer.Common
 
-data IfHelper m ki ty a =
-  IfHelper {
-    ihExpectType :: ExpectedType ki ty a -> ActualType ki ty a -> m ()
-  , ihExpectTypeEq :: Type ki ty a -> Type ki ty a -> m ()
-  }
+type IfInferTypeConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , AsTmIf ki ty pt tm
+  , AsTyBool ki ty
+  )
 
-inferTypeInput :: (AsTyBool ki ty, AsTmIf ki ty pt tm, Monad mi)
-               => IfHelper mi ki ty a
-               -> InferTypeInput e w s r m mi ki ty pt tm a
-inferTypeInput ih =
-  InferTypeInput [] [ InferTypeRecurse $ inferTmIf ih ] []
+ifInferTypeInput :: IfInferTypeConstraint e w s r m ki ty pt tm a i
+                 => Proxy (MonadProxy e w s r m)
+                 -> Proxy i
+                 -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+ifInferTypeInput m i =
+  InferTypeInput
+    [] [ InferTypeRecurse $ inferTmIf m i ] []
 
-inferTmIf :: (AsTyBool ki ty, AsTmIf ki ty pt tm, Monad m)
-          => IfHelper m ki ty a
-          -> (Term ki ty pt tm a -> m (Type ki ty a))
+inferTmIf :: IfInferTypeConstraint e w s r m ki ty pt tm a i
+          => Proxy (MonadProxy e w s r m)
+          -> Proxy i
+          -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
           -> Term ki ty pt tm a
-          -> Maybe (m (Type ki ty a))
-inferTmIf (IfHelper expectType expectTypeEq) inferFn tm = do
+          -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmIf m i inferFn tm = do
   (tmB, tmT, tmF) <- preview _TmIf tm
   return $ do
     tyB <- inferFn tmB
-    expectType (ExpectedType tyB) (ActualType (review _TyBool ()))
+    expectType m i (ExpectedType tyB) (ActualType (review _TyBool ()))
     tyT <- inferFn tmT
     tyF <- inferFn tmF
-    expectTypeEq tyT tyF
+    expectTypeEq m i tyT tyF
     return tyT
-

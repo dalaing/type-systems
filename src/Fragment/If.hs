@@ -18,13 +18,14 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.Bool.Ast
 
 import Fragment.If.Ast as X
-import Fragment.If.Rules as X
 import Fragment.If.Helpers as X
 
+import Fragment.If.Rules.Type.Infer.Common
 import Fragment.If.Rules.Term
 
 data IfTag
@@ -48,3 +49,14 @@ instance NormalizeRules IfTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i IfTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i IfTag =
+    IfInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i IfTag =
+    '[]
+  type WarningList ki ty pt tm a i IfTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    ifInferTypeInput m i

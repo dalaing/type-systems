@@ -18,19 +18,23 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 
 import Fragment.TmApp.Ast as X
-import Fragment.TmApp.Rules as X
 import Fragment.TmApp.Helpers as X
 
+import Fragment.TyArr.Ast.Type
+import Fragment.TyArr.Ast.Error
+
+import Fragment.TmApp.Rules.Type.Infer.Common
 import Fragment.TmApp.Rules.Term
 
 data TmAppTag
 
 instance AstIn TmAppTag where
   type KindList TmAppTag = '[]
-  type TypeList TmAppTag = '[]
+  type TypeList TmAppTag = '[TyFArr]
   type PatternList TmAppTag = '[]
   type TermList TmAppTag = '[TmFApp]
 
@@ -54,3 +58,14 @@ instance NormalizeRules TmAppTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i TmAppTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i TmAppTag =
+    TmAppInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i TmAppTag =
+    '[ ErrExpectedTyArr ki ty a ]
+  type WarningList ki ty pt tm a i TmAppTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    tmAppInferTypeInput m i

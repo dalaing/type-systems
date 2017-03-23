@@ -16,14 +16,15 @@ module Fragment.Variant (
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
 import Fragment.Variant.Ast as X
-import Fragment.Variant.Rules as X
 import Fragment.Variant.Helpers as X
 
 import Fragment.Variant.Rules.Type
+import Fragment.Variant.Rules.Type.Infer.Common
 import Fragment.Variant.Rules.Term
 
 data VariantTag
@@ -47,3 +48,16 @@ instance NormalizeRules VariantTag where
 
   normalizeInput _ =
     variantNormalizeRules
+
+instance MkInferType i => InferTypeRules i VariantTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i VariantTag =
+    VariantInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i VariantTag =
+    '[ ErrExpectedTyVariant ki ty a
+     , ErrVariantNotFound
+     ]
+  type WarningList ki ty pt tm a i VariantTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    variantInferTypeInput m i

@@ -7,11 +7,13 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment.Variant.Rules.Type.Infer.Common (
-    VariantHelper(..)
-  , VariantInferTypeContext
-  , inferTypeInput
+    VariantInferTypeConstraint
+  , variantInferTypeInput
   ) where
+
+import Data.Proxy (Proxy)
 
 import Control.Monad.Except (MonadError)
 import Control.Lens (preview)
@@ -29,40 +31,65 @@ import Fragment.Variant.Ast.Term
 
 import Rules.Type.Infer.Common
 
-data VariantHelper m ki ty a =
-  VariantHelper {
-    vhExpectTypeEq :: Type ki ty a -> Type ki ty a -> m ()
-  }
+type VariantInferTypeConstraint e w s r m ki ty pt tm a i =
+  ( VariantInferConstraint e w s r m ki ty pt tm a i
+  , VariantCheckConstraint e w s r m ki ty pt tm a i
+  )
 
-inferTmVariant :: (Eq a, EqRec (ty ki), MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsTyVariant ki ty, AsTmVariant ki ty pt tm)
-               => VariantHelper m ki ty a
-               -> (Term ki ty pt tm a -> m (Type ki ty a))
+type VariantInferConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , AsTmVariant ki ty pt tm
+  , AsTyVariant ki ty
+  , MonadError e (InferTypeMonad ki ty a m i)
+  , AsExpectedTyVariant e ki ty a
+  , AsVariantNotFound e
+  )
+
+type VariantCheckConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , AsPtVariant pt
+  , AsTyVariant ki ty
+  , MonadError e (InferTypeMonad ki ty a m i)
+  , AsExpectedTyVariant e ki ty a
+  , AsVariantNotFound e
+  )
+
+variantInferTypeInput :: VariantInferTypeConstraint e w s r m ki ty pt tm a i
+                      => Proxy (MonadProxy e w s r m)
+                      -> Proxy i
+                      -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+variantInferTypeInput m i =
+  InferTypeInput
+    []
+    [ InferTypeRecurse $ inferTmVariant m i ]
+    [ PCheckRecurse $ checkVariant m i ]
+
+inferTmVariant :: VariantInferConstraint e w s r m ki ty pt tm a i
+               => Proxy (MonadProxy e w s r m)
+               -> Proxy i
+               -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
                -> Term ki ty pt tm a
-               -> Maybe (m (Type ki ty a))
-inferTmVariant (VariantHelper expectTypeEq) inferFn tm = do
+               -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmVariant m i inferFn tm = do
   (l, tmV, ty) <- preview _TmVariant tm
   return $ do
     tyL <- inferFn tmV
     tys <- expectTyVariant ty
     tyV <- lookupVariant tys l
-    expectTypeEq tyL tyV
+    expectTypeEq m i tyL tyV
     return ty
 
-checkVariant :: (MonadError e m, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsPtVariant pt, AsTyVariant ki ty) => (Pattern pt a -> Type ki ty a -> m [Type ki ty a]) -> Pattern pt a -> Type ki ty a -> Maybe (m [Type ki ty a])
-checkVariant checkFn p ty = do
+checkVariant :: VariantCheckConstraint e w s r m ki ty pt tm a i
+             => Proxy (MonadProxy e w s r m)
+             -> Proxy i
+             -> (Pattern pt a -> Type ki ty a -> InferTypeMonad ki ty a m i [Type ki ty a])
+             -> Pattern pt a
+             -> Type ki ty a
+             -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+checkVariant _ _ checkFn p ty = do
   (lV, pV) <- preview _PtVariant p
   return $ do
     vs <- expectTyVariant ty
     tyV <- lookupVariant vs lV
     checkFn pV tyV
 
-type VariantInferTypeContext e w s r (m :: * -> *) (mi :: * -> *) ki ty pt tm a = (Eq a, EqRec (ty ki), Monad m, MonadError e mi, AsTyVariant ki ty, AsExpectedTyVariant e ki ty a, AsVariantNotFound e, AsExpectedTypeEq e ki ty a, AsPtVariant pt, AsTmVariant ki ty pt tm)
-
-inferTypeInput :: VariantInferTypeContext e w s r m mi ki ty pt tm a
-               => VariantHelper mi ki ty a
-               -> InferTypeInput e w s r m mi ki ty pt tm a
-inferTypeInput vh =
-  InferTypeInput
-    []
-    [ InferTypeRecurse $ inferTmVariant vh ]
-    [ PCheckRecurse checkVariant ]

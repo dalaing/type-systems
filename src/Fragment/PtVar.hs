@@ -18,11 +18,12 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 
-import Fragment.PtVar.Rules as X
 import Fragment.PtVar.Helpers as X
 
+import Fragment.PtVar.Rules.Type.Infer.Common
 import Fragment.PtVar.Rules.Term
 
 data PtVarTag
@@ -46,3 +47,14 @@ instance NormalizeRules PtVarTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i PtVarTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i PtVarTag =
+    PtVarInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i PtVarTag =
+    '[]
+  type WarningList ki ty pt tm a i PtVarTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    ptVarInferTypeInput m i

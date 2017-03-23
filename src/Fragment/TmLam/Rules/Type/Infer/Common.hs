@@ -6,42 +6,115 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.TmLam.Rules.Type.Infer.Common (
-    TmLamInferTypeContext
-  , TmLamHelper(..)
-  , inferTypeInput
+    TmLamInferTypeConstraint
+  , TmLamInferTypeHelper(..)
+  , tmLamInferTypeInput
   ) where
 
+import Data.Proxy (Proxy(..))
+import GHC.Exts (Constraint)
+
 import Bound (Scope, instantiate1)
-import Control.Lens (review, (%~))
+import Control.Lens (preview, review, (%~))
 import Control.Lens.Wrapped (_Wrapped)
 import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.State (MonadState)
+import Control.Monad.Except (MonadError)
+import Control.Monad.Error.Lens (throwing)
 
 import Ast.Type
+import Ast.Error.Common.Type
+import Ast.Type.Var
 import Ast.Term
 import Ast.Term.Var
 import Context.Term
+import Data.Functor.Rec
 
 import Fragment.TyArr.Ast.Type
+import Fragment.TmLam.Ast.Error
 import Fragment.TmLam.Ast.Term
 
 import Rules.Type.Infer.Common
 
-data TmLamHelper m ki ty pt tm a =
-  TmLamHelper {
-    tlExpectTmLam :: Term ki ty pt tm a -> Maybe (m (Type ki ty a, Scope () (Ast ki ty pt tm) (AstVar a)))
-  }
+import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.Offline (IOffline)
+import Rules.Unification
 
-inferTmLam :: TmLamInferTypeContext e w s r m mi ki ty pt tm a
-           => TmLamHelper mi ki ty pt tm a
-           -> (Term ki ty pt tm a -> mi (Type ki ty a))
+class MkInferType i => TmLamInferTypeHelper i where
+  type TmLamInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: Constraint
+
+  expectTmLam :: TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a i
+              => Proxy (MonadProxy e w s r m)
+              -> Proxy i
+              -> Term ki ty pt tm a
+              -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a, Scope () (Ast ki ty pt tm) (AstVar a)))
+
+instance TmLamInferTypeHelper ISyntax where
+  type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a ISyntax =
+    ( AsTmLam ki ty pt tm
+    , MonadError e m
+    , AsExpectedTmLamAnnotation e
+    )
+
+  expectTmLam _ _ tm = do
+    (mty, s) <- preview _TmLam tm
+    return $ do
+      case mty of
+        Nothing -> throwing _ExpectedTmLamAnnotation ()
+        Just ty -> return (ty, s)
+
+instance TmLamInferTypeHelper IOffline where
+  type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a IOffline =
+    ( AsTmLam ki ty pt tm
+    , MonadState s m
+    , HasTyVarSupply s
+    , ToTyVar a
+    , Ord a
+    , OrdRec (ty ki)
+    , MonadError e m
+    , AsUnknownTypeError e
+    , AsOccursError e (Type ki ty) a
+    , AsUnificationMismatch e (Type ki ty) a
+    , AsUnificationExpectedEq e (Type ki ty) a
+    )
+
+  expectTmLam m i tm = do
+    (mty, s) <- preview _TmLam tm
+    return $ do
+      tyV <- fmap (review _TyVar) freshTyVar
+      case mty of
+        Nothing -> return ()
+        Just ty -> expectType m i (ExpectedType ty) (ActualType tyV)
+      return (tyV, s)
+
+type TmLamInferTypeConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , TmLamInferTypeHelper i
+  , TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a i
+  , AsTmLam ki ty pt tm
+  , AsTyArr ki ty
+  , Ord a
+  , MonadReader r (InferTypeMonad ki ty a m i)
+  , HasTermContext r ki ty a
+  , MonadState s (InferTypeMonad ki ty a m i)
+  , HasTmVarSupply s
+  , ToTmVar a
+  )
+
+inferTmLam :: TmLamInferTypeConstraint e w s r m ki ty pt tm a i
+           => Proxy (MonadProxy e w s r m)
+           -> Proxy i
+           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (mi (Type ki ty a))
-inferTmLam (TmLamHelper expectTmLam) inferFn tm = do
-  act <- expectTmLam tm
+           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmLam m i inferFn tm = do
+  act <- expectTmLam m i tm
   return $ do
     (tyArg, s) <- act
     v <- freshTmVar
@@ -49,22 +122,12 @@ inferTmLam (TmLamHelper expectTmLam) inferFn tm = do
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
-type TmLamInferTypeContext e w s r (m :: * -> *) mi ki ty pt tm a =
-  ( Ord a
-  , AsTyArr ki ty
-  , AsTmLam ki ty pt tm
-  , MonadReader r mi
-  , HasTermContext r ki ty a
-  , MonadState s mi
-  , HasTmVarSupply s
-  , ToTmVar a
-  )
-
-inferTypeInput :: TmLamInferTypeContext e w s r m mi ki ty pt tm a
-               => TmLamHelper mi ki ty pt tm a
-               -> InferTypeInput e w s r m mi ki ty pt tm a
-inferTypeInput lh =
+tmLamInferTypeInput :: TmLamInferTypeConstraint e w s r m ki ty pt tm a i
+                    => Proxy (MonadProxy e w s r m)
+                    -> Proxy i
+                    -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+tmLamInferTypeInput m i =
   InferTypeInput
     []
-    [InferTypeRecurse $ inferTmLam lh]
+    [InferTypeRecurse $ inferTmLam m i]
     []

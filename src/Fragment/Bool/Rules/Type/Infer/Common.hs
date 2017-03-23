@@ -5,10 +5,20 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Fragment.Bool.Rules.Type.Infer.Common (
-    BoolHelper(..)
-  , inferTypeInput
+    BoolInferTypeHelper(..)
+  , BoolInferTypeConstraint
+  , boolInferTypeInput
   ) where
+
+import Data.Proxy (Proxy(..))
+import GHC.Exts (Constraint)
 
 import Control.Lens (review, preview)
 
@@ -23,73 +33,125 @@ import Fragment.Bool.Ast.Term
 
 import Rules.Type.Infer.Common
 
-data BoolHelper m ki ty a =
-  BoolHelper {
-    bhCreateBool :: m (Type ki ty a)
-  , bhExpectType :: ExpectedType ki ty a -> ActualType ki ty a -> m ()
-  }
+import Rules.Type.Infer.SyntaxDirected (ISyntax)
 
-inferTypeInput :: (Monad mi, AsTyBool ki ty, AsPtBool pt, AsTmBool ki ty pt tm)
-               => BoolHelper mi ki ty a
-               -> InferTypeInput e w s r m mi ki ty pt tm a
-inferTypeInput ih =
+import Rules.Type.Infer.Offline (IOffline)
+import Ast.Type.Var
+import Control.Monad.State (MonadState)
+
+class MkInferType i => BoolInferTypeHelper i where
+  type BoolInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+
+  createBool :: BoolInferTypeHelperConstraint e w s r m ki ty a i
+             => Proxy (MonadProxy e w s r m)
+             -> Proxy i
+             -> InferTypeMonad ki ty a m i (Type ki ty a)
+
+instance BoolInferTypeHelper ISyntax where
+  type BoolInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+    ( AsTyBool ki ty
+    , Monad m
+    )
+
+  createBool _ _ =
+    return . review _TyBool $ ()
+
+instance BoolInferTypeHelper IOffline where
+  type BoolInferTypeHelperConstraint e w s r m ki ty a IOffline =
+    ( MonadState s m
+    , HasTyVarSupply s
+    , ToTyVar a
+    )
+
+  createBool _ _ =
+    fmap (review _TyVar) freshTyVar
+
+type BoolInferTypeConstraint e w s r m ki ty pt tm a i =
+  ( BoolInferConstraint e w s r m ki ty pt tm a i
+  , BoolCheckConstraint e w s r m ki ty pt tm a i
+  )
+
+type BoolInferConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , BoolInferTypeHelper i
+  , BoolInferTypeHelperConstraint e w s r m ki ty a i
+  , AsTmBool ki ty pt tm
+  , AsTyBool ki ty
+  )
+
+type BoolCheckConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , AsPtBool pt
+  , AsTyBool ki ty
+  )
+
+boolInferTypeInput :: BoolInferTypeConstraint e w s r m ki ty pt tm a i
+                   => Proxy (MonadProxy e w s r m)
+                   -> Proxy i
+                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+boolInferTypeInput m i =
   InferTypeInput
     []
-    [ InferTypeBase inferTmBool
-    , InferTypeRecurse $ inferTmAnd ih
-    , InferTypeRecurse $ inferTmOr ih
+    [ InferTypeBase $ inferTmBool m i
+    , InferTypeRecurse $ inferTmAnd m i
+    , InferTypeRecurse $ inferTmOr m i
     ]
-    [ PCheckBase $ checkBool ih]
+    [ PCheckBase $ checkBool m i]
 
-inferTmBool :: (AsTyBool ki ty, AsTmBool ki ty pt tm, Monad m)
-           => Term ki ty pt tm a
-           -> Maybe (m (Type ki ty a))
-inferTmBool tm = do
+inferTmBool :: BoolInferConstraint e w s r m ki ty pt tm a i
+            => Proxy (MonadProxy e w s r m)
+            -> Proxy i
+            -> Term ki ty pt tm a
+            -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmBool _ _ tm = do
   _ <- preview _TmBool tm
   return . return . review _TyBool $ ()
 
-inferTmAnd :: (AsTyBool ki ty, AsTmBool ki ty pt tm, Monad m)
-           => BoolHelper m ki ty a
-           -> (Term ki ty pt tm a -> m (Type ki ty a))
+inferTmAnd :: BoolInferConstraint e w s r m ki ty pt tm a i
+           => Proxy (MonadProxy e w s r m)
+           -> Proxy i
+           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (m (Type ki ty a))
-inferTmAnd (BoolHelper createBool expectType) inferFn tm = do
+           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmAnd m i inferFn tm = do
   (tm1, tm2) <- preview _TmAnd tm
   return $ do
     let ty = review _TyBool ()
     ty1 <- inferFn tm1
-    expectType (ExpectedType ty) (ActualType ty1)
+    expectType m i (ExpectedType ty) (ActualType ty1)
     ty2 <- inferFn tm2
-    expectType (ExpectedType ty) (ActualType ty2)
-    tyV <- createBool
-    expectType (ExpectedType ty) (ActualType tyV)
+    expectType m i (ExpectedType ty) (ActualType ty2)
+    tyV <- createBool m i
+    expectType m i (ExpectedType ty) (ActualType tyV)
     return tyV
 
-inferTmOr :: (AsTyBool ki ty, AsTmBool ki ty pt tm, Monad m)
-          => BoolHelper m ki ty a
-          -> (Term ki ty pt tm a -> m (Type ki ty a))
+inferTmOr :: BoolInferConstraint e w s r m ki ty pt tm a i
+          => Proxy (MonadProxy e w s r m)
+          -> Proxy i
+          -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
           -> Term ki ty pt tm a
-          -> Maybe (m (Type ki ty a))
-inferTmOr (BoolHelper createBool expectType) inferFn tm = do
+          -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmOr m i inferFn tm = do
   (tm1, tm2) <- preview _TmOr tm
   return $ do
     let ty = review _TyBool ()
     ty1 <- inferFn tm1
-    expectType (ExpectedType ty) (ActualType ty1)
+    expectType m i (ExpectedType ty) (ActualType ty1)
     ty2 <- inferFn tm2
-    expectType (ExpectedType ty) (ActualType ty2)
-    tyV <- createBool
-    expectType (ExpectedType ty) (ActualType tyV)
+    expectType m i (ExpectedType ty) (ActualType ty2)
+    tyV <- createBool m i
+    expectType m i (ExpectedType ty) (ActualType tyV)
     return tyV
 
-checkBool :: (AsPtBool pt, AsTyBool ki ty, Monad m)
-         => BoolHelper m ki ty a
-         -> Pattern pt a
-         -> Type ki ty a
-         -> Maybe (m [Type ki ty a])
-checkBool (BoolHelper _ expectType) p ty = do
+checkBool :: BoolCheckConstraint e w s r m ki ty pt tm a i
+          => Proxy (MonadProxy e w s r m)
+          -> Proxy i
+          -> Pattern pt a
+          -> Type ki ty a
+          -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+checkBool m i p ty = do
   _ <- preview _PtBool p
   return $ do
     let tyI = review _TyBool ()
-    expectType (ExpectedType tyI) (ActualType ty)
+    expectType m i (ExpectedType tyI) (ActualType ty)
     return []

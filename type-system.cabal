@@ -36,7 +36,7 @@ library
                      , Context.Term.Error
                      , Context.Type
                      , Context.Type.Error
-                     , Rules
+                     -- , Rules
                      , Rules.Term
                      , Rules.Type
                      , Rules.Unification
@@ -48,27 +48,27 @@ library
                      , Rules.Kind.Infer.SyntaxDirected
                      -- , Rules.Kind.Infer.Offline
                      , Fragment.PtVar
-                     , Fragment.PtVar.Rules
-                     , Fragment.PtVar.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.PtVar.Rules.Type.Infer.Offline
+                     -- , Fragment.PtVar.Rules
+                     -- , Fragment.PtVar.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.PtVar.Rules.Type.Infer.Offline
                      , Fragment.PtVar.Rules.Type.Infer.Common
                      , Fragment.PtVar.Rules.Term
                      , Fragment.PtVar.Helpers
                      , Fragment.PtWild
-                     , Fragment.PtWild.Rules
-                     , Fragment.PtWild.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.PtWild.Rules.Type.Infer.Offline
+                     -- , Fragment.PtWild.Rules
+                     -- , Fragment.PtWild.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.PtWild.Rules.Type.Infer.Offline
                      , Fragment.PtWild.Rules.Type.Infer.Common
                      , Fragment.PtWild.Rules.Term
                      , Fragment.PtWild.Helpers
                      , Fragment.TmVar
-                     , Fragment.TmVar.Rules
-                     , Fragment.TmVar.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.TmVar.Rules.Type.Infer.Offline
+                     -- , Fragment.TmVar.Rules
+                     -- , Fragment.TmVar.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.TmVar.Rules.Type.Infer.Offline
                      , Fragment.TmVar.Rules.Type.Infer.Common
                      , Fragment.TmVar.Helpers
                      , Fragment.TyVar
-                     , Fragment.TyVar.Rules
+                     -- , Fragment.TyVar.Rules
                      , Fragment.TyVar.Rules.Type
                      , Fragment.TyVar.Rules.Kind.Infer.SyntaxDirected
                      -- , Fragment.TyVar.Rules.Kind.Infer.Offline
@@ -82,10 +82,10 @@ library
                      , Fragment.Int.Ast.Type
                      , Fragment.Int.Ast.Pattern
                      , Fragment.Int.Ast.Term
-                     , Fragment.Int.Rules
+                     -- , Fragment.Int.Rules
                      , Fragment.Int.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.Int.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Int.Rules.Type.Infer.Offline
+                     -- , Fragment.Int.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.Int.Rules.Type.Infer.Offline
                      , Fragment.Int.Rules.Type.Infer.Common
                      , Fragment.Int.Rules.Type
                      , Fragment.Int.Rules.Term
@@ -95,10 +95,10 @@ library
                      , Fragment.Bool.Ast.Type
                      , Fragment.Bool.Ast.Pattern
                      , Fragment.Bool.Ast.Term
-                     , Fragment.Bool.Rules
+                     -- , Fragment.Bool.Rules
                      , Fragment.Bool.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.Bool.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Bool.Rules.Type.Infer.Offline
+                     -- , Fragment.Bool.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.Bool.Rules.Type.Infer.Offline
                      , Fragment.Bool.Rules.Type.Infer.Common
                      , Fragment.Bool.Rules.Type
                      , Fragment.Bool.Rules.Term
@@ -106,9 +106,9 @@ library
                      , Fragment.If
                      , Fragment.If.Ast
                      , Fragment.If.Ast.Term
-                     , Fragment.If.Rules
-                     , Fragment.If.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.If.Rules.Type.Infer.Offline
+                     -- , Fragment.If.Rules
+                     -- , Fragment.If.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.If.Rules.Type.Infer.Offline
                      , Fragment.If.Rules.Type.Infer.Common
                      , Fragment.If.Rules.Term
                      , Fragment.If.Helpers
@@ -118,10 +118,10 @@ library
                      , Fragment.Pair.Ast.Error
                      , Fragment.Pair.Ast.Pattern
                      , Fragment.Pair.Ast.Term
-                     , Fragment.Pair.Rules
+                     -- , Fragment.Pair.Rules
                      , Fragment.Pair.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.Pair.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Pair.Rules.Type.Infer.Offline
+                     -- , Fragment.Pair.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.Pair.Rules.Type.Infer.Offline
                      , Fragment.Pair.Rules.Type.Infer.Common
                      , Fragment.Pair.Rules.Type
                      , Fragment.Pair.Rules.Term
@@ -132,50 +132,53 @@ library
                      , Fragment.Tuple.Ast.Error
                      , Fragment.Tuple.Ast.Pattern
                      , Fragment.Tuple.Ast.Term
-                     , Fragment.Tuple.Rules
+                     -- , Fragment.Tuple.Rules
                      , Fragment.Tuple.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.Tuple.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Tuple.Rules.Type.Infer.Offline
+                     -- , Fragment.Tuple.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.Tuple.Rules.Type.Infer.Offline
                      , Fragment.Tuple.Rules.Type.Infer.Common
                      , Fragment.Tuple.Rules.Type
                      , Fragment.Tuple.Rules.Term
                      , Fragment.Tuple.Helpers
-                     , Fragment.Record
-                     , Fragment.Record.Ast
-                     , Fragment.Record.Ast.Type
-                     , Fragment.Record.Ast.Error
-                     , Fragment.Record.Ast.Pattern
-                     , Fragment.Record.Ast.Term
-                     , Fragment.Record.Rules
-                     , Fragment.Record.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.Record.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Record.Rules.Type.Infer.Offline
-                     , Fragment.Record.Rules.Type.Infer.Common
-                     , Fragment.Record.Rules.Type
-                     , Fragment.Record.Rules.Term
-                     , Fragment.Record.Helpers
-                     , Fragment.Variant
-                     , Fragment.Variant.Ast
-                     , Fragment.Variant.Ast.Type
-                     , Fragment.Variant.Ast.Error
-                     , Fragment.Variant.Ast.Pattern
-                     , Fragment.Variant.Ast.Term
-                     , Fragment.Variant.Rules
-                     , Fragment.Variant.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.Variant.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Variant.Rules.Type.Infer.Offline
-                     , Fragment.Variant.Rules.Type.Infer.Common
-                     , Fragment.Variant.Rules.Type
-                     , Fragment.Variant.Rules.Term
-                     , Fragment.Variant.Helpers
+
+                     -- , Fragment.Record
+                     -- , Fragment.Record.Ast
+                     -- , Fragment.Record.Ast.Type
+                     -- , Fragment.Record.Ast.Error
+                     -- , Fragment.Record.Ast.Pattern
+                     -- , Fragment.Record.Ast.Term
+                     -- -- , Fragment.Record.Rules
+                     -- , Fragment.Record.Rules.Kind.Infer.SyntaxDirected
+                     -- -- , Fragment.Record.Rules.Type.Infer.SyntaxDirected
+                     -- -- , Fragment.Record.Rules.Type.Infer.Offline
+                     -- , Fragment.Record.Rules.Type.Infer.Common
+                     -- , Fragment.Record.Rules.Type
+                     -- , Fragment.Record.Rules.Term
+                     -- , Fragment.Record.Helpers
+
+                     -- , Fragment.Variant
+                     -- , Fragment.Variant.Ast
+                     -- , Fragment.Variant.Ast.Type
+                     -- , Fragment.Variant.Ast.Error
+                     -- , Fragment.Variant.Ast.Pattern
+                     -- , Fragment.Variant.Ast.Term
+                     -- -- , Fragment.Variant.Rules
+                     -- , Fragment.Variant.Rules.Kind.Infer.SyntaxDirected
+                     -- -- , Fragment.Variant.Rules.Type.Infer.SyntaxDirected
+                     -- -- , Fragment.Variant.Rules.Type.Infer.Offline
+                     -- , Fragment.Variant.Rules.Type.Infer.Common
+                     -- , Fragment.Variant.Rules.Type
+                     -- , Fragment.Variant.Rules.Term
+                     -- , Fragment.Variant.Helpers
+
                      , Fragment.Case
                      , Fragment.Case.Ast
                      , Fragment.Case.Ast.Error
                      , Fragment.Case.Ast.Warning
                      , Fragment.Case.Ast.Term
-                     , Fragment.Case.Rules
-                     , Fragment.Case.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Case.Rules.Type.Infer.Offline
+                     -- , Fragment.Case.Rules
+                     -- , Fragment.Case.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.Case.Rules.Type.Infer.Offline
                      , Fragment.Case.Rules.Type.Infer.Common
                      , Fragment.Case.Rules.Term
                      , Fragment.Case.Helpers
@@ -183,9 +186,9 @@ library
                      , Fragment.Annotation
                      , Fragment.Annotation.Ast
                      , Fragment.Annotation.Ast.Term
-                     , Fragment.Annotation.Rules
-                     , Fragment.Annotation.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Annotation.Rules.Type.Infer.Offline
+                     -- , Fragment.Annotation.Rules
+                     -- , Fragment.Annotation.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.Annotation.Rules.Type.Infer.Offline
                      , Fragment.Annotation.Rules.Type.Infer.Common
                      , Fragment.Annotation.Rules.Term
                      , Fragment.Annotation.Helpers
@@ -197,7 +200,7 @@ library
                      , Fragment.IsoRec.Ast.Term
                      -- , Fragment.IsoRec.Rules
                      -- , Fragment.IsoRec.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.IsoRec.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.IsoRec.Rules.Type.Infer.SyntaxDirected
                      , Fragment.IsoRec.Rules.Type
                      , Fragment.IsoRec.Rules.Term
                      , Fragment.IsoRec.Helpers
@@ -206,9 +209,10 @@ library
                      , Fragment.TyArr.Ast
                      , Fragment.TyArr.Ast.Type
                      , Fragment.TyArr.Ast.Error
-                     , Fragment.TyArr.Rules
+                     -- , Fragment.TyArr.Rules
                      , Fragment.TyArr.Rules.Kind.Infer.SyntaxDirected
-                     , Fragment.TyArr.Rules.Type.Infer.Offline
+                     -- , Fragment.TyArr.Rules.Type.Infer.Offline
+                     , Fragment.TyArr.Rules.Type.Infer.Common
                      , Fragment.TyArr.Rules.Type
                      , Fragment.TyArr.Helpers
 
@@ -216,9 +220,9 @@ library
                      , Fragment.TmLam.Ast
                      , Fragment.TmLam.Ast.Error
                      , Fragment.TmLam.Ast.Term
-                     , Fragment.TmLam.Rules
-                     , Fragment.TmLam.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.TmLam.Rules.Type.Infer.Offline
+                     -- , Fragment.TmLam.Rules
+                     -- , Fragment.TmLam.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.TmLam.Rules.Type.Infer.Offline
                      , Fragment.TmLam.Rules.Type.Infer.Common
                      , Fragment.TmLam.Rules.Term
                      , Fragment.TmLam.Helpers
@@ -232,25 +236,25 @@ library
                      , Fragment.TmApp
                      , Fragment.TmApp.Ast
                      , Fragment.TmApp.Ast.Term
-                     , Fragment.TmApp.Rules
-                     , Fragment.TmApp.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.TmApp.Rules.Type.Infer.Offline
+                     -- , Fragment.TmApp.Rules
+                     -- , Fragment.TmApp.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.TmApp.Rules.Type.Infer.Offline
                      , Fragment.TmApp.Rules.Type.Infer.Common
                      , Fragment.TmApp.Rules.Term
                      , Fragment.TmApp.Helpers
 
                      , Fragment.LC
                      , Fragment.LC.Ast
-                     , Fragment.LC.Rules
+                     -- , Fragment.LC.Rules
                      , Fragment.LC.Rules.Term
                      , Fragment.LC.Helpers
 
                      , Fragment.Fix
                      , Fragment.Fix.Ast
                      , Fragment.Fix.Ast.Term
-                     , Fragment.Fix.Rules
-                     , Fragment.Fix.Rules.Type.Infer.SyntaxDirected
-                     , Fragment.Fix.Rules.Type.Infer.Offline
+                     -- , Fragment.Fix.Rules
+                     -- , Fragment.Fix.Rules.Type.Infer.SyntaxDirected
+                     -- , Fragment.Fix.Rules.Type.Infer.Offline
                      , Fragment.Fix.Rules.Type.Infer.Common
                      , Fragment.Fix.Rules.Term
                      , Fragment.Fix.Helpers
@@ -260,19 +264,20 @@ library
                      , Fragment.SystemF.Ast.Type
                      , Fragment.SystemF.Ast.Error
                      , Fragment.SystemF.Ast.Term
-                     , Fragment.SystemF.Rules
+                     -- , Fragment.SystemF.Rules
                      , Fragment.SystemF.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.SystemF.Rules.Type.Infer.SyntaxDirected
                      , Fragment.SystemF.Rules.Type
                      , Fragment.SystemF.Rules.Term
                      , Fragment.SystemF.Helpers
 
+                     , Fragment.SystemFw
                      , Fragment.SystemFw.Ast
                      , Fragment.SystemFw.Ast.Kind
                      , Fragment.SystemFw.Ast.Type
                      , Fragment.SystemFw.Ast.Error
                      , Fragment.SystemFw.Ast.Term
-                     , Fragment.SystemFw.Rules
+                     -- , Fragment.SystemFw.Rules
                      , Fragment.SystemFw.Rules.Kind.Infer.SyntaxDirected
                      , Fragment.SystemFw.Rules.Type.Infer.SyntaxDirected
                      , Fragment.SystemFw.Rules.Type

@@ -16,14 +16,15 @@ module Fragment.Tuple (
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
 import Fragment.Tuple.Ast as X
-import Fragment.Tuple.Rules as X
 import Fragment.Tuple.Helpers as X
 
 import Fragment.Tuple.Rules.Type
+import Fragment.Tuple.Rules.Type.Infer.Common
 import Fragment.Tuple.Rules.Term
 
 data TupleTag
@@ -54,3 +55,16 @@ instance NormalizeRules TupleTag where
 
   normalizeInput _ =
     tupleNormalizeRules
+
+instance MkInferType i => InferTypeRules i TupleTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i TupleTag =
+    TupleInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i TupleTag =
+    '[ ErrExpectedTyTuple ki ty a
+     , ErrTupleOutOfBounds
+     ]
+  type WarningList ki ty pt tm a i TupleTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    tupleInferTypeInput m i

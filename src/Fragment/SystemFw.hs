@@ -16,14 +16,15 @@ module Fragment.SystemFw (
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
+import Rules.Type.Infer.SyntaxDirected
 import Rules.Term
-import Fragment.KiBase.Ast.Kind
 
 import Fragment.SystemFw.Ast as X
-import Fragment.SystemFw.Rules as X
 import Fragment.SystemFw.Helpers as X
 
 import Fragment.SystemFw.Rules.Type
+import Fragment.SystemFw.Rules.Type.Infer.SyntaxDirected
 import Fragment.SystemFw.Rules.Term
 
 data SystemFwTag
@@ -54,3 +55,10 @@ instance NormalizeRules SystemFwTag where
 
   normalizeInput _ =
     systemFwNormalizeRules
+
+instance InferTypeRules ISyntax SystemFwTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a ISyntax SystemFwTag =
+    SystemFwInferTypeConstraint e w s r m ki ty pt tm a
+
+  inferTypeInput' m i _ =
+    systemFwInferTypeInput m i

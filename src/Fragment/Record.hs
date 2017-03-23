@@ -16,14 +16,15 @@ module Fragment.Record (
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
 import Fragment.Record.Ast as X
-import Fragment.Record.Rules as X
 import Fragment.Record.Helpers as X
 
 import Fragment.Record.Rules.Type
+import Fragment.Record.Rules.Type.Infer.Common
 import Fragment.Record.Rules.Term
 
 data RecordTag
@@ -54,3 +55,16 @@ instance NormalizeRules RecordTag where
 
   normalizeInput _ =
     recordNormalizeRules
+
+instance MkInferType i => InferTypeRules i RecordTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i RecordTag =
+    RecordInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i RecordTag =
+    '[ ErrExpectedTyRecord ki ty a
+     , ErrRecordNotFound
+     ]
+  type WarningList ki ty pt tm a i RecordTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    recordInferTypeInput m i

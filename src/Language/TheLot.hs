@@ -44,11 +44,14 @@ import qualified Context.Type as CTy
 import qualified Context.Term as CTm
 
 import Ast
-import Rules
+-- import Rules
 import Rules.Unification
-import qualified Rules.Type.Infer.SyntaxDirected as SD
-import qualified Rules.Type.Infer.Offline as UO
+-- import qualified Rules.Type.Infer.SyntaxDirected as SD
+-- import qualified Rules.Type.Infer.Offline as UO
 import Rules.Type
+import Rules.Type.Infer.Common
+import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.Offline (IOffline)
 import Rules.Term
 
 import Fragment.PtVar
@@ -65,37 +68,15 @@ import Fragment.Record
 import Fragment.Variant
 import Fragment.Case
 import Fragment.Fix
--- import Fragment.STLC
--- import Fragment.HM
---import Fragment.SystemFw
+
+-- import Fragment.SystemF
+-- import Fragment.SystemFw
 import Fragment.TyArr
 import Fragment.TmLam
 import Fragment.TmApp
 import Fragment.LC
 
 type Rules =
-  '[ RPtVar
-   , RPtWild
-   , RTmVar
-   , RTyVar
-   , RInt
-   , RBool
-   -- , RIf
-   -- , RPair
-   -- , RTuple
-   -- , RRecord
-   -- , RVariant
-   , RCase
-   , RFix
-   -- , RHM
-   -- , RSystemFw
-   , RTyArr
-   , RTmLam
-   , RTmApp
-   , RLC
-   ]
-
-type Rules' =
   '[ PtVarTag
    , PtWildTag
    , TmVarTag
@@ -105,22 +86,18 @@ type Rules' =
    -- , IfTag
    -- , PairTag
    -- , TupleTag
-   -- , RecordTag
-   -- , VariantTag
-   , CaseTag
-   , FixTag
-   -- , SystemFw
-   , TyArrTag
-   , TmLamTag
-   , TmAppTag
-   , LCTag
+   , RecordTag
+   , VariantTag
+   -- , CaseTag
+   -- , FixTag
+   -- , TyArrTag
+   -- , TmLamTag
+   -- , TmAppTag
+   -- , LCTag
    ]
 
 rules :: Proxy Rules
 rules = Proxy
-
-rules' :: Proxy Rules'
-rules' = Proxy
 
 type KindF = RKindF Rules
 type TypeF = RTypeF Rules
@@ -129,8 +106,8 @@ type TermF = RTermF Rules
 
 type LTerm = Term KindF TypeF PatternF TermF String
 type LType = Type KindF TypeF String
-type LError = RError KindF TypeF PatternF TermF String Rules
-type LWarning = RWarning KindF TypeF PatternF TermF String Rules
+type LError i = RError KindF TypeF PatternF TermF String i Rules
+type LWarning i = RWarning KindF TypeF PatternF TermF String i Rules
 
 type M e w s r = StateT s (ReaderT r (ExceptT e (Writer [w])))
 
@@ -172,56 +149,72 @@ eStrict = Proxy
 
 runEvalLazy :: LTerm -> LTerm
 runEvalLazy =
-  eoEval . evalOutput eLazy $ rules'
+  eoEval . evalOutput eLazy $ rules
 
 runEvalStrict :: LTerm  -> LTerm
 runEvalStrict =
-  eoEval . evalOutput eStrict $ rules'
+  eoEval . evalOutput eStrict $ rules
 
 normalize :: LType -> LType
 normalize =
-  noNormalizeType . normalizeOutput $ rules'
+  noNormalizeType . normalizeOutput $ rules
 
-runInferSyntax :: LTerm -> (Either LError LType, [LWarning])
+monadProxy :: Proxy i -> Proxy (MonadProxy (LError i) (LWarning i) Int LContext (M (LError i) (LWarning i) Int LContext))
+monadProxy _ = Proxy
+
+syntaxProxy :: Proxy ISyntax
+syntaxProxy = Proxy
+
+offlineProxy :: Proxy IOffline
+offlineProxy = Proxy
+
+--runInfer :: Proxy i -> LTerm -> (Either (LError i) LType, [LWarning i])
+--runInfer i =
+--  runM (0 :: Int) emptyContext .
+--  ioInfer (inferTypeOutput (monadProxy i) i rules' undefined normalize)
+
+runInferSyntax :: LTerm -> (Either (LError ISyntax) LType, [LWarning ISyntax])
 runInferSyntax =
   runM (0 :: Int) emptyContext .
-  SD.ioInfer (inferTypeOutputSyntax rules normalize)
+  ioInfer (inferTypeOutput (monadProxy syntaxProxy) syntaxProxy rules undefined normalize)
 
-runCheckSyntax :: LTerm -> LType -> (Either LError (), [LWarning])
+runCheckSyntax :: LTerm -> LType -> (Either (LError ISyntax) (), [LWarning ISyntax])
 runCheckSyntax tm ty =
   runM (0 :: Int) emptyContext $
-  (SD.ioCheck $ inferTypeOutputSyntax rules normalize) tm ty
+  ioCheck (inferTypeOutput (monadProxy syntaxProxy) syntaxProxy rules undefined normalize) tm ty
 
-runInferOffline :: LTerm -> (Either LError LType, [LWarning])
+runInferOffline :: LTerm -> (Either (LError IOffline) LType, [LWarning IOffline])
 runInferOffline =
   runM (0 :: Int) emptyContext .
-  UO.ioInfer (inferTypeOutputOffline rules normalize)
+  ioInfer (inferTypeOutput (monadProxy offlineProxy) offlineProxy rules undefined normalize)
 
-runCheckOffline :: LTerm -> LType -> (Either LError (), [LWarning])
+runCheckOffline :: LTerm -> LType -> (Either (LError IOffline) (), [LWarning IOffline])
 runCheckOffline tm ty =
   runM (0 :: Int) emptyContext $
-  (UO.ioCheck $ inferTypeOutputOffline rules normalize) tm ty
+  ioCheck (inferTypeOutput (monadProxy offlineProxy) offlineProxy rules undefined normalize) tm ty
 
+{-
 runUnify :: [UConstraint (Type KindF TypeF) String] -> (Either LError (M.Map String (LType)), [LWarning])
 runUnify =
   runM (0 :: Int) emptyContext .
   UO.ioUnify (inferTypeOutputOffline rules normalize :: UO.InferTypeOutput LError LWarning Int LContext (M LError LWarning Int LContext) KindF TypeF PatternF TermF String)
+-}
 
 -- for debugging
 
 runStepStrict :: LTerm -> Maybe LTerm
 runStepStrict =
-  eoStep . evalOutput eStrict $ rules'
+  eoStep . evalOutput eStrict $ rules
 
 runStepLazy :: LTerm -> Maybe LTerm
 runStepLazy =
-  eoStep . evalOutput eLazy $ rules'
+  eoStep . evalOutput eLazy $ rules
 
 runValueStrict :: LTerm -> Maybe LTerm
 runValueStrict =
-  eoValue . evalOutput eStrict $ rules'
+  eoValue . evalOutput eStrict $ rules
 
 runValueLazy :: LTerm -> Maybe LTerm
 runValueLazy =
-  eoValue . evalOutput eLazy $ rules'
+  eoValue . evalOutput eLazy $ rules
 

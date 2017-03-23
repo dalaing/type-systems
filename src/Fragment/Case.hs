@@ -18,13 +18,14 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 
 import Fragment.Case.Ast as X
-import Fragment.Case.Rules as X
 import Fragment.Case.Helpers as X
 
 import Fragment.Case.Rules.Term
+import Fragment.Case.Rules.Type.Infer.Common
 
 data CaseTag
 
@@ -54,3 +55,18 @@ instance NormalizeRules CaseTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i CaseTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i CaseTag =
+    CaseInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i CaseTag =
+    '[ ErrDuplicatedPatternVariables a
+     , ErrExpectedPattern ki ty pt tm a
+     ]
+  type WarningList ki ty pt tm a i CaseTag =
+    '[ WarnUnusedPatternVariables a
+     , WarnShadowingPatternVariables a
+     ]
+
+  inferTypeInput' m i _ =
+    caseInferTypeInput m i

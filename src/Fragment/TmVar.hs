@@ -17,11 +17,14 @@ module Fragment.TmVar (
 import GHC.Exts (Constraint)
 
 import Ast
+import Context.Term.Error
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 
-import Fragment.TmVar.Rules as X
 import Fragment.TmVar.Helpers as X
+
+import Fragment.TmVar.Rules.Type.Infer.Common
 
 data TmVarTag
 
@@ -44,3 +47,14 @@ instance NormalizeRules TmVarTag where
 
   normalizeInput _ =
     mempty
+
+instance MkInferType i => InferTypeRules i TmVarTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i TmVarTag =
+    TmVarInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i TmVarTag =
+    '[ErrUnboundTermVariable a]
+  type WarningList ki ty pt tm a i TmVarTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    tmVarInferTypeInput m i

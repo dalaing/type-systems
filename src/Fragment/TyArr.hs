@@ -18,14 +18,15 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
 import Fragment.TyArr.Ast as X
-import Fragment.TyArr.Rules as X
 import Fragment.TyArr.Helpers as X
 
 import Fragment.TyArr.Rules.Type
+import Fragment.TyArr.Rules.Type.Infer.Common
 
 data TyArrTag
 
@@ -48,3 +49,14 @@ instance NormalizeRules TyArrTag where
 
   normalizeInput _ =
     tyArrNormalizeRules
+
+instance MkInferType i => InferTypeRules i TyArrTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i TyArrTag =
+    TyArrInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i TyArrTag =
+    '[]
+  type WarningList ki ty pt tm a i TyArrTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    tyArrInferTypeInput m i

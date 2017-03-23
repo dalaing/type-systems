@@ -18,12 +18,12 @@ import GHC.Exts (Constraint)
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.TmLam.Ast.Term
 import Fragment.TmApp.Ast.Term
 
 import Fragment.LC.Ast as X
-import Fragment.LC.Rules as X
 import Fragment.LC.Helpers as X
 
 import Fragment.LC.Rules.Term
@@ -55,4 +55,15 @@ instance NormalizeRules LCTag where
     (() :: Constraint)
 
   normalizeInput _ =
+    mempty
+
+instance MkInferType i => InferTypeRules i LCTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i LCTag =
+    (() :: Constraint)
+  type ErrorList ki ty pt tm a i LCTag =
+    '[]
+  type WarningList ki ty pt tm a i LCTag =
+    '[]
+
+  inferTypeInput' m i _ =
     mempty

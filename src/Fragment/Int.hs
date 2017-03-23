@@ -16,14 +16,15 @@ module Fragment.Int (
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
 import Fragment.Int.Ast as X
-import Fragment.Int.Rules as X
 import Fragment.Int.Helpers as X
 
 import Fragment.Int.Rules.Type
+import Fragment.Int.Rules.Type.Infer.Common
 import Fragment.Int.Rules.Term
 
 data IntTag
@@ -47,3 +48,14 @@ instance NormalizeRules IntTag where
 
   normalizeInput _ =
     intNormalizeRules
+
+instance MkInferType i => InferTypeRules i IntTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i IntTag =
+    IntInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i IntTag =
+    '[]
+  type WarningList ki ty pt tm a i IntTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    intInferTypeInput m i

@@ -6,51 +6,115 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.TmApp.Rules.Type.Infer.Common (
-    TmAppInferTypeContext
-  , TmAppHelper(..)
-  , inferTypeInput
+    TmAppInferTypeConstraint
+  , TmAppInferTypeHelper(..)
+  , tmAppInferTypeInput
   ) where
 
-import Control.Lens (preview)
+import Data.Proxy (Proxy(..))
+import GHC.Exts (Constraint)
+
+import Bound (Bound)
+import Control.Lens (preview, review)
 
 import Ast.Type
+import Ast.Type.Var
+import Ast.Error.Common.Type
 import Ast.Term
+import Data.Bitransversable
+import Data.Functor.Rec
 
 import Fragment.TyArr.Ast.Type
+import Fragment.TyArr.Ast.Error
 import Fragment.TmApp.Ast.Term
 
 import Rules.Type.Infer.Common
 
-data TmAppHelper m ki ty a =
-  TmAppHelper {
-    _taExpectTyArr :: Type ki ty a -> m (Type ki ty a, Type ki ty a)
-  , _taExpectTypeEq :: Type ki ty a -> Type ki ty a -> m ()
-  }
+import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Control.Monad.Except (MonadError)
 
-inferTmApp :: (AsTmApp ki ty pt tm, AsTyArr ki ty, Monad m)
-           => TmAppHelper m ki ty a
-           -> (Term ki ty pt tm a -> m (Type ki ty a))
+import Rules.Type.Infer.Offline (IOffline)
+import Rules.Unification
+import Control.Monad.State (MonadState)
+
+class MkInferType i => TmAppInferTypeHelper i where
+  type TmAppInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+
+  expectArr :: TmAppInferTypeHelperConstraint e w s r m ki ty a i
+             => Proxy (MonadProxy e w s r m)
+             -> Proxy i
+             -> Type ki ty a
+             -> InferTypeMonad ki ty a m i (Type ki ty a, Type ki ty a)
+
+instance TmAppInferTypeHelper ISyntax where
+  type TmAppInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+    ( AsTyArr ki ty
+    , MonadError e m
+    , AsExpectedTyArr e ki ty a
+    )
+
+  expectArr _ _ =
+    expectTyArr
+
+instance TmAppInferTypeHelper IOffline where
+  type TmAppInferTypeHelperConstraint e w s r m ki ty a IOffline =
+    ( AsTyArr ki ty
+    , MonadState s m
+    , HasTyVarSupply s
+    , ToTyVar a
+    , Ord a
+    , OrdRec (ty ki)
+    , MonadError e m
+    , AsUnknownTypeError e
+    , AsOccursError e (Type ki ty) a
+    , AsUnificationMismatch e (Type ki ty) a
+    , AsUnificationExpectedEq e (Type ki ty) a
+    , Bound (ty ki)
+    , Bitransversable (ty ki)
+    )
+
+  expectArr m i tyA = do
+    tyP1 <- fmap (review _TyVar) freshTyVar
+    tyP2 <- fmap (review _TyVar) freshTyVar
+    expectTypeEq m i tyA (review _TyArr (tyP1, tyP2))
+    return (tyP1, tyP2)
+
+type TmAppInferTypeConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , TmAppInferTypeHelper i
+  , TmAppInferTypeHelperConstraint e w s r m ki ty a i
+  , AsTmApp ki ty pt tm
+  , AsTyArr ki ty
+  )
+
+inferTmApp :: TmAppInferTypeConstraint e w s r m ki ty pt tm a i
+           => Proxy (MonadProxy e w s r m)
+           -> Proxy i
+           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (m (Type ki ty a))
-inferTmApp (TmAppHelper expectTyArr expectTypeEq) inferFn tm = do
+           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmApp m i inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
     tyF <- inferFn tmF
-    (tyArg, tyRet) <- expectTyArr tyF
+    (tyArg, tyRet) <- expectArr m i tyF
     tyX <- inferFn tmX
-    expectTypeEq tyArg tyX
+    expectTypeEq m i tyArg tyX
     return tyRet
 
-type TmAppInferTypeContext e w s r (m :: * -> *) mi ki ty pt tm a = (AsTyArr ki ty, AsTmApp ki ty pt tm, Monad mi)
-
-inferTypeInput :: TmAppInferTypeContext e w s r m mi ki ty pt tm a
-               => TmAppHelper mi ki ty a
-               -> InferTypeInput e w s r m mi ki ty pt tm a
-inferTypeInput ah =
+tmAppInferTypeInput :: TmAppInferTypeConstraint e w s r m ki ty pt tm a i
+                    => Proxy (MonadProxy e w s r m)
+                    -> Proxy i
+                    -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+tmAppInferTypeInput m i =
   InferTypeInput
     []
-    [InferTypeRecurse $ inferTmApp ah]
+    [InferTypeRecurse $ inferTmApp m i]
     []
 

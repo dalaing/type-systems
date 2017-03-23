@@ -16,13 +16,15 @@ module Fragment.SystemF (
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
+import Rules.Type.Infer.SyntaxDirected
 import Rules.Term
 
 import Fragment.SystemF.Ast as X
-import Fragment.SystemF.Rules as X
 import Fragment.SystemF.Helpers as X
 
 import Fragment.SystemF.Rules.Type
+import Fragment.SystemF.Rules.Type.Infer.SyntaxDirected
 import Fragment.SystemF.Rules.Term
 
 data SystemFTag
@@ -53,3 +55,10 @@ instance NormalizeRules SystemFTag where
 
   normalizeInput _ =
     systemFNormalizeRules
+
+instance InferTypeRules ISyntax SystemFTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a ISyntax SystemFTag =
+    SystemFInferTypeConstraint e w s r m ki ty pt tm a
+
+  inferTypeInput' m i _ =
+    systemFInferTypeInput m i

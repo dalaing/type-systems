@@ -5,10 +5,14 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Fragment.Annotation.Rules.Type.Infer.Common (
-    AnnotationHelper(..)
-  , inferTypeInput
+    AnnotationInferTypeConstraint
+  , annotationInferTypeInput
   ) where
+
+import Data.Proxy (Proxy)
 
 import Control.Lens (preview)
 
@@ -19,26 +23,27 @@ import Rules.Type.Infer.Common
 
 import Fragment.Annotation.Ast.Term
 
-data AnnotationHelper m ki ty a =
-  AnnotationHelper {
-    ahExpectType :: ExpectedType ki ty a -> ActualType ki ty a -> m ()
-  }
+type AnnotationInferTypeConstraint e w s r m ki ty pt tm a i =
+  ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
+  , AsTmAnnotation ki ty pt tm
+  )
 
-inferTypeInput :: (Monad mi, AsTmAnnotation ki ty pt tm)
-               => AnnotationHelper mi ki ty a
-               -> InferTypeInput e w s r m mi ki ty pt tm a
-inferTypeInput ah =
-  InferTypeInput
-    [] [ InferTypeRecurse $ inferTmAnnotation ah ] []
+annotationInferTypeInput :: AnnotationInferTypeConstraint e w s r m ki ty pt tm a i
+                         => Proxy (MonadProxy e w s r m)
+                         -> Proxy i
+                         -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+annotationInferTypeInput m i =
+  InferTypeInput [] [InferTypeRecurse $ inferTmAnnotation m i ] []
 
-inferTmAnnotation :: (Monad m, AsTmAnnotation ki ty pt tm)
-            => AnnotationHelper m ki ty a
-            -> (Term ki ty pt tm a -> m (Type ki ty a))
+inferTmAnnotation :: AnnotationInferTypeConstraint e w s r m ki ty pt tm a i
+            => Proxy (MonadProxy e w s r m)
+            -> Proxy i
+            -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
             -> Term ki ty pt tm a
-            -> Maybe (m (Type ki ty a))
-inferTmAnnotation (AnnotationHelper expectType) inferFn tm = do
+            -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+inferTmAnnotation m i inferFn tm = do
   (tyE, tmAnn) <- preview _TmAnnotation tm
   return $ do
     tyA <- inferFn tmAnn
-    expectType (ExpectedType tyE) (ActualType tyA)
+    expectType m i (ExpectedType tyE) (ActualType tyA)
     return tyE

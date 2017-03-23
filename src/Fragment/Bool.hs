@@ -16,14 +16,15 @@ module Fragment.Bool (
 
 import Ast
 import Rules.Type
+import Rules.Type.Infer.Common
 import Rules.Term
 import Fragment.KiBase.Ast.Kind
 
 import Fragment.Bool.Ast as X
-import Fragment.Bool.Rules as X
 import Fragment.Bool.Helpers as X
 
 import Fragment.Bool.Rules.Type
+import Fragment.Bool.Rules.Type.Infer.Common
 import Fragment.Bool.Rules.Term
 
 data BoolTag
@@ -47,3 +48,14 @@ instance NormalizeRules BoolTag where
 
   normalizeInput _ =
     boolNormalizeRules
+
+instance MkInferType i => InferTypeRules i BoolTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i BoolTag =
+    BoolInferTypeConstraint e w s r m ki ty pt tm a i
+  type ErrorList ki ty pt tm a i BoolTag =
+    '[]
+  type WarningList ki ty pt tm a i BoolTag =
+    '[]
+
+  inferTypeInput' m i _ =
+    boolInferTypeInput m i
