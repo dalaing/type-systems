@@ -33,9 +33,9 @@ import Fragment.Bool.Ast.Term
 
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.Offline (ITOffline)
 import Ast.Type.Var
 import Control.Monad.State (MonadState)
 
@@ -47,8 +47,8 @@ class MkInferType i => BoolInferTypeHelper i where
              -> Proxy i
              -> InferTypeMonad ki ty a m i (Type ki ty a)
 
-instance BoolInferTypeHelper ISyntax where
-  type BoolInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+instance BoolInferTypeHelper ITSyntax where
+  type BoolInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
     ( AsTyBool ki ty
     , Monad m
     )
@@ -56,8 +56,8 @@ instance BoolInferTypeHelper ISyntax where
   createBool _ _ =
     return . review _TyBool $ ()
 
-instance BoolInferTypeHelper IOffline where
-  type BoolInferTypeHelperConstraint e w s r m ki ty a IOffline =
+instance BoolInferTypeHelper ITOffline where
+  type BoolInferTypeHelperConstraint e w s r m ki ty a ITOffline =
     ( MonadState s m
     , HasTyVarSupply s
     , ToTyVar a

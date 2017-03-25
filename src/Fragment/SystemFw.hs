@@ -56,12 +56,12 @@ instance NormalizeRules SystemFwTag where
   normalizeInput _ =
     systemFwNormalizeRules
 
-instance InferTypeRules ISyntax SystemFwTag where
-  type InferTypeConstraint e w s r m ki ty pt tm a ISyntax SystemFwTag =
+instance InferTypeRules ITSyntax SystemFwTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a ITSyntax SystemFwTag =
     SystemFwInferTypeConstraint e w s r m ki ty pt tm a
-  type ErrorList ki ty pt tm a ISyntax SystemFwTag =
+  type ErrorList ki ty pt tm a ITSyntax SystemFwTag =
     '[]
-  type WarningList ki ty pt tm a ISyntax SystemFwTag =
+  type WarningList ki ty pt tm a ITSyntax SystemFwTag =
     '[]
 
   inferTypeInput m i _ =

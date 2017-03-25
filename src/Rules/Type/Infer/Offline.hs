@@ -22,13 +22,12 @@ module Rules.Type.Infer.Offline (
   , UnifyT
   , InferTypeInput(..)
   , InferTypeOutput(..)
-  , IOffline
+  , ITOffline
   ) where
 
 import Control.Monad (unless)
 import Data.List (tails)
 import Data.Proxy (Proxy(..))
-import GHC.Exts (Constraint)
 
 import Bound (Bound)
 import Control.Monad.Except (MonadError)
@@ -42,7 +41,6 @@ import qualified Data.Map as M
 import Data.Bitransversable
 import Data.Functor.Rec
 
-import Ast.Kind
 import Ast.Type
 import Ast.Term
 import Ast.Error.Common
@@ -63,7 +61,9 @@ mkInferType' go unifyFn x = do
   s <- unifyFn cs
   return $ mapSubst _TyVar s ty
 
-mkCheck' :: MkInferTypeConstraint e w s r m ki ty a IOffline
+data ITOffline
+
+mkCheck' :: MkInferTypeConstraint e w s r m ki ty a ITOffline
         => Proxy (MonadProxy e w s r m)
         -> (Term ki ty pt tm a -> UnifyT ki ty a m (Type ki ty a))
         -> ([UConstraint (Type ki ty) a] -> m (M.Map a (Type ki ty a)))
@@ -71,14 +71,12 @@ mkCheck' :: MkInferTypeConstraint e w s r m ki ty a IOffline
         -> Type ki ty a
         -> m ()
 mkCheck' m inferFn unifyFn x y = do
-  cs <- execWriterT $ (mkCheckType m (Proxy :: Proxy IOffline) inferFn) x y
+  cs <- execWriterT $ (mkCheckType m (Proxy :: Proxy ITOffline) inferFn) x y
   _ <- unifyFn cs
   return ()
 
-data IOffline
-
-instance MkInferType IOffline where
-  type MkInferTypeConstraint e w s r m ki ty a IOffline =
+instance MkInferType ITOffline where
+  type MkInferTypeConstraint e w s r m ki ty a ITOffline =
     ( Ord a
     , OrdRec (ty ki)
     , MonadError e m
@@ -89,14 +87,14 @@ instance MkInferType IOffline where
     , Bound (ty ki)
     , Bitransversable (ty ki)
     )
-  type InferTypeMonad ki ty a m IOffline =
+  type InferTypeMonad ki ty a m ITOffline =
     UnifyT ki ty a m
-  type MkInferErrorList ki ty pt tm a IOffline =
+  type MkInferErrorList ki ty pt tm a ITOffline =
     '[ ErrOccursError (Type ki ty) a
      , ErrUnificationMismatch (Type ki ty) a
      , ErrUnificationExpectedEq (Type ki ty) a
      ]
-  type MkInferWarningList ki ty pt tm a IOffline =
+  type MkInferWarningList ki ty pt tm a ITOffline =
     '[]
 
   mkCheckType m i =

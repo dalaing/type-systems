@@ -28,9 +28,9 @@ import Fragment.TyArr.Ast.Type
 
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.Offline (ITOffline)
 import Control.Lens (preview)
 import Control.Monad.Except (MonadError)
 import Data.Equivalence.Monad (classDesc)
@@ -43,15 +43,15 @@ class MkInferType i => TyArrInferTypeHelper i where
                  -> Proxy i
                  -> [UnificationRule m (Type ki ty) a]
 
-instance TyArrInferTypeHelper ISyntax where
-  type TyArrInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+instance TyArrInferTypeHelper ITSyntax where
+  type TyArrInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
     (() :: Constraint)
 
   unifyTyArrRules _ _  =
     []
 
-instance TyArrInferTypeHelper IOffline where
-  type TyArrInferTypeHelperConstraint e w s r m ki ty a IOffline =
+instance TyArrInferTypeHelper ITOffline where
+  type TyArrInferTypeHelperConstraint e w s r m ki ty a ITOffline =
     ( AsTyArr ki ty
     , Ord a
     , OrdRec (ty ki)

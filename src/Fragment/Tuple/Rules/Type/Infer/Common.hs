@@ -41,9 +41,9 @@ import Fragment.Tuple.Ast.Term
 import Rules.Unification
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.Offline (ITOffline)
 import Control.Monad.State (MonadState)
 import Data.Equivalence.Monad (classDesc)
 
@@ -68,8 +68,8 @@ class MkInferType i => TupleInferTypeHelper i where
              -> InferTypeMonad ki ty a m i [Type ki ty a]
 
 
-instance TupleInferTypeHelper ISyntax where
-  type TupleInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+instance TupleInferTypeHelper ITSyntax where
+  type TupleInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
     ( AsTyTuple ki ty
     , MonadError e m
     , AsExpectedTyTuple e ki ty a
@@ -84,8 +84,8 @@ instance TupleInferTypeHelper ISyntax where
   expectTuple _ _ =
     expectTyTuple
 
-instance TupleInferTypeHelper IOffline where
-  type TupleInferTypeHelperConstraint e w s r m ki ty a IOffline =
+instance TupleInferTypeHelper ITOffline where
+  type TupleInferTypeHelperConstraint e w s r m ki ty a ITOffline =
     ( AsTyTuple ki ty
     , MonadState s m
     , HasTyVarSupply s

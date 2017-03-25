@@ -43,8 +43,8 @@ import Fragment.Case.Ast.Warning
 import Fragment.Case.Ast.Term
 
 import Rules.Type.Infer.Common
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
+import Rules.Type.Infer.Offline (ITOffline)
 
 class MkInferType i => CaseInferTypeHelper i where
   liftInfer :: Monad m
@@ -56,10 +56,10 @@ class MkInferType i => CaseInferTypeHelper i where
             -> m x
             -> InferTypeMonad ki ty a m i x
 
-instance CaseInferTypeHelper ISyntax where
+instance CaseInferTypeHelper ITSyntax where
   liftInfer _ _ _ _ _ = id
 
-instance CaseInferTypeHelper IOffline where
+instance CaseInferTypeHelper ITOffline where
   liftInfer _ _ _ _ _ = lift
 
 type CaseInferTypeConstraint e w s r m ki ty pt tm a i =

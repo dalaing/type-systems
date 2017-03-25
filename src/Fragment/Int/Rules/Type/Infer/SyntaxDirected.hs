@@ -6,33 +6,26 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Int.Rules.Type.Infer.SyntaxDirected (
-    IntInferTypeContext
-  , intInferTypeRules
+    ISyntaxInt
   ) where
 
 import Control.Lens (review)
 
-import Rules.Type.Infer.SyntaxDirected
-import Ast.Type
+import Rules.Type.Infer.SyntaxDirected (ISyntax)
 
 import Fragment.Int.Ast.Type
-import Fragment.Int.Ast.Pattern
-import Fragment.Int.Ast.Term
-
 import Fragment.Int.Rules.Type.Infer.Common
 
-createInt :: (AsTyInt ki ty, Monad m)
-          => m (Type ki ty a)
-createInt =
-  return . review _TyInt $ ()
+data ISyntaxInt
 
-type IntInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
+instance IntInferTypeHelper ISyntax ISyntaxInt where
+  type IntInferTypeHelperConstraint e w s r m ki ty a ISyntax ISyntaxInt =
+    ( AsTyInt ki ty
+    , Monad m
+    )
 
-intInferTypeRules :: IntInferTypeContext e w s r m ki ty pt tm a
-              => InferTypeInput e w s r m m ki ty pt tm a
-intInferTypeRules =
-  let
-    ih = IntHelper createInt expectType
-  in
-    inferTypeInput ih
+  createInt _ _ _ =
+    return . review _TyInt $ ()

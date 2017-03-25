@@ -34,10 +34,10 @@ import Fragment.Fix.Ast.Term
 
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 import Control.Monad.Except (MonadError)
 
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.Offline (ITOffline)
 import Rules.Unification
 import Control.Monad.State (MonadState)
 
@@ -50,8 +50,8 @@ class MkInferType i => FixInferTypeHelper i where
             -> Type ki ty a
             -> InferTypeMonad ki ty a m i (Type ki ty a, Type ki ty a)
 
-instance FixInferTypeHelper ISyntax where
-  type FixInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+instance FixInferTypeHelper ITSyntax where
+  type FixInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
     ( AsTyArr ki ty
     , MonadError e m
     , AsExpectedTyArr e ki ty a
@@ -60,8 +60,8 @@ instance FixInferTypeHelper ISyntax where
   expectArr _ _ =
     expectTyArr
 
-instance FixInferTypeHelper IOffline where
-  type FixInferTypeHelperConstraint e w s r m ki ty a IOffline =
+instance FixInferTypeHelper ITOffline where
+  type FixInferTypeHelperConstraint e w s r m ki ty a ITOffline =
     ( AsTyArr ki ty
     , MonadState s m
     , HasTyVarSupply s

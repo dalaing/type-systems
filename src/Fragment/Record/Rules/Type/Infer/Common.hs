@@ -40,9 +40,9 @@ import Fragment.Record.Ast.Term
 
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.Offline (ITOffline)
 import Control.Monad.State (MonadState)
 import Data.Equivalence.Monad (classDesc)
 
@@ -67,8 +67,8 @@ class MkInferType i => RecordInferTypeHelper i where
              -> InferTypeMonad ki ty a m i [(T.Text, Type ki ty a)]
 
 
-instance RecordInferTypeHelper ISyntax where
-  type RecordInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+instance RecordInferTypeHelper ITSyntax where
+  type RecordInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
     ( AsTyRecord ki ty
     , MonadError e m
     , AsExpectedTyRecord e ki ty a
@@ -83,8 +83,8 @@ instance RecordInferTypeHelper ISyntax where
   expectRecord _ _ =
     expectTyRecord
 
-instance RecordInferTypeHelper IOffline where
-  type RecordInferTypeHelperConstraint e w s r m ki ty a IOffline =
+instance RecordInferTypeHelper ITOffline where
+  type RecordInferTypeHelperConstraint e w s r m ki ty a ITOffline =
     ( AsTyRecord ki ty
     , MonadState s m
     , HasTyVarSupply s

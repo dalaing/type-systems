@@ -13,7 +13,6 @@ module Fragment.If.Rules.Type.Infer.Common (
   ) where
 
 import Data.Proxy (Proxy(..))
-import GHC.Exts (Constraint)
 
 import Control.Lens (review, preview)
 

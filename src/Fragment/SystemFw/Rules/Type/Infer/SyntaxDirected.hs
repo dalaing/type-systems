@@ -63,7 +63,7 @@ inferTmApp m inferFn tm = do
     tyF <- inferFn tmF
     (tyArg, tyRet) <- expectTyArr tyF
     tyX <- inferFn tmX
-    expectTypeEq m (Proxy :: Proxy ISyntax) tyArg tyX
+    expectTypeEq m (Proxy :: Proxy ITSyntax) tyArg tyX
     return tyRet
 
 inferTmLamTy :: SystemFwInferTypeConstraint e w s r m ki ty pt tm a

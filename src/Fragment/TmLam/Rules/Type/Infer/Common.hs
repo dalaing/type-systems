@@ -42,8 +42,8 @@ import Fragment.TmLam.Ast.Term
 
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
+import Rules.Type.Infer.Offline (ITOffline)
 import Rules.Unification
 
 class MkInferType i => TmLamInferTypeHelper i where
@@ -55,8 +55,8 @@ class MkInferType i => TmLamInferTypeHelper i where
               -> Term ki ty pt tm a
               -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a, Scope () (Ast ki ty pt tm) (AstVar a)))
 
-instance TmLamInferTypeHelper ISyntax where
-  type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a ISyntax =
+instance TmLamInferTypeHelper ITSyntax where
+  type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a ITSyntax =
     ( AsTmLam ki ty pt tm
     , MonadError e m
     , AsExpectedTmLamAnnotation e
@@ -69,8 +69,8 @@ instance TmLamInferTypeHelper ISyntax where
         Nothing -> throwing _ExpectedTmLamAnnotation ()
         Just ty -> return (ty, s)
 
-instance TmLamInferTypeHelper IOffline where
-  type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a IOffline =
+instance TmLamInferTypeHelper ITOffline where
+  type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a ITOffline =
     ( AsTmLam ki ty pt tm
     , MonadState s m
     , HasTyVarSupply s

@@ -17,7 +17,7 @@ module Rules.Type.Infer.SyntaxDirected (
   , InferTypeInput(..)
   , InferTypeOutput(..)
   , prepareInferType
-  , ISyntax
+  , ITSyntax
   ) where
 
 import Control.Monad (unless)
@@ -30,19 +30,14 @@ import qualified Data.Map as M
 
 import Data.Functor.Rec
 
-import Ast.Kind
-import Ast.Type
-import Ast.Term
 import Ast.Error.Common
 
-import Rules.Kind.Infer.SyntaxDirected
+import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.Common as X
+data ITSyntax
 
-data ISyntax
-
-instance MkInferType ISyntax where
-  type MkInferTypeConstraint e w s r m ki ty a ISyntax =
+instance MkInferType ITSyntax where
+  type MkInferTypeConstraint e w s r m ki ty a ITSyntax =
     ( Eq a
     , EqRec (ty ki)
     , MonadError e m
@@ -51,11 +46,11 @@ instance MkInferType ISyntax where
     , AsExpectedTypeEq e ki ty a
     , AsExpectedTypeAllEq e ki ty a
     )
-  type InferTypeMonad ki ty a m ISyntax =
+  type InferTypeMonad ki ty a m ITSyntax =
     m
-  type MkInferErrorList ki ty pt tm a ISyntax =
+  type MkInferErrorList ki ty pt tm a ITSyntax =
     '[]
-  type MkInferWarningList ki ty pt tm a ISyntax =
+  type MkInferWarningList ki ty pt tm a ITSyntax =
     '[]
 
   mkCheckType m i =
@@ -69,7 +64,7 @@ instance MkInferType ISyntax where
     unless (ty1 == ty2) $
       throwing _ExpectedTypeEq (ty1, ty2)
 
-  expectTypeAllEq _ _ n@(ty :| tys) = do
+  expectTypeAllEq _ _ (ty :| tys) = do
     unless (all (== ty) tys) $
       throwing _ExpectedTypeAllEq (ty :| tys)
     return ty

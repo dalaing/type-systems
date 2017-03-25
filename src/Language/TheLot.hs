@@ -50,8 +50,8 @@ import Rules.Unification
 -- import qualified Rules.Type.Infer.Offline as UO
 import Rules.Type
 import Rules.Type.Infer.Common
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
+import Rules.Type.Infer.Offline (ITOffline)
 import Rules.Term
 
 import Fragment.PtVar
@@ -163,10 +163,10 @@ normalize =
 monadProxy :: Proxy i -> Proxy (MonadProxy (LError i) (LWarning i) Int LContext (M (LError i) (LWarning i) Int LContext))
 monadProxy _ = Proxy
 
-syntaxProxy :: Proxy ISyntax
+syntaxProxy :: Proxy ITSyntax
 syntaxProxy = Proxy
 
-offlineProxy :: Proxy IOffline
+offlineProxy :: Proxy ITOffline
 offlineProxy = Proxy
 
 --runInfer :: Proxy i -> LTerm -> (Either (LError i) LType, [LWarning i])
@@ -174,22 +174,22 @@ offlineProxy = Proxy
 --  runM (0 :: Int) emptyContext .
 --  ioInfer (inferTypeOutput (monadProxy i) i rules' undefined normalize)
 
-runInferSyntax :: LTerm -> (Either (LError ISyntax) LType, [LWarning ISyntax])
+runInferSyntax :: LTerm -> (Either (LError ITSyntax) LType, [LWarning ITSyntax])
 runInferSyntax =
   runM (0 :: Int) emptyContext .
   ioInfer (inferTypeOutput (monadProxy syntaxProxy) syntaxProxy rules undefined normalize)
 
-runCheckSyntax :: LTerm -> LType -> (Either (LError ISyntax) (), [LWarning ISyntax])
+runCheckSyntax :: LTerm -> LType -> (Either (LError ITSyntax) (), [LWarning ITSyntax])
 runCheckSyntax tm ty =
   runM (0 :: Int) emptyContext $
   ioCheck (inferTypeOutput (monadProxy syntaxProxy) syntaxProxy rules undefined normalize) tm ty
 
-runInferOffline :: LTerm -> (Either (LError IOffline) LType, [LWarning IOffline])
+runInferOffline :: LTerm -> (Either (LError ITOffline) LType, [LWarning ITOffline])
 runInferOffline =
   runM (0 :: Int) emptyContext .
   ioInfer (inferTypeOutput (monadProxy offlineProxy) offlineProxy rules undefined normalize)
 
-runCheckOffline :: LTerm -> LType -> (Either (LError IOffline) (), [LWarning IOffline])
+runCheckOffline :: LTerm -> LType -> (Either (LError ITOffline) (), [LWarning ITOffline])
 runCheckOffline tm ty =
   runM (0 :: Int) emptyContext $
   ioCheck (inferTypeOutput (monadProxy offlineProxy) offlineProxy rules undefined normalize) tm ty

@@ -39,10 +39,10 @@ import Fragment.Pair.Ast.Term
 
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 import Control.Monad.Except (MonadError)
 
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.Offline (ITOffline)
 import Control.Monad.State (MonadState)
 import Data.Equivalence.Monad (classDesc)
 
@@ -67,8 +67,8 @@ class MkInferType i => PairInferTypeHelper i where
              -> Type ki ty a
              -> InferTypeMonad ki ty a m i (Type ki ty a, Type ki ty a)
 
-instance PairInferTypeHelper ISyntax where
-  type PairInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+instance PairInferTypeHelper ITSyntax where
+  type PairInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
     ( AsTyPair ki ty
     , MonadError e m
     , AsExpectedTyPair e ki ty a
@@ -83,8 +83,8 @@ instance PairInferTypeHelper ISyntax where
   expectPair _ _ =
     expectTyPair
 
-instance PairInferTypeHelper IOffline where
-  type PairInferTypeHelperConstraint e w s r m ki ty a IOffline =
+instance PairInferTypeHelper ITOffline where
+  type PairInferTypeHelperConstraint e w s r m ki ty a ITOffline =
     ( AsTyPair ki ty
     , MonadState s m
     , HasTyVarSupply s

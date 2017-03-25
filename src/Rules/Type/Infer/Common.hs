@@ -98,11 +98,11 @@ mkCheckType' :: (Eq a, EqRec (ty ki), Monad m)
             -> Term ki ty pt tm a
             -> Type ki ty a
             -> m ()
-mkCheckType' expectType inferTypeFn =
+mkCheckType' expectTypeFn inferTypeFn =
   let
     go tm ty = do
       tyAc <- inferTypeFn tm
-      expectType (ExpectedType ty) (ActualType tyAc)
+      expectTypeFn (ExpectedType ty) (ActualType tyAc)
   in
     go
 

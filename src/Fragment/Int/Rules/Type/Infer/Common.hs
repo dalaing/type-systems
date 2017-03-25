@@ -7,12 +7,16 @@ Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Fragment.Int.Rules.Type.Infer.Common (
-    IntInferTypeHelper(..)
+    InferTypeInt
+  , IntInferTypeHelper(..)
   , IntInferTypeConstraint
   , intInferTypeInput
   ) where
@@ -33,12 +37,13 @@ import Fragment.Int.Ast.Term
 
 import Rules.Type.Infer.Common
 
-import Rules.Type.Infer.SyntaxDirected (ISyntax)
+import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 
-import Rules.Type.Infer.Offline (IOffline)
+import Rules.Type.Infer.Offline (ITOffline)
 import Ast.Type.Var
 import Control.Monad.State (MonadState)
- 
+
+data InferTypeInt
 
 class MkInferType i => IntInferTypeHelper i where
   type IntInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
@@ -48,8 +53,10 @@ class MkInferType i => IntInferTypeHelper i where
             -> Proxy i
             -> InferTypeMonad ki ty a m i (Type ki ty a)
 
-instance IntInferTypeHelper ISyntax where
-  type IntInferTypeHelperConstraint e w s r m ki ty a ISyntax =
+data ISyntaxInt
+
+instance IntInferTypeHelper ITSyntax where
+  type IntInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
     ( AsTyInt ki ty
     , Monad m
     )
@@ -57,8 +64,8 @@ instance IntInferTypeHelper ISyntax where
   createInt _ _ =
     return . review _TyInt $ ()
 
-instance IntInferTypeHelper IOffline where
-  type IntInferTypeHelperConstraint e w s r m ki ty a IOffline =
+instance IntInferTypeHelper ITOffline where
+  type IntInferTypeHelperConstraint e w s r m ki ty a ITOffline =
     ( MonadState s m
     , HasTyVarSupply s
     , ToTyVar a

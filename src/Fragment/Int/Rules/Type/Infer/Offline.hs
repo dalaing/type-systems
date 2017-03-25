@@ -6,36 +6,31 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 module Fragment.Int.Rules.Type.Infer.Offline (
-    IntInferTypeContext
-  , intInferTypeRules
+    IOfflineInt
   ) where
 
-import Control.Monad.State (MonadState)
 import Control.Lens (review)
 
-import Rules.Type.Infer.Offline
 import Ast.Type
 import Ast.Type.Var
 
-import Fragment.Int.Ast.Type
-import Fragment.Int.Ast.Pattern
-import Fragment.Int.Ast.Term
+import Rules.Type.Infer.Offline (IOffline)
+import Control.Monad.State (MonadState)
 
 import Fragment.Int.Rules.Type.Infer.Common
 
-createInt :: (MonadState s m, HasTyVarSupply s, ToTyVar a)
-          => m (Type ki ty a)
-createInt =
-  fmap (review _TyVar) freshTyVar
+data IOfflineInt
 
-type IntInferTypeContext e w s r m ki ty pt tm a = (InferTypeContext e w s r m ki ty pt tm a, MonadState s m, HasTyVarSupply s, ToTyVar a, AsTyInt ki ty, AsPtInt pt, AsTmInt ki ty pt tm)
+instance IntInferTypeHelper ITOffline IOfflineInt where
+  type IntInferTypeHelperConstraint e w s r m ki ty a ITOffline IOfflineInt =
+    ( MonadState s m
+    , HasTyVarSupply s
+    , ToTyVar a
+    )
 
-intInferTypeRules :: IntInferTypeContext e w s r m ki ty pt tm a
-              => InferTypeInput e w s r m (UnifyT ki ty a m) ki ty pt tm a
-intInferTypeRules =
-  let
-    ih = IntHelper createInt expectType
-  in
-    inferTypeInput ih
+  createInt _ _ _ =
+    fmap (review _TyVar) freshTyVar
