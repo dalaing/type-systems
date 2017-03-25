@@ -69,7 +69,7 @@ import Fragment.Variant
 import Fragment.Case
 import Fragment.Fix
 
--- import Fragment.SystemF
+import Fragment.SystemF
 -- import Fragment.SystemFw
 import Fragment.TyArr
 import Fragment.TmLam
@@ -88,6 +88,7 @@ type Rules =
    -- , TupleTag
    , RecordTag
    , VariantTag
+   -- , SystemFTag
    -- , CaseTag
    -- , FixTag
    -- , TyArrTag

@@ -193,7 +193,6 @@ class MkInferType i where
               -> Type ki ty a
               -> InferTypeMonad ki ty a m i ()
 
-  -- Might want to add a context in here
   prepareInferType :: MkInferTypeConstraint e w s r m ki ty a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
@@ -213,7 +212,7 @@ class MkInferType i => InferTypeRules i (k :: j) where
   type ErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: [*]
   type WarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: [*]
 
-  inferTypeInput' :: InferTypeConstraint e w s r m ki ty pt tm a i k
+  inferTypeInput :: InferTypeConstraint e w s r m ki ty pt tm a i k
                  => Proxy (MonadProxy e w s r m)
                  -> Proxy i
                  -> Proxy k
@@ -236,7 +235,7 @@ instance MkInferType i => InferTypeRules i '[] where
   type WarningList ki ty pt tm a i '[] =
     '[]
 
-  inferTypeInput' _ _ _ = mempty
+  inferTypeInput _ _ _ = mempty
 
 instance (MkInferType i, InferTypeRules i k, InferTypeRules i ks) => InferTypeRules i (k ': ks) where
   type InferTypeConstraint e w s r m ki ty pt tm a i (k ': ks) =
@@ -249,10 +248,10 @@ instance (MkInferType i, InferTypeRules i k, InferTypeRules i ks) => InferTypeRu
   type WarningList ki ty pt tm a i (k ': ks) =
     Append (WarningList ki ty pt tm a i k) (WarningList ki ty pt tm a i ks)
 
-  inferTypeInput' m i _ =
+  inferTypeInput m i _ =
     mappend
-      (inferTypeInput' m i (Proxy :: Proxy k))
-      (inferTypeInput' m i (Proxy :: Proxy ks))
+      (inferTypeInput m i (Proxy :: Proxy k))
+      (inferTypeInput m i (Proxy :: Proxy ks))
 
 class InferTypeRulesOut i k where
   type RError (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: *
@@ -270,4 +269,4 @@ inferTypeOutput :: (MkInferTypeConstraint e w s r m ki ty a i, InferTypeRules i 
                 -> (Type ki ty a -> Type ki ty a)
                 -> InferTypeOutput e w s r m ki ty pt tm a
 inferTypeOutput m i k inferKindFn normalizeTypeFn =
-  prepareInferType m i inferKindFn normalizeTypeFn (inferTypeInput' m i k)
+  prepareInferType m i inferKindFn normalizeTypeFn (inferTypeInput m i k)

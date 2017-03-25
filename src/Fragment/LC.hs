@@ -65,5 +65,5 @@ instance MkInferType i => InferTypeRules i LCTag where
   type WarningList ki ty pt tm a i LCTag =
     '[]
 
-  inferTypeInput' m i _ =
+  inferTypeInput m i _ =
     mempty

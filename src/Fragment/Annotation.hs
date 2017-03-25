@@ -57,5 +57,5 @@ instance MkInferType i => InferTypeRules i AnnotationTag where
   type WarningList ki ty pt tm a i AnnotationTag =
     '[]
 
-  inferTypeInput' m i _ =
+  inferTypeInput m i _ =
     annotationInferTypeInput m i

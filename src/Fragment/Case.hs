@@ -68,5 +68,5 @@ instance MkInferType i => InferTypeRules i CaseTag where
      , WarnShadowingPatternVariables a
      ]
 
-  inferTypeInput' m i _ =
+  inferTypeInput m i _ =
     caseInferTypeInput m i

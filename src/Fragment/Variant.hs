@@ -59,5 +59,5 @@ instance MkInferType i => InferTypeRules i VariantTag where
   type WarningList ki ty pt tm a i VariantTag =
     '[]
 
-  inferTypeInput' m i _ =
+  inferTypeInput m i _ =
     variantInferTypeInput m i

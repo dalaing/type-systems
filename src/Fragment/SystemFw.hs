@@ -64,5 +64,5 @@ instance InferTypeRules ISyntax SystemFwTag where
   type WarningList ki ty pt tm a ISyntax SystemFwTag =
     '[]
 
-  inferTypeInput' m i _ =
+  inferTypeInput m i _ =
     systemFwInferTypeInput m i

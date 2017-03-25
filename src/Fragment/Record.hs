@@ -66,5 +66,5 @@ instance MkInferType i => InferTypeRules i RecordTag where
   type WarningList ki ty pt tm a i RecordTag =
     '[]
 
-  inferTypeInput' m i _ =
+  inferTypeInput m i _ =
     recordInferTypeInput m i
