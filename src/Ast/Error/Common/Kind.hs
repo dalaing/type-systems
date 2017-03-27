@@ -20,6 +20,8 @@ module Ast.Error.Common.Kind (
   , AsUnexpectedKind(..)
   , ErrExpectedKindEq
   , AsExpectedKindEq(..)
+  , ErrExpectedKindAllEq
+  , AsExpectedKindAllEq(..)
   , ErrUnknownKindError(..)
   , AsUnknownKindError(..)
   ) where
@@ -27,13 +29,15 @@ module Ast.Error.Common.Kind (
 import Control.Lens.Prism (Prism')
 import Control.Lens.TH (makePrisms)
 
+import Data.List.NonEmpty (NonEmpty(..))
+
 import Ast.Kind
 import Ast.Error
 
-newtype ExpectedKind ki = ExpectedKind (Kind ki)
+newtype ExpectedKind ki = ExpectedKind ki
   deriving (Eq, Ord, Show)
 
-newtype ActualKind ki = ActualKind (Kind ki)
+newtype ActualKind ki = ActualKind ki
   deriving (Eq, Ord, Show)
 
 data ErrUnexpectedKind ki = ErrUnexpectedKind (ExpectedKind ki ) (ActualKind ki)
@@ -69,6 +73,23 @@ instance {-# OVERLAPPABLE #-} AsExpectedKindEq (ErrSum xs) ki => AsExpectedKindE
 
 instance {-# OVERLAPPING #-} AsExpectedKindEq (ErrSum (ErrExpectedKindEq ki ': xs)) ki where
   _ExpectedKindEq = _ErrNow . _ExpectedKindEq
+
+data ErrExpectedKindAllEq ki = ErrExpectedKindAllEq (NonEmpty (Kind ki))
+  deriving (Eq, Ord, Show)
+
+makePrisms ''ErrExpectedKindAllEq
+
+class AsExpectedKindAllEq e ki where -- | e -> ty, e -> a where
+  _ExpectedKindAllEq :: Prism' e (NonEmpty (Kind ki))
+
+instance AsExpectedKindAllEq (ErrExpectedKindAllEq ki) ki where
+  _ExpectedKindAllEq = _ErrExpectedKindAllEq
+
+instance {-# OVERLAPPABLE #-} AsExpectedKindAllEq (ErrSum xs) ki => AsExpectedKindAllEq (ErrSum (x ': xs)) ki where
+  _ExpectedKindAllEq = _ErrNext . _ExpectedKindAllEq
+
+instance {-# OVERLAPPING #-} AsExpectedKindAllEq (ErrSum (ErrExpectedKindAllEq ki ': xs)) ki where
+  _ExpectedKindAllEq = _ErrNow . _ExpectedKindAllEq
 
 data ErrUnknownKindError = ErrUnknownKindError
   deriving (Eq, Ord, Show)

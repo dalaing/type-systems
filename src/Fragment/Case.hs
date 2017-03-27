@@ -59,11 +59,11 @@ instance NormalizeRules CaseTag where
 instance MkInferType i => InferTypeRules i CaseTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i CaseTag =
     CaseInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i CaseTag =
+  type InferTypeErrorList ki ty pt tm a i CaseTag =
     '[ ErrDuplicatedPatternVariables a
      , ErrExpectedPattern ki ty pt tm a
      ]
-  type WarningList ki ty pt tm a i CaseTag =
+  type InferTypeWarningList ki ty pt tm a i CaseTag =
     '[ WarnUnusedPatternVariables a
      , WarnShadowingPatternVariables a
      ]

@@ -53,9 +53,9 @@ instance NormalizeRules TmLamTag where
 instance MkInferType i => InferTypeRules i TmLamTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i TmLamTag =
     TmLamInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i TmLamTag =
+  type InferTypeErrorList ki ty pt tm a i TmLamTag =
     '[ ErrExpectedTmLamAnnotation ]
-  type WarningList ki ty pt tm a i TmLamTag =
+  type InferTypeWarningList ki ty pt tm a i TmLamTag =
     '[]
 
   inferTypeInput m i _ =

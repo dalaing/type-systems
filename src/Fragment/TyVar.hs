@@ -17,12 +17,14 @@ module Fragment.TyVar (
 import GHC.Exts (Constraint)
 
 import Ast
+import Rules.Kind.Infer.Common
 import Rules.Type
 import Rules.Type.Infer.Common
 import Rules.Term
 
 import Fragment.TyVar.Helpers as X
 
+import Fragment.TyVar.Rules.Kind.Infer.Common
 import Fragment.TyVar.Rules.Type
 
 data TyVarTag
@@ -50,10 +52,21 @@ instance NormalizeRules TyVarTag where
 instance MkInferType i => InferTypeRules i TyVarTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i TyVarTag =
     (() :: Constraint)
-  type ErrorList ki ty pt tm a i TyVarTag =
+  type InferTypeErrorList ki ty pt tm a i TyVarTag =
     '[]
-  type WarningList ki ty pt tm a i TyVarTag =
+  type InferTypeWarningList ki ty pt tm a i TyVarTag =
     '[]
 
   inferTypeInput _ _ _ =
     mempty
+
+instance MkInferKind i => InferKindRules i TyVarTag where
+  type InferKindConstraint e w s r m ki ty a i TyVarTag =
+    TyVarInferKindConstraint e w s r m ki ty a i
+  type InferKindErrorList ki ty a i TyVarTag =
+    '[]
+  type InferKindWarningList ki ty a i TyVarTag =
+    '[]
+
+  inferKindInput m i _ =
+    tyVarInferKindInput m i

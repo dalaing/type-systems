@@ -12,12 +12,7 @@ Portability : non-portable
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds #-}
 module Rules.Type.Infer.SyntaxDirected (
-    InferTypeRule(..)
-  , PCheckRule(..)
-  , InferTypeInput(..)
-  , InferTypeOutput(..)
-  , prepareInferType
-  , ITSyntax
+    ITSyntax
   ) where
 
 import Control.Monad (unless)
@@ -48,9 +43,9 @@ instance MkInferType ITSyntax where
     )
   type InferTypeMonad ki ty a m ITSyntax =
     m
-  type MkInferErrorList ki ty pt tm a ITSyntax =
+  type MkInferTypeErrorList ki ty pt tm a ITSyntax =
     '[]
-  type MkInferWarningList ki ty pt tm a ITSyntax =
+  type MkInferTypeWarningList ki ty pt tm a ITSyntax =
     '[]
 
   mkCheckType m i =

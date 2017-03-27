@@ -53,9 +53,9 @@ instance NormalizeRules IfTag where
 instance MkInferType i => InferTypeRules i IfTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i IfTag =
     IfInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i IfTag =
+  type InferTypeErrorList ki ty pt tm a i IfTag =
     '[]
-  type WarningList ki ty pt tm a i IfTag =
+  type InferTypeWarningList ki ty pt tm a i IfTag =
     '[]
 
   inferTypeInput m i _ =

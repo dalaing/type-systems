@@ -15,6 +15,7 @@ module Fragment.Pair (
   ) where
 
 import Ast
+import Rules.Kind.Infer.Common
 import Rules.Type
 import Rules.Type.Infer.Common
 import Rules.Term
@@ -23,6 +24,7 @@ import Fragment.KiBase.Ast.Kind
 import Fragment.Pair.Ast as X
 import Fragment.Pair.Helpers as X
 
+import Fragment.Pair.Rules.Kind.Infer.Common
 import Fragment.Pair.Rules.Type
 import Fragment.Pair.Rules.Type.Infer.Common
 import Fragment.Pair.Rules.Term
@@ -59,10 +61,21 @@ instance NormalizeRules PairTag where
 instance MkInferType i => InferTypeRules i PairTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i PairTag =
     PairInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i PairTag =
+  type InferTypeErrorList ki ty pt tm a i PairTag =
     '[ErrExpectedTyPair ki ty a]
-  type WarningList ki ty pt tm a i PairTag =
+  type InferTypeWarningList ki ty pt tm a i PairTag =
     '[]
 
   inferTypeInput m i _ =
     pairInferTypeInput m i
+
+instance MkInferKind i => InferKindRules i PairTag where
+  type InferKindConstraint e w s r m ki ty a i PairTag =
+    PairInferKindConstraint e w s r m ki ty a i
+  type InferKindErrorList ki ty a i PairTag =
+    '[]
+  type InferKindWarningList ki ty a i PairTag =
+    '[]
+
+  inferKindInput m i _ =
+    pairInferKindInput m i

@@ -51,9 +51,9 @@ instance NormalizeRules PtVarTag where
 instance MkInferType i => InferTypeRules i PtVarTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i PtVarTag =
     PtVarInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i PtVarTag =
+  type InferTypeErrorList ki ty pt tm a i PtVarTag =
     '[]
-  type WarningList ki ty pt tm a i PtVarTag =
+  type InferTypeWarningList ki ty pt tm a i PtVarTag =
     '[]
 
   inferTypeInput m i _ =

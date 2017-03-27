@@ -56,9 +56,9 @@ instance NormalizeRules FixTag where
 instance MkInferType i => InferTypeRules i FixTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i FixTag =
     FixInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i FixTag =
+  type InferTypeErrorList ki ty pt tm a i FixTag =
     '[ ErrExpectedTyArr ki ty a ]
-  type WarningList ki ty pt tm a i FixTag =
+  type InferTypeWarningList ki ty pt tm a i FixTag =
     '[]
 
   inferTypeInput m i _ =

@@ -52,9 +52,9 @@ instance NormalizeRules PtWildTag where
 instance MkInferType i => InferTypeRules i PtWildTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i PtWildTag =
     PtWildInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i PtWildTag =
+  type InferTypeErrorList ki ty pt tm a i PtWildTag =
     '[]
-  type WarningList ki ty pt tm a i PtWildTag =
+  type InferTypeWarningList ki ty pt tm a i PtWildTag =
     '[]
 
   inferTypeInput m i _ =

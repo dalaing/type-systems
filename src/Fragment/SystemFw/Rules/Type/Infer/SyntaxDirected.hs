@@ -6,7 +6,10 @@ Stability   : experimental
 Portability : non-portable
 -}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Fragment.SystemFw.Rules.Type.Infer.SyntaxDirected (
     SystemFwInferTypeConstraint
   , systemFwInferTypeInput
@@ -22,7 +25,7 @@ import Control.Lens (review, preview, (%~))
 import Control.Lens.Wrapped (_Wrapped)
 import Data.Functor.Classes (Eq1)
 
-import Rules.Kind.Infer.SyntaxDirected
+import Rules.Kind.Infer.Common
 import Rules.Type.Infer.Common
 import Rules.Type.Infer.SyntaxDirected
 import Ast.Kind
@@ -84,15 +87,15 @@ inferTmAppTy :: SystemFwInferTypeConstraint e w s r m ki ty pt tm a
              -> (Term ki ty pt tm a -> m (Type ki ty a))
              -> Term ki ty pt tm a
              -> Maybe (m (Type ki ty a))
-inferTmAppTy _ inferKindFn inferTypeFn tm = do
+inferTmAppTy m inferKindFn inferTypeFn tm = do
   (tmF, tyX) <- preview _TmAppTy tm
   return $ do
     tyF <- inferTypeFn tmF
     (ki, s) <- expectTyAll tyF
-    mkCheckKind inferKindFn tyX ki
+    mkCheckKind m (Proxy :: Proxy ki) (Proxy :: Proxy ty) (Proxy :: Proxy a) _ inferKindFn tyX ki
     return $ instantiate1 tyX s
 
-type SystemFwInferTypeConstraint e w s r m ki ty pt tm a = (Ord a, EqRec (ty ki), Eq1 ki, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTypeContext r ki a, HasTermContext r ki ty a, AsTySystemFw ki ty, MonadError e m, AsUnexpectedKind e ki, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemFw ki ty pt tm, AsUnknownTypeError e, AsUnexpectedType e ki ty a, AsExpectedTypeAllEq e ki ty a)
+type SystemFwInferTypeConstraint e w s r m ki ty pt tm a = (Ord a, EqRec (ty ki), Eq1 ki, MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTypeContext r ki a, HasTermContext r ki ty a, AsTySystemFw ki ty, MonadError e m, AsUnexpectedKind e (Kind ki), AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemFw ki ty pt tm, AsUnknownTypeError e, AsUnexpectedType e ki ty a, AsExpectedTypeAllEq e ki ty a)
 
 systemFwInferTypeInput :: SystemFwInferTypeConstraint e w s r m ki ty pt tm a
                        => Proxy (MonadProxy e w s r m)

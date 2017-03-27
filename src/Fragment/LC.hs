@@ -60,9 +60,9 @@ instance NormalizeRules LCTag where
 instance MkInferType i => InferTypeRules i LCTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i LCTag =
     (() :: Constraint)
-  type ErrorList ki ty pt tm a i LCTag =
+  type InferTypeErrorList ki ty pt tm a i LCTag =
     '[]
-  type WarningList ki ty pt tm a i LCTag =
+  type InferTypeWarningList ki ty pt tm a i LCTag =
     '[]
 
   inferTypeInput m i _ =

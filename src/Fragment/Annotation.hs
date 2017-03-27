@@ -52,9 +52,9 @@ instance NormalizeRules AnnotationTag where
 instance MkInferType i => InferTypeRules i AnnotationTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i AnnotationTag =
     AnnotationInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i AnnotationTag =
+  type InferTypeErrorList ki ty pt tm a i AnnotationTag =
     '[]
-  type WarningList ki ty pt tm a i AnnotationTag =
+  type InferTypeWarningList ki ty pt tm a i AnnotationTag =
     '[]
 
   inferTypeInput m i _ =

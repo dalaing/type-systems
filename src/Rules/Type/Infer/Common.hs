@@ -54,6 +54,7 @@ import Ast.Error.Common
 import Ast.Warning
 import Data.Functor.Rec
 import Util.TypeList
+import Util.MonadProxy
 
 import Rules.Unification
 
@@ -156,14 +157,12 @@ data InferTypeOutput e w s r m ki ty pt tm a =
   , ioCheck :: Term ki ty pt tm a -> Type ki ty a -> m ()
   }
 
-data MonadProxy (e :: *) (w :: *) (s :: *) (r :: *) (m :: * -> *)
-
 class MkInferType i where
   type MkInferTypeConstraint (e :: *) (w :: *) (s :: *) (r :: *) (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
   type InferTypeMonad (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a (m :: * -> *) i :: (* -> *)
 
-  type MkInferErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: [*]
-  type MkInferWarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: [*]
+  type MkInferTypeErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: [*]
+  type MkInferTypeWarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: [*]
 
   expectType :: MkInferTypeConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)
@@ -209,8 +208,8 @@ type BasicInferTypeConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> 
 class MkInferType i => InferTypeRules i (k :: j) where
   type InferTypeConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: Constraint
 
-  type ErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: [*]
-  type WarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: [*]
+  type InferTypeErrorList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: [*]
+  type InferTypeWarningList (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: [*]
 
   inferTypeInput :: InferTypeConstraint e w s r m ki ty pt tm a i k
                  => Proxy (MonadProxy e w s r m)
@@ -223,17 +222,17 @@ instance MkInferType i => InferTypeRules i '[] where
     MkInferTypeConstraint e w s r m ki ty a i
 
   -- pull in error lists from MkInferType i
-  type ErrorList ki ty pt tm a i '[] =
+  type InferTypeErrorList ki ty pt tm a i '[] =
     Append
-    (MkInferErrorList ki ty pt tm a i)
+    (MkInferTypeErrorList ki ty pt tm a i)
     ('[ ErrUnknownTypeError
       , ErrUnexpectedType ki ty a
       , ErrExpectedTypeEq ki ty a
       , ErrExpectedTypeAllEq ki ty a
       ])
 
-  type WarningList ki ty pt tm a i '[] =
-    '[]
+  type InferTypeWarningList ki ty pt tm a i '[] =
+    MkInferTypeWarningList ki ty pt tm a i
 
   inferTypeInput _ _ _ = mempty
 
@@ -243,10 +242,14 @@ instance (MkInferType i, InferTypeRules i k, InferTypeRules i ks) => InferTypeRu
     , InferTypeConstraint e w s r m ki ty pt tm a i ks
     )
 
-  type ErrorList ki ty pt tm a i (k ': ks) =
-    Append (ErrorList ki ty pt tm a i k) (ErrorList ki ty pt tm a i ks)
-  type WarningList ki ty pt tm a i (k ': ks) =
-    Append (WarningList ki ty pt tm a i k) (WarningList ki ty pt tm a i ks)
+  type InferTypeErrorList ki ty pt tm a i (k ': ks) =
+    Append
+      (InferTypeErrorList ki ty pt tm a i k)
+      (InferTypeErrorList ki ty pt tm a i ks)
+  type InferTypeWarningList ki ty pt tm a i (k ': ks) =
+    Append
+      (InferTypeWarningList ki ty pt tm a i k)
+      (InferTypeWarningList ki ty pt tm a i ks)
 
   inferTypeInput m i _ =
     mappend
@@ -254,12 +257,12 @@ instance (MkInferType i, InferTypeRules i k, InferTypeRules i ks) => InferTypeRu
       (inferTypeInput m i (Proxy :: Proxy ks))
 
 class InferTypeRulesOut i k where
-  type RError (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: *
-  type RWarning (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: *
+  type InferTypeError (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: *
+  type InferTypeWarning (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i k :: *
 
 instance InferTypeRules i k => InferTypeRulesOut i k where
-  type RError ki ty pt tm a i k = ErrSum (ErrorList ki ty pt tm a i k)
-  type RWarning ki ty pt tm a i k = WarnSum (WarningList ki ty pt tm a i k)
+  type InferTypeError ki ty pt tm a i k = ErrSum (InferTypeErrorList ki ty pt tm a i k)
+  type InferTypeWarning ki ty pt tm a i k = WarnSum (InferTypeWarningList ki ty pt tm a i k)
 
 inferTypeOutput :: (MkInferTypeConstraint e w s r m ki ty a i, InferTypeRules i k, InferTypeConstraint e w s r m ki ty pt tm a i k)
                 => Proxy (MonadProxy e w s r m)

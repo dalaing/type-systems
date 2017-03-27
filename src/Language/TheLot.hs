@@ -107,8 +107,8 @@ type TermF = RTermF Rules
 
 type LTerm = Term KindF TypeF PatternF TermF String
 type LType = Type KindF TypeF String
-type LError i = RError KindF TypeF PatternF TermF String i Rules
-type LWarning i = RWarning KindF TypeF PatternF TermF String i Rules
+type LError i = InferTypeError KindF TypeF PatternF TermF String i Rules
+type LWarning i = InferTypeWarning KindF TypeF PatternF TermF String i Rules
 
 type M e w s r = StateT s (ReaderT r (ExceptT e (Writer [w])))
 

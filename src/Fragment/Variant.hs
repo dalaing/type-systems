@@ -52,11 +52,11 @@ instance NormalizeRules VariantTag where
 instance MkInferType i => InferTypeRules i VariantTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i VariantTag =
     VariantInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i VariantTag =
+  type InferTypeErrorList ki ty pt tm a i VariantTag =
     '[ ErrExpectedTyVariant ki ty a
      , ErrVariantNotFound
      ]
-  type WarningList ki ty pt tm a i VariantTag =
+  type InferTypeWarningList ki ty pt tm a i VariantTag =
     '[]
 
   inferTypeInput m i _ =

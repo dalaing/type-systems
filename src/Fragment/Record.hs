@@ -59,11 +59,11 @@ instance NormalizeRules RecordTag where
 instance MkInferType i => InferTypeRules i RecordTag where
   type InferTypeConstraint e w s r m ki ty pt tm a i RecordTag =
     RecordInferTypeConstraint e w s r m ki ty pt tm a i
-  type ErrorList ki ty pt tm a i RecordTag =
+  type InferTypeErrorList ki ty pt tm a i RecordTag =
     '[ ErrExpectedTyRecord ki ty a
      , ErrRecordNotFound
      ]
-  type WarningList ki ty pt tm a i RecordTag =
+  type InferTypeWarningList ki ty pt tm a i RecordTag =
     '[]
 
   inferTypeInput m i _ =

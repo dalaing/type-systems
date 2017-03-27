@@ -20,13 +20,20 @@ Portability : non-portable
 {-# LANGUAGE TemplateHaskell #-}
 module Ast.Kind (
     Kind(..)
+  , UnifyKind(..)
+  , _UnifyKindVar
+  , _UnifyKind
+  , _UKind
   , KiSum(..)
   , _KiNow
   , _KiNext
   ) where
 
+import Control.Monad (ap)
+
+import Control.Error (note)
 import Control.Lens.Prism (Prism', prism)
-import Control.Lens.TH (makeWrapped)
+import Control.Lens.TH (makePrisms, makeWrapped)
 import Data.Functor.Classes
 
 newtype Kind k = Kind (k (Kind k))
@@ -41,6 +48,53 @@ instance Ord1 k => Ord (Kind k) where
 
 instance Show1 k => Show (Kind k) where
   showsPrec n (Kind x) = liftShowsPrec showsPrec showList n x
+
+data UnifyKind ki a =
+    UnifyKindVar a
+  | UnifyKind (ki (UnifyKind ki a))
+  deriving (Functor, Foldable, Traversable)
+
+makePrisms ''UnifyKind
+
+instance Functor ki => Applicative (UnifyKind ki) where
+  pure = return
+  (<*>) = ap
+
+instance Functor ki => Monad (UnifyKind ki) where
+  return = UnifyKindVar
+  UnifyKindVar x >>= f = f x
+  UnifyKind ki >>= f = UnifyKind (fmap (>>= f) ki)
+
+instance (Eq a, Eq1 ki) => Eq (UnifyKind ki a) where
+  UnifyKindVar x == UnifyKindVar y = x == y
+  UnifyKind x == UnifyKind y = liftEq (==) x y
+  _ == _ = False
+
+instance (Ord a, Ord1 ki) => Ord (UnifyKind ki a) where
+  compare (UnifyKindVar x) (UnifyKindVar y) = compare x y
+  compare (UnifyKindVar _) _ = LT
+  compare _ (UnifyKindVar _) = GT
+  compare (UnifyKind x) (UnifyKind y) = liftCompare compare x y
+
+kindToUnifyKind :: Functor ki
+                => Kind ki
+                -> UnifyKind ki a
+kindToUnifyKind (Kind ki) =
+  UnifyKind (kindToUnifyKind <$> ki)
+
+unifyKindToKind :: Traversable ki
+                => UnifyKind ki a
+                -> Maybe (Kind ki)
+unifyKindToKind (UnifyKindVar _) =
+  Nothing
+unifyKindToKind (UnifyKind ki) =
+  Kind <$> traverse unifyKindToKind ki
+
+_UKind :: Traversable ki => Prism' (UnifyKind ki a) (Kind ki)
+_UKind = prism there back
+  where
+    there = kindToUnifyKind
+    back x = note x . unifyKindToKind $ x
 
 data KiSum (f :: [k -> *]) (a :: k) where
   KiNext :: KiSum f a -> KiSum (g ': f) a

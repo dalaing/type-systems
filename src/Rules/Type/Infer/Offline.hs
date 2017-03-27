@@ -5,23 +5,14 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 module Rules.Type.Infer.Offline (
-    InferTypeRule(..)
-  , PCheckRule(..)
-  , UnifyT
-  , InferTypeInput(..)
-  , InferTypeOutput(..)
+    UnifyT
   , ITOffline
   ) where
 
@@ -89,12 +80,12 @@ instance MkInferType ITOffline where
     )
   type InferTypeMonad ki ty a m ITOffline =
     UnifyT ki ty a m
-  type MkInferErrorList ki ty pt tm a ITOffline =
+  type MkInferTypeErrorList ki ty pt tm a ITOffline =
     '[ ErrOccursError (Type ki ty) a
      , ErrUnificationMismatch (Type ki ty) a
      , ErrUnificationExpectedEq (Type ki ty) a
      ]
-  type MkInferWarningList ki ty pt tm a ITOffline =
+  type MkInferTypeWarningList ki ty pt tm a ITOffline =
     '[]
 
   mkCheckType m i =
