@@ -29,7 +29,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFBool (ki :: * -> *) (ty :: * -> *) a =
+data TyFBool (ki :: (* -> *) -> * -> *) (ty :: * -> *) a =
   TyBoolF
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 

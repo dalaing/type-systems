@@ -21,27 +21,30 @@ Portability : non-portable
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Ast.Term (
-    AstVar(..)
-  , _ATyVar
-  , _APtVar
-  , _ATmVar
-  , Ast(..)
-  , AstEq
-  , AstOrd
-  , AstShow
-  , AstBound
-  , AstTransversable
-  , _AVar
-  , _AType
-  , _APattern
-  , _ATerm
+    TmAstVar(..)
+  , _TmAstKiVar
+  , _TmAstTyVar
+  , _TmAstPtVar
+  , _TmAstTmVar
+  , TmAst(..)
+  , TmAstEq
+  , TmAstOrd
+  , TmAstShow
+  , TmAstBound
+  , TmAstTransversable
+  , _TmAstVar
+  , _TmAstKind
+  , _TmAstType
+  , _TmAstPattern
+  , _TmAstTerm
   , Term(..)
   , _TmVar
   , TmSum(..)
   , _TmNow
   , _TmNext
-  , _Type
-  , _Pattern
+  , _TmKind
+  , _TmType
+  , _TmPattern
   ) where
 
 import Control.Monad (ap)
@@ -60,137 +63,152 @@ import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1, makeLiftEq, makeLiftCo
 import Data.Bitransversable
 import Data.Functor.Rec
 
+import Ast.Kind
 import Ast.Type
 import Ast.Pattern
 
 -- AstVar
 
-data AstVar a =
-    ATyVar a
-  | APtVar a
-  | ATmVar a
+data TmAstVar a =
+    TmAstKiVar a
+  | TmAstTyVar a
+  | TmAstPtVar a
+  | TmAstTmVar a
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-makePrisms ''AstVar
+makePrisms ''TmAstVar
 
-deriveEq1 ''AstVar
-deriveOrd1 ''AstVar
-deriveShow1 ''AstVar
+deriveEq1 ''TmAstVar
+deriveOrd1 ''TmAstVar
+deriveShow1 ''TmAstVar
 
 -- AstVar
 
 -- TODO with type families, we could add annotations here by just adding some more constraints
-data Ast (ki :: * -> *) ty pt tm a =
-    AVar a
-  | AType (ty ki (Ast ki ty pt tm) a)
-  | APattern (pt (Ast ki ty pt tm) a)
-  | ATerm (tm ki ty pt (Ast ki ty pt tm) a)
+data TmAst (ki :: (* -> *) -> * -> *) ty pt tm a =
+    TmAstVar a
+  | TmAstKind (ki (TmAst ki ty pt tm) a)
+  | TmAstType (ty ki (TmAst ki ty pt tm) a)
+  | TmAstPattern (pt (TmAst ki ty pt tm) a)
+  | TmAstTerm (tm ki ty pt (TmAst ki ty pt tm) a)
 
-makePrisms ''Ast
+makePrisms ''TmAst
 
-type AstConstraint (k :: ((* -> *) -> * -> *) -> Constraint) ki ty pt tm = (k (ty ki), k pt, k (tm ki ty pt))
-type AstTransversable ki ty pt tm = AstConstraint (Bitransversable) ki ty pt tm
-type AstBound ki ty pt tm = AstConstraint Bound ki ty pt tm
-type AstEq ki ty pt tm = AstConstraint EqRec ki ty pt tm
-type AstOrd ki ty pt tm = AstConstraint OrdRec ki ty pt tm
-type AstShow ki ty pt tm = AstConstraint ShowRec ki ty pt tm
+type TmAstConstraint (k :: ((* -> *) -> * -> *) -> Constraint) ki ty pt tm = (k ki, k (ty ki), k pt, k (tm ki ty pt))
+type TmAstTransversable ki ty pt tm = TmAstConstraint (Bitransversable) ki ty pt tm
+type TmAstBound ki ty pt tm = TmAstConstraint Bound ki ty pt tm
+type TmAstEq ki ty pt tm = TmAstConstraint EqRec ki ty pt tm
+type TmAstOrd ki ty pt tm = TmAstConstraint OrdRec ki ty pt tm
+type TmAstShow ki ty pt tm = TmAstConstraint ShowRec ki ty pt tm
 
-instance (Eq a, AstEq ki ty pt tm) => Eq (Ast ki ty pt tm a) where
-  AVar x == AVar y = x == y
-  AType x == AType y = eqRec x y
-  APattern x == APattern y = eqRec x y
-  ATerm x == ATerm y = eqRec x y
+instance (Eq a, TmAstEq ki ty pt tm) => Eq (TmAst ki ty pt tm a) where
+  TmAstVar x == TmAstVar y = x == y
+  TmAstKind x == TmAstKind y = eqRec x y
+  TmAstType x == TmAstType y = eqRec x y
+  TmAstPattern x == TmAstPattern y = eqRec x y
+  TmAstTerm x == TmAstTerm y = eqRec x y
   _ == _ = False
 
-instance AstEq ki ty pt tm => Eq1 (Ast ki ty pt tm) where
-  liftEq e (AVar x) (AVar y) = e x y
-  liftEq e (AType x) (AType y) = liftEq1Rec e x y
-  liftEq e (APattern x) (APattern y) = liftEq1Rec e x y
-  liftEq e (ATerm x) (ATerm y) = liftEq1Rec e x y
+instance TmAstEq ki ty pt tm => Eq1 (TmAst ki ty pt tm) where
+  liftEq e (TmAstVar x) (TmAstVar y) = e x y
+  liftEq e (TmAstKind x) (TmAstKind y) = liftEq1Rec e x y
+  liftEq e (TmAstType x) (TmAstType y) = liftEq1Rec e x y
+  liftEq e (TmAstPattern x) (TmAstPattern y) = liftEq1Rec e x y
+  liftEq e (TmAstTerm x) (TmAstTerm y) = liftEq1Rec e x y
   liftEq _ _ _ = False
 
-instance (Ord a, AstOrd ki ty pt tm) => Ord (Ast ki ty pt tm a) where
-  compare (AVar x) (AVar y) = compare x y
-  compare (AVar _) _ = LT
-  compare _ (AVar _) = GT
-  compare (AType x) (AType y) = compareRec x y
-  compare (AType _) _ = LT
-  compare _ (AType _) = GT
-  compare (APattern x) (APattern y) = compareRec x y
-  compare (APattern _) _ = LT
-  compare _ (APattern _) = GT
-  compare (ATerm x) (ATerm y) = compareRec x y
+instance (Ord a, TmAstOrd ki ty pt tm) => Ord (TmAst ki ty pt tm a) where
+  compare (TmAstVar x) (TmAstVar y) = compare x y
+  compare (TmAstVar _) _ = LT
+  compare _ (TmAstVar _) = GT
+  compare (TmAstKind x) (TmAstKind y) = compareRec x y
+  compare (TmAstKind _) _ = LT
+  compare _ (TmAstKind _) = GT
+  compare (TmAstType x) (TmAstType y) = compareRec x y
+  compare (TmAstType _) _ = LT
+  compare _ (TmAstType _) = GT
+  compare (TmAstPattern x) (TmAstPattern y) = compareRec x y
+  compare (TmAstPattern _) _ = LT
+  compare _ (TmAstPattern _) = GT
+  compare (TmAstTerm x) (TmAstTerm y) = compareRec x y
 
-instance AstOrd ki ty pt tm => Ord1 (Ast ki ty pt tm) where
-  liftCompare c (AVar x) (AVar y) = c x y
-  liftCompare _ (AVar _) _ = LT
-  liftCompare _ _ (AVar _) = GT
-  liftCompare c (AType x) (AType y) = liftCompare1Rec c x y
-  liftCompare _ (AType _) _ = LT
-  liftCompare _ _ (AType _) = GT
-  liftCompare c (APattern x) (APattern y) = liftCompare1Rec c x y
-  liftCompare _ (APattern _) _ = LT
-  liftCompare _ _ (APattern _) = GT
-  liftCompare c (ATerm x) (ATerm y) = liftCompare1Rec c x y
+instance TmAstOrd ki ty pt tm => Ord1 (TmAst ki ty pt tm) where
+  liftCompare c (TmAstVar x) (TmAstVar y) = c x y
+  liftCompare _ (TmAstVar _) _ = LT
+  liftCompare _ _ (TmAstVar _) = GT
+  liftCompare c (TmAstKind x) (TmAstKind y) = liftCompare1Rec c x y
+  liftCompare _ (TmAstKind _) _ = LT
+  liftCompare _ _ (TmAstKind _) = GT
+  liftCompare c (TmAstType x) (TmAstType y) = liftCompare1Rec c x y
+  liftCompare _ (TmAstType _) _ = LT
+  liftCompare _ _ (TmAstType _) = GT
+  liftCompare c (TmAstPattern x) (TmAstPattern y) = liftCompare1Rec c x y
+  liftCompare _ (TmAstPattern _) _ = LT
+  liftCompare _ _ (TmAstPattern _) = GT
+  liftCompare c (TmAstTerm x) (TmAstTerm y) = liftCompare1Rec c x y
 
-instance (Show a, AstShow ki ty pt tm) => Show (Ast ki ty pt tm a) where
-  showsPrec n (AVar x) = showsUnaryWith showsPrec "AVar" n x
-  showsPrec n (AType x) = showsUnaryWith showsPrecRec "AType" n x
-  showsPrec n (APattern x) = showsUnaryWith showsPrecRec "APattern" n x
-  showsPrec n (ATerm x) = showsUnaryWith showsPrecRec "ATerm" n x
+instance (Show a, TmAstShow ki ty pt tm) => Show (TmAst ki ty pt tm a) where
+  showsPrec n (TmAstVar x) = showsUnaryWith showsPrec "TmAstVar" n x
+  showsPrec n (TmAstKind x) = showsUnaryWith showsPrecRec "TmAstKind" n x
+  showsPrec n (TmAstType x) = showsUnaryWith showsPrecRec "TmAstType" n x
+  showsPrec n (TmAstPattern x) = showsUnaryWith showsPrecRec "TmAstPattern" n x
+  showsPrec n (TmAstTerm x) = showsUnaryWith showsPrecRec "TmAstTerm" n x
 
-instance AstShow ki ty pt tm => Show1 (Ast ki ty pt tm) where
-  liftShowsPrec s _ n (AVar x) = s n x
-  liftShowsPrec s sl n (AType x) = liftShowsPrec1Rec s sl n x
-  liftShowsPrec s sl n (APattern x) = liftShowsPrec1Rec s sl n x
-  liftShowsPrec s sl n (ATerm x) = liftShowsPrec1Rec s sl n x
+instance TmAstShow ki ty pt tm => Show1 (TmAst ki ty pt tm) where
+  liftShowsPrec s _ n (TmAstVar x) = s n x
+  liftShowsPrec s sl n (TmAstKind x) = liftShowsPrec1Rec s sl n x
+  liftShowsPrec s sl n (TmAstType x) = liftShowsPrec1Rec s sl n x
+  liftShowsPrec s sl n (TmAstPattern x) = liftShowsPrec1Rec s sl n x
+  liftShowsPrec s sl n (TmAstTerm x) = liftShowsPrec1Rec s sl n x
 
-instance AstTransversable ki ty pt tm => Functor (Ast ki ty pt tm) where
+instance TmAstTransversable ki ty pt tm => Functor (TmAst ki ty pt tm) where
   fmap = fmapDefault
 
-instance AstTransversable ki ty pt tm => Foldable (Ast ki ty pt tm) where
+instance TmAstTransversable ki ty pt tm => Foldable (TmAst ki ty pt tm) where
   foldMap = foldMapDefault
 
-instance AstTransversable ki ty pt tm => Traversable (Ast ki ty pt tm) where
-  traverse f (AVar x) = AVar <$> f x
-  traverse f (AType x) = AType <$> traverseDefault f x
-  traverse f (APattern x) = APattern <$> traverseDefault f x
-  traverse f (ATerm x) = ATerm <$> traverseDefault f x
+instance TmAstTransversable ki ty pt tm => Traversable (TmAst ki ty pt tm) where
+  traverse f (TmAstVar x) = TmAstVar <$> f x
+  traverse f (TmAstKind x) = TmAstKind <$> traverseDefault f x
+  traverse f (TmAstType x) = TmAstType <$> traverseDefault f x
+  traverse f (TmAstPattern x) = TmAstPattern <$> traverseDefault f x
+  traverse f (TmAstTerm x) = TmAstTerm <$> traverseDefault f x
 
-instance (AstTransversable ki ty pt tm, AstBound ki ty pt tm) => Applicative (Ast ki ty pt tm) where
+instance (TmAstTransversable ki ty pt tm, TmAstBound ki ty pt tm) => Applicative (TmAst ki ty pt tm) where
   pure = return
   (<*>) = ap
 
-instance (AstTransversable ki ty pt tm, AstBound ki ty pt tm) => Monad (Ast ki ty pt tm) where
-  return = AVar
+instance (TmAstTransversable ki ty pt tm, TmAstBound ki ty pt tm) => Monad (TmAst ki ty pt tm) where
+  return = TmAstVar
 
-  AVar x >>= f = f x
-  AType ty >>= f = AType (ty >>>= f)
-  APattern pt >>= f = APattern (pt >>>= f)
-  ATerm tm >>= f = ATerm (tm >>>= f)
+  TmAstVar x >>= f = f x
+  TmAstKind ki >>= f = TmAstKind (ki >>>= f)
+  TmAstType ty >>= f = TmAstType (ty >>>= f)
+  TmAstPattern pt >>= f = TmAstPattern (pt >>>= f)
+  TmAstTerm tm >>= f = TmAstTerm (tm >>>= f)
 
 -- Term
 
-newtype Term ki ty pt tm a = Term (Ast ki ty pt tm (AstVar a))
+newtype Term ki ty pt tm a = Term (TmAst ki ty pt tm (TmAstVar a))
   deriving (Eq, Ord, Show)
 
 makeWrapped ''Term
 
-instance AstEq ki ty pt tm => Eq1 (Term ki ty pt tm) where
+instance TmAstEq ki ty pt tm => Eq1 (Term ki ty pt tm) where
   liftEq = $(makeLiftEq ''Term)
 
-instance AstOrd ki ty pt tm => Ord1 (Term ki ty pt tm) where
+instance TmAstOrd ki ty pt tm => Ord1 (Term ki ty pt tm) where
   liftCompare = $(makeLiftCompare ''Term)
 
-instance AstShow ki ty pt tm => Show1 (Term ki ty pt tm) where
+instance TmAstShow ki ty pt tm => Show1 (Term ki ty pt tm) where
   liftShowsPrec = $(makeLiftShowsPrec ''Term)
 
-deriving instance AstTransversable ki ty pt tm => Functor (Term ki ty pt tm)
-deriving instance AstTransversable ki ty pt tm => Foldable (Term ki ty pt tm)
-deriving instance AstTransversable ki ty pt tm => Traversable (Term ki ty pt tm)
+deriving instance TmAstTransversable ki ty pt tm => Functor (Term ki ty pt tm)
+deriving instance TmAstTransversable ki ty pt tm => Foldable (Term ki ty pt tm)
+deriving instance TmAstTransversable ki ty pt tm => Traversable (Term ki ty pt tm)
 
 _TmVar :: Prism' (Term ki ty pt tm a) a
-_TmVar = _Wrapped . _AVar . _ATmVar
+_TmVar = _Wrapped . _TmAstVar . _TmAstTmVar
 
 -- Type list
 
@@ -284,56 +302,83 @@ instance (ShowRec (x ki ty pt), ShowRec (TmSum xs ki ty pt)) => ShowRec (TmSum (
 
 -- Prisms
 
-typeToAst :: Bitransversable (ty ki) => Type ki ty a -> Ast ki ty pt tm (AstVar a)
-typeToAst = runIdentity . typeToAst' (Identity . ATyVar)
+kindToAst :: Bitransversable ki => Kind ki a -> TmAst ki ty pt tm (TmAstVar a)
+kindToAst = runIdentity . kindToAst' (Identity . TmAstTyVar)
 
-typeToAst' :: Bitransversable (ty ki) => (a -> Identity b) -> Type ki ty a -> Identity (Ast ki ty pt tm b)
+kindToAst' :: Bitransversable ki => (a -> Identity b) -> Kind ki a -> Identity (TmAst ki ty pt tm b)
+kindToAst' fV x = kindToAst'' =<< traverse fV x
+
+kindToAst'' :: Bitransversable ki => Kind ki a -> Identity (TmAst ki ty pt tm a)
+kindToAst'' (KiVar x) = Identity (TmAstVar x)
+kindToAst'' (KiTree ty) = fmap TmAstKind . bitransverse kindToAst' pure $ ty
+
+astToKind :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm (TmAstVar a) -> Maybe (Kind ki a)
+astToKind = astToKind' fV
+  where
+    fV (TmAstKiVar x) = Just x
+    fV _ = Nothing
+
+astToKind' :: TmAstTransversable ki ty pt tm => (a -> Maybe b) -> TmAst ki ty pt tm a -> Maybe (Kind ki b)
+astToKind' fV x = astToKind'' =<< traverse fV x
+
+astToKind'' :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm a -> Maybe (Kind ki a)
+astToKind'' (TmAstVar x) = Just (KiVar x)
+astToKind'' (TmAstKind ty) = fmap KiTree . bitransverse astToKind' pure $ ty
+astToKind'' _ = Nothing
+
+_TmKind :: TmAstTransversable ki ty pt tm => Prism' (TmAst ki ty pt tm (TmAstVar a)) (Kind ki a)
+_TmKind = prism kindToAst (\x -> note x . astToKind $ x)
+
+typeToAst :: Bitransversable (ty ki) => Type ki ty a -> TmAst ki ty pt tm (TmAstVar a)
+typeToAst = runIdentity . typeToAst' (Identity . TmAstTyVar)
+
+typeToAst' :: Bitransversable (ty ki) => (a -> Identity b) -> Type ki ty a -> Identity (TmAst ki ty pt tm b)
 typeToAst' fV x = typeToAst'' =<< traverse fV x
 
-typeToAst'' :: Bitransversable (ty ki) => Type ki ty a -> Identity (Ast ki ty pt tm a)
-typeToAst'' (TyVar x) = Identity (AVar x)
-typeToAst'' (TyTree ty) = fmap AType . bitransverse typeToAst' pure $ ty
+typeToAst'' :: Bitransversable (ty ki) => Type ki ty a -> Identity (TmAst ki ty pt tm a)
+typeToAst'' (TyVar x) = Identity (TmAstVar x)
+typeToAst'' (TyTree ty) = fmap TmAstType . bitransverse typeToAst' pure $ ty
 
-astToType :: AstTransversable ki ty pt tm => Ast ki ty pt tm (AstVar a) -> Maybe (Type ki ty a)
+astToType :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm (TmAstVar a) -> Maybe (Type ki ty a)
 astToType = astToType' fV
   where
-    fV (ATyVar x) = Just x
+    fV (TmAstTyVar x) = Just x
     fV _ = Nothing
 
-astToType' :: AstTransversable ki ty pt tm => (a -> Maybe b) -> Ast ki ty pt tm a -> Maybe (Type ki ty b)
+astToType' :: TmAstTransversable ki ty pt tm => (a -> Maybe b) -> TmAst ki ty pt tm a -> Maybe (Type ki ty b)
 astToType' fV x = astToType'' =<< traverse fV x
 
-astToType'' :: AstTransversable ki ty pt tm => Ast ki ty pt tm a -> Maybe (Type ki ty a)
-astToType'' (AVar x) = Just (TyVar x)
-astToType'' (AType ty) = fmap TyTree . bitransverse astToType' pure $ ty
+astToType'' :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm a -> Maybe (Type ki ty a)
+astToType'' (TmAstVar x) = Just (TyVar x)
+astToType'' (TmAstType ty) = fmap TyTree . bitransverse astToType' pure $ ty
 astToType'' _ = Nothing
 
-_Type :: AstTransversable ki ty pt tm => Prism' (Ast ki ty pt tm (AstVar a)) (Type ki ty a)
-_Type = prism typeToAst (\x -> note x . astToType $ x)
+_TmType :: TmAstTransversable ki ty pt tm => Prism' (TmAst ki ty pt tm (TmAstVar a)) (Type ki ty a)
+_TmType = prism typeToAst (\x -> note x . astToType $ x)
 
-patternToAst :: Bitransversable pt => Pattern pt a -> Ast ki ty pt tm (AstVar a)
-patternToAst = runIdentity . patternToAst' (Identity . APtVar)
+patternToAst :: Bitransversable pt => Pattern pt a -> TmAst ki ty pt tm (TmAstVar a)
+patternToAst = runIdentity . patternToAst' (Identity . TmAstPtVar)
 
-patternToAst' :: Bitransversable pt => (a -> Identity b) -> Pattern pt a -> Identity (Ast ki ty pt tm b)
+patternToAst' :: Bitransversable pt => (a -> Identity b) -> Pattern pt a -> Identity (TmAst ki ty pt tm b)
 patternToAst' fV x = patternToAst'' =<< traverse fV x
 
-patternToAst'' :: Bitransversable pt => Pattern pt a -> Identity (Ast ki ty pt tm a)
-patternToAst'' (PtVar x) = pure (AVar x)
-patternToAst'' (PtTree pt) = fmap APattern . bitransverse patternToAst' pure $ pt
+patternToAst'' :: Bitransversable pt => Pattern pt a -> Identity (TmAst ki ty pt tm a)
+patternToAst'' (PtVar x) = pure (TmAstVar x)
+patternToAst'' (PtTree pt) = fmap TmAstPattern . bitransverse patternToAst' pure $ pt
 
-astToPattern :: AstTransversable ki ty pt tm => Ast ki ty pt tm (AstVar a) -> Maybe (Pattern pt a)
+astToPattern :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm (TmAstVar a) -> Maybe (Pattern pt a)
 astToPattern = astToPattern' fV
   where
-    fV (APtVar x) = Just x
+    fV (TmAstPtVar x) = Just x
     fV _ = Nothing
 
-astToPattern' :: AstTransversable ki ty pt tm => (a -> Maybe b) -> Ast ki ty pt tm a -> Maybe (Pattern pt b)
+astToPattern' :: TmAstTransversable ki ty pt tm => (a -> Maybe b) -> TmAst ki ty pt tm a -> Maybe (Pattern pt b)
 astToPattern' fV x = astToPattern'' =<< traverse fV x
 
-astToPattern'' :: AstTransversable ki ty pt tm => Ast ki ty pt tm a -> Maybe (Pattern pt a)
-astToPattern'' (AVar x) = pure (PtVar x)
-astToPattern'' (APattern pt) = fmap PtTree . bitransverse astToPattern' pure $ pt
+astToPattern'' :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm a -> Maybe (Pattern pt a)
+astToPattern'' (TmAstVar x) = pure (PtVar x)
+astToPattern'' (TmAstPattern pt) = fmap PtTree . bitransverse astToPattern' pure $ pt
 astToPattern'' _ = Nothing
 
-_Pattern :: AstTransversable ki ty pt tm => Prism' (Ast ki ty pt tm (AstVar a)) (Pattern pt a)
-_Pattern = prism patternToAst (\x -> note x . astToPattern $ x)
+_TmPattern :: TmAstTransversable ki ty pt tm => Prism' (TmAst ki ty pt tm (TmAstVar a)) (Pattern pt a)
+_TmPattern = prism patternToAst (\x -> note x . astToPattern $ x)

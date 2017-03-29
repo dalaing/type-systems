@@ -32,7 +32,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFFix (k :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFFix (k :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
   TmFixF (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -64,7 +64,7 @@ class AsTmFix ki ty pt tm where
   _TmFixP :: Prism' (tm ki ty pt f a) (TmFFix ki ty pt f a)
 
   _TmFix :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a)
-  _TmFix = _Wrapped . _ATerm . _TmFixP . _TmFixF . _Unwrapped
+  _TmFix = _Wrapped . _TmAstTerm . _TmFixP . _TmFixF . _Unwrapped
 
 instance AsTmFix ki ty pt TmFFix where
   _TmFixP = id

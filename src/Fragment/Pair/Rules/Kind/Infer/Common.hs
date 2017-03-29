@@ -37,7 +37,7 @@ type PairInferKindConstraint e w s r m ki ty a i =
 pairInferKindInput :: PairInferKindConstraint e w s r m ki ty a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a i
+                   -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
 pairInferKindInput m i =
   InferKindInput
     []
@@ -49,13 +49,13 @@ inferTyPair :: PairInferKindConstraint e w s r m ki ty a i
             -> Proxy ty
             -> Proxy a
             -> Proxy i
-            -> (Type ki ty a -> InferKindMonad ki a m i (InferKind ki a i))
+            -> (Type ki ty a -> InferKindMonad ki a m i (Kind ki a))
             -> Type ki ty a
-            -> Maybe (InferKindMonad ki a m i (InferKind ki a i))
+            -> Maybe (InferKindMonad ki a m i (Kind ki a))
 inferTyPair pm pki pty pa pi inferFn ty = do
   (ty1, ty2) <- preview _TyPair ty
   return $ do
-    let kib = mkKind pm pki pty pa pi $ review _KiBase ()
+    let kib = review _KiBase ()
     mkCheckKind pm pki pty pa pi inferFn ty1 kib
     mkCheckKind pm pki pty pa pi inferFn ty2 kib
     return kib

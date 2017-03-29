@@ -38,13 +38,13 @@ import Ast.Kind
 
 import Context.Type.Error
 
-data TypeContext ki a = TypeContext (M.Map a (Kind ki))
+data TypeContext ki a = TypeContext (M.Map a (Kind ki a))
 
 emptyTypeContext :: TypeContext ki a
 emptyTypeContext = TypeContext M.empty
 
 class HasTypeContext' l where
-  type TyCtxKi l :: (* -> *)
+  type TyCtxKi l :: ((* -> *) -> * -> *)
   type TyCtxVar l :: *
 
   typeContext :: Lens' l (TypeContext (TyCtxKi l) (TyCtxVar l))
@@ -62,12 +62,12 @@ lookupTypeBindings = do
   TypeContext m <- view typeContext
   return $ M.keysSet m
 
-lookupType :: (Ord a, MonadReader r m, MonadError e m, HasTypeContext r ki a, AsUnboundTypeVariable e a) => a -> m (Kind ki)
+lookupType :: (Ord a, MonadReader r m, MonadError e m, HasTypeContext r ki a, AsUnboundTypeVariable e a) => a -> m (Kind ki a)
 lookupType v = do
   TypeContext m <- view typeContext
   case M.lookup v m of
     Nothing -> throwing _UnboundTypeVariable v
     Just ty -> return ty
 
-insertType :: Ord a => a -> Kind ki -> TypeContext ki a -> TypeContext ki a
+insertType :: Ord a => a -> Kind ki a -> TypeContext ki a -> TypeContext ki a
 insertType v ty (TypeContext m) = TypeContext (M.insert v ty m)

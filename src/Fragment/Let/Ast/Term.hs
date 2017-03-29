@@ -34,7 +34,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data LetBinding (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data LetBinding (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
   LetBinding (Maybe (k a)) (Scope Int k a)
   deriving (Functor, Foldable, Traversable)
 
@@ -75,7 +75,7 @@ instance Bitransversable (LetBinding ki ty pt) where
   bitransverse fT fL (LetBinding Nothing s) = LetBinding <$> pure Nothing <*> bitransverse fT fL s
   bitransverse fT fL (LetBinding (Just ty) s) = LetBinding <$> (Just <$> fT fL ty) <*> bitransverse fT fL s
 
-data TmFLet (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFLet (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmLetF [LetBinding ki ty pt f a] (Scope Int f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -119,17 +119,17 @@ instance Bound (TmFLet ki ty pt) where
 instance Bitransversable (TmFLet ki ty tp) where
   bitransverse fT fL (TmLetF binds tm) = TmLetF <$> traverse (bitransverse fT fL) binds <*> bitransverse fT fL tm
 
-class AstTransversable ki ty pt tm => AsTmLet ki ty pt tm where
+class TmAstTransversable ki ty pt tm => AsTmLet ki ty pt tm where
   _TmLetP :: Prism' (tm ki ty pt f a) (TmFLet ki ty pt f a)
 
-  _TmLet :: Prism' (Term ki ty pt tm a) ([LetBinding ki ty pt (Ast ki ty pt tm) (AstVar a)], Scope Int (Ast ki ty pt tm) (AstVar a))
-  _TmLet = _Wrapped . _ATerm. _TmLetP . _TmLetF . bimapping id id
+  _TmLet :: Prism' (Term ki ty pt tm a) ([LetBinding ki ty pt (TmAst ki ty pt tm) (TmAstVar a)], Scope Int (TmAst ki ty pt tm) (TmAstVar a))
+  _TmLet = _Wrapped . _TmAstTerm. _TmLetP . _TmLetF . bimapping id id
 
-instance (Bitransversable (ty ki), Bitransversable pt) => AsTmLet ki ty pt TmFLet where
+instance (Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmLet ki ty pt TmFLet where
   _TmLetP = id
 
 instance {-# OVERLAPPABLE #-} (Bitransversable (x ki ty pt), AsTmLet ki ty pt (TmSum xs)) => AsTmLet ki ty pt (TmSum (x ': xs)) where
   _TmLetP = _TmNext . _TmLetP
 
-instance {-# OVERLAPPING #-} (Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmLet ki ty pt (TmSum (TmFLet ': xs)) where
+instance {-# OVERLAPPING #-} (Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmLet ki ty pt (TmSum (TmFLet ': xs)) where
   _TmLetP = _TmNow . _TmLetP

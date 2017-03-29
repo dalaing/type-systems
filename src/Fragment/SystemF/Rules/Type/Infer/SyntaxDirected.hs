@@ -45,7 +45,7 @@ inferTmLam _ inferFn tm = do
   (tyArg, s) <- preview _TmLam tm
   return $ do
     v <- freshTmVar
-    let tmF = review _Wrapped $ instantiate1 (review (_AVar . _ATmVar) v) s
+    let tmF = review _Wrapped $ instantiate1 (review (_TmAstVar . _TmAstTmVar) v) s
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 
@@ -72,7 +72,7 @@ inferTmLamTy _ inferFn tm = do
   tmF <- preview _TmLamTy tm
   return $ do
     v <- freshTyVar
-    ty <- inferFn (review _Wrapped . instantiate1 (review (_AVar . _ATyVar) v) $ tmF)
+    ty <- inferFn (review _Wrapped . instantiate1 (review (_TmAstVar . _TmAstTyVar) v) $ tmF)
     return . review _TyAll . abstract1 v $ ty
 
 inferTmAppTy :: SystemFInferTypeConstraint e w s r m ki ty pt tm a

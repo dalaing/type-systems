@@ -31,7 +31,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFIf (k :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFIf (k :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmIfF (f a) (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -72,7 +72,7 @@ class AsTmIf ki ty pt tm where
   _TmIfP :: Prism' (tm ki ty pt f a) (TmFIf ki ty pt f a)
 
   _TmIf :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmIf = _Wrapped . _ATerm . _TmIfP . _TmIfF . mkTriple _Unwrapped _Unwrapped _Unwrapped
+  _TmIf = _Wrapped . _TmAstTerm . _TmIfP . _TmIfF . mkTriple _Unwrapped _Unwrapped _Unwrapped
 
 instance AsTmIf ki ty pt TmFIf where
   _TmIfP = id

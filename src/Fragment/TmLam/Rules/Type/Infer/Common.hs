@@ -47,13 +47,13 @@ import Rules.Type.Infer.Offline (ITOffline)
 import Rules.Unification
 
 class MkInferType i => TmLamInferTypeHelper i where
-  type TmLamInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: Constraint
+  type TmLamInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: Constraint
 
   expectTmLam :: TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a i
               => Proxy (MonadProxy e w s r m)
               -> Proxy i
               -> Term ki ty pt tm a
-              -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a, Scope () (Ast ki ty pt tm) (AstVar a)))
+              -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a, Scope () (TmAst ki ty pt tm) (TmAstVar a)))
 
 instance TmLamInferTypeHelper ITSyntax where
   type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a ITSyntax =
@@ -118,7 +118,7 @@ inferTmLam m i inferFn tm = do
   return $ do
     (tyArg, s) <- act
     v <- freshTmVar
-    let tmF = review _Wrapped $ instantiate1 (review (_AVar . _ATmVar) v) s
+    let tmF = review _Wrapped $ instantiate1 (review (_TmAstVar . _TmAstTmVar) v) s
     tyRet <- local (termContext %~ insertTerm v tyArg) $ inferFn tmF
     return $ review _TyArr (tyArg, tyRet)
 

@@ -37,7 +37,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.NonEmpty
 
-data TyFVariant (ki :: * -> *) f a =
+data TyFVariant (ki :: (* -> *) -> * -> *) f a =
   TyVariantF (NE (T.Text, f a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 

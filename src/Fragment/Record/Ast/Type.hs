@@ -34,7 +34,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFRecord (ki :: * -> *) f a =
+data TyFRecord (ki :: (* -> *) -> * -> *) f a =
   TyRecordF [(T.Text, f a)]
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 

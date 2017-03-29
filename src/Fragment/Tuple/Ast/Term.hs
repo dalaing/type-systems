@@ -33,7 +33,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFTuple (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFTuple (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmTupleF [f a]
   | TmTupleIxF (f a) Int
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -84,10 +84,10 @@ class AsTmTuple ki ty pt tm where
   _TmTupleP :: Prism' (tm ki ty pt f a) (TmFTuple ki ty pt f a)
 
   _TmTuple :: Prism' (Term ki ty pt tm a) [Term ki ty pt tm a]
-  _TmTuple = _Wrapped . _ATerm . _TmTupleP . _TmTupleF . mapping _Unwrapped
+  _TmTuple = _Wrapped . _TmAstTerm . _TmTupleP . _TmTupleF . mapping _Unwrapped
 
   _TmTupleIx :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Int)
-  _TmTupleIx = _Wrapped . _ATerm . _TmTupleP . _TmTupleIxF . bimapping _Unwrapped id
+  _TmTupleIx = _Wrapped . _TmAstTerm . _TmTupleP . _TmTupleIxF . bimapping _Unwrapped id
 
 instance AsTmTuple ki ty pt TmFTuple where
   _TmTupleP = id

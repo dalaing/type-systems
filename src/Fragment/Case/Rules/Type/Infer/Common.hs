@@ -29,7 +29,6 @@ import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.State (MonadState)
 import Control.Monad.Writer (MonadWriter)
 import Control.Monad.Trans (lift)
-import Data.List.NonEmpty (NonEmpty)
 
 import Ast.Type
 import Ast.Pattern
@@ -66,7 +65,7 @@ type CaseInferTypeConstraint e w s r m ki ty pt tm a i =
   ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
   , Ord a
   , EqRec (ty ki)
-  , AstBound ki ty pt tm
+  , TmAstBound ki ty pt tm
   , MonadState s (InferTypeMonad ki ty a m i)
   , HasTmVarSupply s
   , ToTmVar a

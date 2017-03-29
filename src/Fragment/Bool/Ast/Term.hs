@@ -33,7 +33,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFBool (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFBool (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmBoolF Bool
   | TmAndF (f a) (f a)
   | TmOrF (f a) (f a)
@@ -88,13 +88,13 @@ class AsTmBool ki ty pt tm where
   _TmBoolP :: Prism' (tm ki ty pt j a) (TmFBool ki ty pt j a)
 
   _TmBool :: Prism' (Term ki ty pt tm a) Bool
-  _TmBool = _Wrapped . _ATerm . _TmBoolP . _TmBoolF
+  _TmBool = _Wrapped . _TmAstTerm . _TmBoolP . _TmBoolF
 
   _TmAnd :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmAnd = _Wrapped . _ATerm . _TmBoolP . _TmAndF . bimapping _Unwrapped _Unwrapped
+  _TmAnd = _Wrapped . _TmAstTerm . _TmBoolP . _TmAndF . bimapping _Unwrapped _Unwrapped
 
   _TmOr :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmOr = _Wrapped . _ATerm . _TmBoolP . _TmOrF . bimapping _Unwrapped _Unwrapped
+  _TmOr = _Wrapped . _TmAstTerm . _TmBoolP . _TmOrF . bimapping _Unwrapped _Unwrapped
 
 instance AsTmBool ki ty pt TmFBool where
   _TmBoolP = id

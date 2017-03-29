@@ -42,7 +42,7 @@ import Rules.Type.Infer.SyntaxDirected (ITSyntax)
 import Rules.Type.Infer.Offline (ITOffline)
 
 class MkInferType i => TyArrInferTypeHelper i where
-  type TyArrInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+  type TyArrInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
 
   unifyTyArrRules :: TyArrInferTypeHelperConstraint e w s r m ki ty a i
                  => Proxy (MonadProxy e w s r m)

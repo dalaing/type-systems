@@ -33,7 +33,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFInt (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFInt (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmIntF Int
   | TmAddF (f a) (f a)
   | TmSubF (f a) (f a)
@@ -100,16 +100,16 @@ class AsTmInt ki ty pt tm where
   _TmIntP :: Prism' (tm ki ty pt f a) (TmFInt ki ty pt f a)
 
   _TmInt :: Prism' (Term ki ty pt tm a) Int
-  _TmInt = _Wrapped . _ATerm . _TmIntP . _TmIntF
+  _TmInt = _Wrapped . _TmAstTerm . _TmIntP . _TmIntF
 
   _TmAdd :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmAdd = _Wrapped . _ATerm . _TmIntP . _TmAddF . bimapping _Unwrapped _Unwrapped
+  _TmAdd = _Wrapped . _TmAstTerm . _TmIntP . _TmAddF . bimapping _Unwrapped _Unwrapped
 
   _TmSub :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmSub = _Wrapped . _ATerm . _TmIntP . _TmSubF . bimapping _Unwrapped _Unwrapped
+  _TmSub = _Wrapped . _TmAstTerm . _TmIntP . _TmSubF . bimapping _Unwrapped _Unwrapped
 
   _TmMul :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmMul = _Wrapped . _ATerm . _TmIntP . _TmMulF . bimapping _Unwrapped _Unwrapped
+  _TmMul = _Wrapped . _TmAstTerm . _TmIntP . _TmMulF . bimapping _Unwrapped _Unwrapped
 
 instance AsTmInt ki ty pt TmFInt where
   _TmIntP = id

@@ -29,7 +29,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFInt (ki :: * -> *) (f :: * -> *) a =
+data TyFInt (ki :: (* -> *) -> * -> *) (f :: * -> *) a =
   TyIntF
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 

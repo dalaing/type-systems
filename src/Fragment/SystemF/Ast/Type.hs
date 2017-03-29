@@ -31,7 +31,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFSystemF (ki :: * -> *) f a =
+data TyFSystemF (ki :: (* -> *) -> * -> *) f a =
     TyArrF (f a) (f a)
   | TyAllF (Scope () f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)

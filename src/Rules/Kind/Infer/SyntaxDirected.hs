@@ -25,6 +25,7 @@ import Data.List.NonEmpty (NonEmpty(..))
 
 import Ast.Kind
 import Ast.Error.Common
+import Data.Functor.Rec
 
 import Rules.Kind.Infer.Common
 
@@ -32,24 +33,20 @@ data IKSyntax
 
 instance MkInferKind IKSyntax where
   type MkInferKindConstraint e w s r m ki ty a IKSyntax =
-    ( Eq1 ki
+    ( Eq a
+    , EqRec ki
     , MonadError e m
     , AsUnknownKindError e
-    , AsUnexpectedKind e (InferKind ki a IKSyntax)
-    , AsExpectedKindEq e ki
-    , AsExpectedKindAllEq e ki
+    , AsUnexpectedKind e ki a
+    , AsExpectedKindEq e ki a
+    , AsExpectedKindAllEq e ki a
     )
   type InferKindMonad ki a m IKSyntax =
     m
-  type InferKind ki a IKSyntax =
-    Kind ki
   type MkInferKindErrorList ki ty a IKSyntax =
     '[]
   type MkInferKindWarningList ki ty a IKSyntax =
     '[]
-
-  mkKind _ _ _ _ _ ki =
-    ki
 
   mkCheckKind m ki ty a i =
     mkCheckKind' i (expectKind m ki ty a i)

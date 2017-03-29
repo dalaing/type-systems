@@ -47,7 +47,7 @@ import Control.Monad.State (MonadState)
 import Data.Equivalence.Monad (classDesc)
 
 class MkInferType i => RecordInferTypeHelper i where
-  type RecordInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+  type RecordInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
 
   unifyRecordRules :: RecordInferTypeHelperConstraint e w s r m ki ty a i
                   => Proxy (MonadProxy e w s r m)

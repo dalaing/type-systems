@@ -31,7 +31,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFIsoRec (ki :: * -> *) f a =
+data TyFIsoRec (ki :: (* -> *) -> * -> *) f a =
   TyRecF (Scope () f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 

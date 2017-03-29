@@ -25,10 +25,10 @@ import Ast.Pattern
 import Ast.Term
 
 class AstIn (k :: j) where
-  type KindList k :: [* -> *]
-  type TypeList k :: [(* -> *) -> (* -> *) -> * -> *]
+  type KindList k :: [(* -> *) -> * -> *]
+  type TypeList k :: [((* -> *) -> * -> *) -> (* -> *) -> * -> *]
   type PatternList k :: [(* -> *) -> * -> *]
-  type TermList k :: [(* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
+  type TermList k :: [((* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *]
 
 instance AstIn '[] where
   type KindList '[] = '[]
@@ -44,12 +44,12 @@ instance (AstIn k, AstIn ks) => AstIn (k ': ks) where
 
 class AstOut (k :: j) where
 
-  type RKindF k :: * -> *
-  type RTypeF k :: ((* -> *) -> (* -> *) -> * -> *)
+  type RKindF k :: ((* -> *) -> * -> *)
+  type RTypeF k :: (((* -> *) -> * -> *) -> (* -> *) -> * -> *)
   type RPatternF k :: ((* -> *) -> * -> *)
-  type RTermF k :: ((* -> *) -> ((* -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)
+  type RTermF k :: (((* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)
 
-  type RKind k :: *
+  type RKind k :: (* -> *)
   type RType k :: (* -> *)
   type RPattern k :: (* -> *)
   type RTerm k :: (* -> *)

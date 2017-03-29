@@ -34,7 +34,7 @@ type BoolInferKindConstraint e w s r m ki ty a i =
 boolInferKindInput :: BoolInferKindConstraint e w s r m ki ty a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a i
+                   -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
 boolInferKindInput m i =
   InferKindInput
     []
@@ -47,7 +47,7 @@ inferTyBool :: BoolInferKindConstraint e w s r m ki ty a i
             -> Proxy a
             -> Proxy i
             -> Type ki ty a
-            -> Maybe (InferKindMonad ki a m i (InferKind ki a i))
+            -> Maybe (InferKindMonad ki a m i (Kind ki a))
 inferTyBool pm pki pty pa pi ty = do
   _ <- preview _TyBool ty
-  return . return . mkKind pm pki pty pa pi . review _KiBase $ ()
+  return . return . review _KiBase $ ()

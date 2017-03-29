@@ -31,7 +31,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFArr (ki :: * -> *) f a =
+data TyFArr (ki :: (* -> *) -> * -> *) f a =
   TyArrF (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 

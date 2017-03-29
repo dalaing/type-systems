@@ -34,7 +34,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFIsoRec (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data TmFIsoRec (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
     TmFoldF (k a) (k a)
   | TmUnfoldF (k a) (k a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -83,23 +83,20 @@ instance Bitransversable (TmFIsoRec ki ty pt) where
   bitransverse fT fL (TmFoldF x y) = TmFoldF <$> fT fL x <*> fT fL y
   bitransverse fT fL (TmUnfoldF x y) = TmUnfoldF <$> fT fL x <*> fT fL y
 
-class (AstBound ki ty pt tm, AstTransversable ki ty pt tm) => AsTmIsoRec ki ty pt tm where
+class (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm) => AsTmIsoRec ki ty pt tm where
   _TmIsoRecP :: Prism' (tm ki ty pt f a) (TmFIsoRec ki ty pt f a)
 
-  _TmIsoRecLink :: Prism' (Term ki ty pt tm a) (TmFIsoRec ki ty pt (Ast ki ty pt tm) (AstVar a))
-  _TmIsoRecLink = _Wrapped . _ATerm . _TmIsoRecP
-
   _TmFold :: Prism' (Term ki ty pt tm a) (Type ki ty a, Term ki ty pt tm a)
-  _TmFold = _TmIsoRecLink . _TmFoldF . mkPair _Type _Unwrapped
+  _TmFold = _Wrapped . _TmAstTerm . _TmIsoRecP . _TmFoldF . mkPair _TmType _Unwrapped
 
   _TmUnfold :: Prism' (Term ki ty pt tm a) (Type ki ty a, Term ki ty pt tm a)
-  _TmUnfold = _TmIsoRecLink . _TmUnfoldF . mkPair _Type _Unwrapped
+  _TmUnfold = _Wrapped . _TmAstTerm . _TmIsoRecP . _TmUnfoldF . mkPair _TmType _Unwrapped
 
-instance (Bound (ty ki), Bound pt, Bitransversable (ty ki), Bitransversable pt) => AsTmIsoRec ki ty pt TmFIsoRec where
+instance (Bound ki, Bound (ty ki), Bound pt, Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmIsoRec ki ty pt TmFIsoRec where
   _TmIsoRecP = id
 
 instance {-# OVERLAPPABLE #-} (Bound (x ki ty pt), Bitransversable (x ki ty pt), AsTmIsoRec ki ty pt (TmSum xs)) => AsTmIsoRec ki ty pt (TmSum (x ': xs)) where
   _TmIsoRecP = _TmNext . _TmIsoRecP
 
-instance {-# OVERLAPPING #-} (Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmIsoRec ki ty pt (TmSum (TmFIsoRec ': xs)) where
+instance {-# OVERLAPPING #-} (Bound ki, Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmIsoRec ki ty pt (TmSum (TmFIsoRec ': xs)) where
   _TmIsoRecP = _TmNow . _TmIsoRecP

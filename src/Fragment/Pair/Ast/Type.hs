@@ -31,7 +31,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFPair (ki :: * -> *) f a =
+data TyFPair (ki :: (* -> *) -> * -> *) f a =
   TyPairF (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 

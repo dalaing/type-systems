@@ -18,6 +18,7 @@ import Data.Proxy (Proxy(..))
 
 import Control.Lens (review, preview)
 
+import Ast.Kind
 import Ast.Type
 import Rules.Kind.Infer.Common
 
@@ -33,7 +34,7 @@ type IntInferKindConstraint e w s r m ki ty a i =
 intInferKindInput :: IntInferKindConstraint e w s r m ki ty a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a i
+                   -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
 intInferKindInput m i =
   InferKindInput
     []
@@ -46,7 +47,7 @@ inferTyInt :: IntInferKindConstraint e w s r m ki ty a i
             -> Proxy a
             -> Proxy i
             -> Type ki ty a
-            -> Maybe (InferKindMonad ki a m i (InferKind ki a i))
+            -> Maybe (InferKindMonad ki a m i (Kind ki a))
 inferTyInt pm pki pty pa pi ty = do
   _ <- preview _TyInt ty
-  return . return . mkKind pm pki pty pa pi . review _KiBase $ ()
+  return . return . review _KiBase $ ()

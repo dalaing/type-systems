@@ -15,5 +15,5 @@ import Ast.Kind
 
 import Fragment.KiArr.Ast.Kind
 
-kiArr :: AsKiArr ki => Kind ki -> Kind ki -> Kind ki
+kiArr :: AsKiArr ki => Kind ki a -> Kind ki a -> Kind ki a
 kiArr = curry $ review _KiArr

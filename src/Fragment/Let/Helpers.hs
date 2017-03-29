@@ -25,7 +25,7 @@ import Ast.Term
 
 import Fragment.Let.Ast.Term
 
-tmLetRec :: (Eq a, AstBound ki ty pt tm, AsTmLet ki ty pt tm)
+tmLetRec :: (Eq a, TmAstBound ki ty pt tm, AsTmLet ki ty pt tm)
          => [(a, Maybe (Type ki ty a), Term ki ty pt tm a)]
          -> Term ki ty pt tm a
          -> Term ki ty pt tm a
@@ -34,15 +34,15 @@ tmLetRec bs tm =
     bs' =
       fmap f bs
     f (v, ty, tm') =
-      (ATmVar v, ty, abstr . review _Unwrapped $ tm')
+      (TmAstTmVar v, ty, abstr . review _Unwrapped $ tm')
     abstr =
       abstract (`elemIndex` fmap (\(x, _, _) -> x) bs')
     ast =
       abstr $ review _Unwrapped tm
   in
-    review _TmLet (fmap (\(_, ty, s) -> LetBinding (fmap (review _Type) ty) s) bs', ast)
+    review _TmLet (fmap (\(_, ty, s) -> LetBinding (fmap (review _TmType) ty) s) bs', ast)
 
-tmLet :: (Eq a, AstBound ki ty pt tm, AsTmLet ki ty pt tm)
+tmLet :: (Eq a, TmAstBound ki ty pt tm, AsTmLet ki ty pt tm)
       => [(a, Maybe (Type ki ty a), Term ki ty pt tm a)]
       -> Term ki ty pt tm a
       -> Term ki ty pt tm a
@@ -51,7 +51,7 @@ tmLet bs tm =
     bs' =
       zipWith f [0..] bs
     f i (v, ty, tm') =
-      (ATmVar v, ty, abstr i . review _Unwrapped $ tm')
+      (TmAstTmVar v, ty, abstr i . review _Unwrapped $ tm')
     trim i j
       | i < j = Just j
       | otherwise = Nothing
@@ -60,7 +60,7 @@ tmLet bs tm =
     ast =
       abstr (length bs') $ review _Unwrapped tm
   in
-    review _TmLet (fmap (\(_, ty, s) -> LetBinding (fmap (review _Type) ty) s) bs', ast)
+    review _TmLet (fmap (\(_, ty, s) -> LetBinding (fmap (review _TmType) ty) s) bs', ast)
 
 checkLetBindings :: Foldable tm => [LetBinding ki ty pt tm a] -> Bool
 checkLetBindings bs =

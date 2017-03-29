@@ -33,7 +33,7 @@ import Control.Lens.TH (makePrisms)
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data Type (ki :: * -> *) ty a =
+data Type (ki :: (* -> *) -> * -> *) ty a =
     TyVar a
   | TyTree (ty ki (Type ki ty) a)
 

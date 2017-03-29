@@ -31,13 +31,13 @@ tyAll :: (Eq a, AsTySystemF ki ty) => a -> Type ki ty a -> Type ki ty a
 tyAll v ty = review _TyAll (abstract1 v ty)
 
 tmLam :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Type ki ty a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmLam v ty tm = review _TmLam (ty, abstract1 (review _ATmVar v) . review _Unwrapped $ tm)
+tmLam v ty tm = review _TmLam (ty, abstract1 (review _TmAstTmVar v) . review _Unwrapped $ tm)
 
 tmApp :: AsTmSystemF ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmApp = curry $ review _TmApp
 
 tmLamTy :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmLamTy v tm = review _TmLamTy (abstract1 (review _ATyVar v) . review _Unwrapped $ tm)
+tmLamTy v tm = review _TmLamTy (abstract1 (review _TmAstTyVar v) . review _Unwrapped $ tm)
 
 tmAppTy :: AsTmSystemF ki ty pt tm => Term ki ty pt tm a -> Type ki ty a -> Term ki ty pt tm a
 tmAppTy = curry $ review _TmAppTy

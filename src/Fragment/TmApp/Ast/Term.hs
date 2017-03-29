@@ -33,7 +33,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFApp (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data TmFApp (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
   TmAppF (k a) (k a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -63,17 +63,17 @@ instance Bound (TmFApp ki ty pt) where
 instance Bitransversable (TmFApp ki ty pt) where
   bitransverse fT fL (TmAppF x y) = TmAppF <$> fT fL x <*> fT fL y
 
-class (AstBound ki ty pt tm, AstTransversable ki ty pt tm) => AsTmApp ki ty pt tm where
+class (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm) => AsTmApp ki ty pt tm where
   _TmAppP :: Prism' (tm ki ty pt f a) (TmFApp ki ty pt f a)
 
   _TmApp :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmApp = _Wrapped . _ATerm . _TmAppP . _TmAppF . mkPair _Unwrapped _Unwrapped
+  _TmApp = _Wrapped . _TmAstTerm . _TmAppP . _TmAppF . mkPair _Unwrapped _Unwrapped
 
-instance (Bound (ty ki), Bound pt, Bitransversable (ty ki), Bitransversable pt) => AsTmApp ki ty pt TmFApp where
+instance (Bound ki, Bound (ty ki), Bound pt, Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmApp ki ty pt TmFApp where
   _TmAppP = id
 
 instance {-# OVERLAPPABLE #-} (Bound (x ki ty pt), Bitransversable (x ki ty pt), AsTmApp ki ty pt (TmSum xs)) => AsTmApp ki ty pt (TmSum (x ': xs)) where
   _TmAppP = _TmNext . _TmAppP
 
-instance {-# OVERLAPPING #-} (Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmApp ki ty pt (TmSum (TmFApp ': xs)) where
+instance {-# OVERLAPPING #-} (Bound ki, Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmApp ki ty pt (TmSum (TmFApp ': xs)) where
   _TmAppP = _TmNow . _TmAppP

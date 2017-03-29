@@ -15,5 +15,5 @@ import Ast.Kind
 
 import Fragment.KiBase.Ast.Kind
 
-kiBase :: AsKiBase k => Kind k
+kiBase :: AsKiBase k => Kind k a
 kiBase = review _KiBase ()

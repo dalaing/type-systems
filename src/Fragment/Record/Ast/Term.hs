@@ -36,7 +36,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFRecord (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFRecord (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmRecordF [(T.Text, f a)]
   | TmRecordIxF (f a) T.Text
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
@@ -99,10 +99,10 @@ class AsTmRecord ki ty pt tm where
   _TmRecordP :: Prism' (tm ki ty pt f a) (TmFRecord ki ty pt f a)
 
   _TmRecord :: Prism' (Term ki ty pt tm a) [(T.Text, Term ki ty pt tm a)]
-  _TmRecord = _Wrapped . _ATerm . _TmRecordP . _TmRecordF . mapping (seconding _Unwrapped)
+  _TmRecord = _Wrapped . _TmAstTerm . _TmRecordP . _TmRecordF . mapping (seconding _Unwrapped)
 
   _TmRecordIx :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, T.Text)
-  _TmRecordIx = _Wrapped . _ATerm . _TmRecordP . _TmRecordIxF . firsting _Unwrapped
+  _TmRecordIx = _Wrapped . _TmAstTerm . _TmRecordP . _TmRecordIxF . firsting _Unwrapped
 
 instance AsTmRecord ki ty pt TmFRecord where
   _TmRecordP = id

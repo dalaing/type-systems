@@ -25,16 +25,16 @@ import Ast.Term
 
 import Fragment.Case.Ast.Term
 
-type MatchConstraint (ki :: * -> *) ty pt tm = (AstTransversable ki ty pt tm, AstBound ki ty pt tm)
+type MatchConstraint (ki :: (* -> *) -> * -> *) ty pt tm = (TmAstTransversable ki ty pt tm, TmAstBound ki ty pt tm)
 
 handleMatch :: MatchConstraint ki ty pt tm
             => (Pattern pt a -> Term ki ty pt tm a -> Maybe [Term ki ty pt tm a])
-            -> Term ki ty pt tm a -> N.NonEmpty (Alt ki ty pt (Ast ki ty pt tm ) (AstVar a))
+            -> Term ki ty pt tm a -> N.NonEmpty (Alt ki ty pt (TmAst ki ty pt tm ) (TmAstVar a))
             -> Maybe (Term ki ty pt tm a)
 handleMatch matchFn tm alts =
   let
     go (Alt p s : rest) = do
-      p' <- preview _Pattern p
+      p' <- preview _TmPattern p
       case matchFn p' tm of
         Nothing -> go rest
         Just tms -> return . review _Wrapped . instantiate (review _Unwrapped . (tms !!)) $ s
@@ -60,8 +60,8 @@ stepCaseValueStrict valueFn matchFn tm = do
   handleMatch matchFn vC alts
 
 type CaseEvalConstraint ki ty pt tm a =
-  ( AstBound ki ty pt tm
-  , AstTransversable ki ty pt tm
+  ( TmAstBound ki ty pt tm
+  , TmAstTransversable ki ty pt tm
   , AsTmCase ki ty pt tm
   )
 

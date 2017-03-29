@@ -43,8 +43,8 @@ emptyTermContext :: TermContext ki ty a
 emptyTermContext = TermContext M.empty
 
 class HasTermContext' l where
-  type TmCtxKi l :: (* -> *)
-  type TmCtxTy l :: ((* -> *) -> (* -> *) -> * -> *)
+  type TmCtxKi l :: ((* -> *) -> * -> *)
+  type TmCtxTy l :: (((* -> *) -> * -> *) -> (* -> *) -> * -> *)
   type TmCtxVar l :: *
 
   termContext :: Lens' l (TermContext (TmCtxKi l) (TmCtxTy l) (TmCtxVar l))

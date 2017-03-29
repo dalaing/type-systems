@@ -40,7 +40,7 @@ import Ast.Type.Var
 import Control.Monad.State (MonadState)
 
 class MkInferType i => BoolInferTypeHelper i where
-  type BoolInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+  type BoolInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
 
   createBool :: BoolInferTypeHelperConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)

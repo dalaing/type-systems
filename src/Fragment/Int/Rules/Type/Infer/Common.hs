@@ -46,7 +46,7 @@ import Control.Monad.State (MonadState)
 data InferTypeInt
 
 class MkInferType i => IntInferTypeHelper i where
-  type IntInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+  type IntInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
 
   createInt :: IntInferTypeHelperConstraint e w s r m ki ty a i
             => Proxy (MonadProxy e w s r m)

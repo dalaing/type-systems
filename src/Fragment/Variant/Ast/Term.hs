@@ -34,7 +34,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFVariant (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFVariant (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmVariantF T.Text (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -71,17 +71,17 @@ instance Bound (TmFVariant ki ty pt) where
 instance Bitransversable (TmFVariant ki ty pt) where
   bitransverse fT fL (TmVariantF l tm ty) = TmVariantF <$> pure l <*> fT fL tm <*> fT fL ty
 
-class AstTransversable ki ty pt tm => AsTmVariant ki ty pt tm where
+class TmAstTransversable ki ty pt tm => AsTmVariant ki ty pt tm where
   _TmVariantP :: Prism' (tm ki ty pt f a) (TmFVariant ki ty pt f a)
 
   _TmVariant :: Prism' (Term ki ty pt tm a) (T.Text, Term ki ty pt tm a, Type ki ty a)
-  _TmVariant = _Wrapped . _ATerm . _TmVariantP . _TmVariantF . mkTriple id _Unwrapped _Type
+  _TmVariant = _Wrapped . _TmAstTerm . _TmVariantP . _TmVariantF . mkTriple id _Unwrapped _TmType
 
-instance (Bitransversable (ty ki), Bitransversable pt) => AsTmVariant ki ty pt TmFVariant where
+instance (Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmVariant ki ty pt TmFVariant where
   _TmVariantP = id
 
 instance {-# OVERLAPPABLE #-} (Bitransversable (x ki ty pt), AsTmVariant ki ty pt (TmSum xs)) => AsTmVariant ki ty pt (TmSum (x ': xs)) where
   _TmVariantP = _TmNext . _TmVariantP
 
-instance {-# OVERLAPPING #-} (Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmVariant ki ty pt (TmSum (TmFVariant ': xs)) where
+instance {-# OVERLAPPING #-} (Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmVariant ki ty pt (TmSum (TmFVariant ': xs)) where
   _TmVariantP = _TmNow . _TmVariantP

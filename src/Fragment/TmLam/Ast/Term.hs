@@ -35,7 +35,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFLam (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data TmFLam (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
     TmLamF (Maybe (k a)) (Scope () k a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -72,30 +72,30 @@ instance Bitransversable (TmFLam ki ty pt) where
   bitransverse fT fL (TmLamF Nothing s) = TmLamF <$> pure Nothing <*> bitransverse fT fL s
   bitransverse fT fL (TmLamF (Just ty) s) = TmLamF <$> (Just <$> fT fL ty) <*> bitransverse fT fL s
 
-class (AstBound ki ty pt tm, AstTransversable ki ty pt tm) => AsTmLam ki ty pt tm where
+class (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm) => AsTmLam ki ty pt tm where
   _TmLamP :: Prism' (tm ki ty pt f a) (TmFLam ki ty pt f a)
 
-  _TmLam :: Prism' (Term ki ty pt tm a) (Maybe (Type ki ty a), Scope () (Ast ki ty pt tm) (AstVar a))
-  _TmLam = _Wrapped . _ATerm . _TmLamP . _TmLamF . mkPair (below _Type) id
+  _TmLam :: Prism' (Term ki ty pt tm a) (Maybe (Type ki ty a), Scope () (TmAst ki ty pt tm) (TmAstVar a))
+  _TmLam = _Wrapped . _TmAstTerm . _TmLamP . _TmLamF . mkPair (below _TmType) id
 
-  _TmLamAnn :: Prism' (Term ki ty pt tm a) (Type ki ty a, Scope () (Ast ki ty pt tm) (AstVar a))
-  _TmLamAnn = _Wrapped . _ATerm . _TmLamP . _TmLamF . mkPair (_Just . _Type) id
+  _TmLamAnn :: Prism' (Term ki ty pt tm a) (Type ki ty a, Scope () (TmAst ki ty pt tm) (TmAstVar a))
+  _TmLamAnn = _Wrapped . _TmAstTerm . _TmLamP . _TmLamF . mkPair (_Just . _TmType) id
 
-  _TmLamNoAnn :: Prism' (Term ki ty pt tm a) (Scope () (Ast ki ty pt tm) (AstVar a))
+  _TmLamNoAnn :: Prism' (Term ki ty pt tm a) (Scope () (TmAst ki ty pt tm) (TmAstVar a))
   _TmLamNoAnn =
     let
       capFst = iso
         (\((), x) -> x)
         (\x -> ((), x))
     in
-      _Wrapped . _ATerm . _TmLamP . _TmLamF . mkPair _Nothing id . capFst
+      _Wrapped . _TmAstTerm . _TmLamP . _TmLamF . mkPair _Nothing id . capFst
 
 
-instance (Bound (ty ki), Bound pt, Bitransversable (ty ki), Bitransversable pt) => AsTmLam ki ty pt TmFLam where
+instance (Bound ki, Bound (ty ki), Bound pt, Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmLam ki ty pt TmFLam where
   _TmLamP = id
 
 instance {-# OVERLAPPABLE #-} (Bound (x ki ty pt), Bitransversable (x ki ty pt), AsTmLam ki ty pt (TmSum xs)) => AsTmLam ki ty pt (TmSum (x ': xs)) where
   _TmLamP = _TmNext . _TmLamP
 
-instance {-# OVERLAPPING #-} (Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmLam ki ty pt (TmSum (TmFLam ': xs)) where
+instance {-# OVERLAPPING #-} (Bound ki, Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmLam ki ty pt (TmSum (TmFLam ': xs)) where
   _TmLamP = _TmNow . _TmLamP

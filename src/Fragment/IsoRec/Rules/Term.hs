@@ -42,14 +42,14 @@ stepTmUnfold evalFn tm = do
   tmF' <- evalFn tmF
   return $ review _TmUnfold (tyF, tmF')
 
-stepTmUnfoldFoldStrict :: (AstBound ki ty pt tm, AsTmIsoRec ki ty pt tm) => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
+stepTmUnfoldFoldStrict :: (TmAstBound ki ty pt tm, AsTmIsoRec ki ty pt tm) => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
 stepTmUnfoldFoldStrict valueFn tm = do
   (_, tmU) <- preview _TmUnfold tm
   (_, tmF) <- preview _TmFold tmU
   vF <- valueFn tmF
   return vF
 
-stepTmUnfoldFoldLazy :: (AstBound ki ty pt tm, AsTmIsoRec ki ty pt tm) => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
+stepTmUnfoldFoldLazy :: (TmAstBound ki ty pt tm, AsTmIsoRec ki ty pt tm) => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
 stepTmUnfoldFoldLazy tm = do
   (_, tmU) <- preview _TmUnfold tm
   (_, tmF) <- preview _TmFold tmU

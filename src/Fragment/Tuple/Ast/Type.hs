@@ -31,7 +31,7 @@ import Ast.Type
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TyFTuple (ki :: * -> *) f a =
+data TyFTuple (ki :: (* -> *) -> * -> *) f a =
   --  TyTupleEmptyF
   -- | TyTupleHasF Int (f a) (TyFTuple f a)
   TyTupleF [f a]

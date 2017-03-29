@@ -34,7 +34,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFAnnotation (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data TmFAnnotation (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
     TmAnnotationF (k a) (k a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -69,17 +69,17 @@ instance Bound (TmFAnnotation ki ty pt) where
 instance Bitransversable (TmFAnnotation ki ty pt) where
   bitransverse fT fL (TmAnnotationF ty tm) = TmAnnotationF <$> fT fL ty <*> fT fL tm
 
-class (AstBound ki ty pt tm, AstTransversable ki ty pt tm) => AsTmAnnotation ki ty pt tm where
+class (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm) => AsTmAnnotation ki ty pt tm where
   _TmAnnotationP :: Prism' (tm ki ty pt f a) (TmFAnnotation ki ty pt f a)
 
   _TmAnnotation :: Prism' (Term ki ty pt tm a) (Type ki ty a, Term ki ty pt tm a)
-  _TmAnnotation = _Wrapped . _ATerm . _TmAnnotationP . _TmAnnotationF . mkPair _Type _Unwrapped
+  _TmAnnotation = _Wrapped . _TmAstTerm . _TmAnnotationP . _TmAnnotationF . mkPair _TmType _Unwrapped
 
-instance (Bound (ty ki), Bound pt, Bitransversable (ty ki), Bitransversable pt) => AsTmAnnotation ki ty pt TmFAnnotation where
+instance (Bound ki, Bound (ty ki), Bound pt, Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmAnnotation ki ty pt TmFAnnotation where
   _TmAnnotationP = id
 
 instance {-# OVERLAPPABLE #-} (Bound (x ki ty pt), Bitransversable (x ki ty pt), AsTmAnnotation ki ty pt (TmSum xs)) => AsTmAnnotation ki ty pt (TmSum (x ': xs)) where
   _TmAnnotationP = _TmNext . _TmAnnotationP
 
-instance {-# OVERLAPPING #-} (Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmAnnotation ki ty pt (TmSum (TmFAnnotation ': xs)) where
+instance {-# OVERLAPPING #-} (Bound ki, Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmAnnotation ki ty pt (TmSum (TmFAnnotation ': xs)) where
   _TmAnnotationP = _TmNow . _TmAnnotationP

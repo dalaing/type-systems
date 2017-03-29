@@ -47,26 +47,26 @@ import Rules.Unification
 
 import Rules.Kind.Infer.Common
 
-type UnifyT ki a = WriterT [UConstraint (UnifyKind ki) a]
+type UnifyT ki a = WriterT [UConstraint (Kind ki) a]
 
-mkInferKind' :: (Functor ki, UnificationContext e m (UnifyKind ki) a, MonadError e m)
-        => (Type ki ty a -> UnifyT ki a m (UnifyKind ki a))
-        -> ([UConstraint (UnifyKind ki) a] -> m (M.Map a (UnifyKind ki a)))
+mkInferKind' :: (UnificationContext e m (Kind ki) a, MonadError e m)
+        => (Type ki ty a -> UnifyT ki a m (Kind ki a))
+        -> ([UConstraint (Kind ki) a] -> m (M.Map a (Kind ki a)))
         -> Type ki ty a
-        -> m (UnifyKind ki a)
+        -> m (Kind ki a)
 mkInferKind' go unifyFn x = do
   (ty, cs) <- runWriterT $ go x
   s <- unifyFn cs
-  return $ mapSubst _UnifyKindVar s ty
+  return $ mapSubst _KiVar s ty
 
 data IKOffline
 
 mkCheck' :: MkInferKindConstraint e w s r m ki ty a IKOffline
         => Proxy (MonadProxy e w s r m)
-        -> (Type ki ty a -> UnifyT ki a m (UnifyKind ki a))
-        -> ([UConstraint (UnifyKind ki) a] -> m (M.Map a (UnifyKind ki a)))
+        -> (Type ki ty a -> UnifyT ki a m (Kind ki a))
+        -> ([UConstraint (Kind ki) a] -> m (M.Map a (Kind ki a)))
         -> Type ki ty a
-        -> InferKind ki a IKOffline
+        -> Kind ki a
         -> m ()
 mkCheck' m inferFn unifyFn x y = do
   cs <- execWriterT $ (mkCheckKind m (Proxy :: Proxy ki) (Proxy :: Proxy ty) (Proxy :: Proxy a) (Proxy :: Proxy IKOffline) inferFn) x y
@@ -77,33 +77,29 @@ instance MkInferKind IKOffline where
   type MkInferKindConstraint e w s r m ki ty a IKOffline =
     ( MonadError e m
     , AsUnknownKindError e
-    , AsOccursError e (UnifyKind ki) a
-    , AsUnificationMismatch e (UnifyKind ki) a
-    , AsUnificationExpectedEq e (UnifyKind ki) a
+    , AsOccursError e (Kind ki) a
+    , AsUnificationMismatch e (Kind ki) a
+    , AsUnificationExpectedEq e (Kind ki) a
     , AsUnboundTypeVariable e a
     , Ord a
-    , Ord1 ki
+    , OrdRec ki
     , OrdRec (ty ki)
-    , Traversable ki
+    , Bound ki
+    , Bitransversable ki
     , Bound (ty ki)
     , Bitransversable (ty ki)
     )
   type InferKindMonad ki a m IKOffline =
     UnifyT ki a m
-  type InferKind ki a IKOffline =
-    UnifyKind ki a
   type MkInferKindErrorList ki ty a IKOffline =
-    '[ ErrOccursError (UnifyKind ki) a
-     , ErrUnificationMismatch (UnifyKind ki) a
-     , ErrUnificationExpectedEq (UnifyKind ki) a
+    '[ ErrOccursError (Kind ki) a
+     , ErrUnificationMismatch (Kind ki) a
+     , ErrUnificationExpectedEq (Kind ki) a
      , ErrUnificationExpectedEq (Type ki ty) a
      , ErrUnboundTypeVariable a
      ]
   type MkInferKindWarningList ki ty a IKOffline =
     '[]
-
-  mkKind _ _ _ _ _ =
-    review _UKind
 
   mkCheckKind m ki ty a i =
     mkCheckKind' i (expectKind m ki ty a i)
@@ -129,13 +125,13 @@ instance MkInferKind IKOffline where
 
   prepareInferKind pm pki pty pa pi kri =
     let
-      u = mkUnify _UnifyKindVar id . kriUnifyRules $ kri
+      u = mkUnify _KiVar id . kriUnifyRules $ kri
       i = mkInferKind . kriInferRules $ kri
       convertKind k =
-        case preview _UKind k of
-          Just ki -> return ki
-          Nothing -> throwing _UnboundTypeVariable . head . toList $ k
+        case toList k of
+          [] -> return k
+          (x : _) -> throwing _UnboundTypeVariable x
       i' = (>>= convertKind) . mkInferKind' i u
-      c ty ki = mkCheck' pm i u ty (mkKind pm pki pty pa pi ki)
+      c = mkCheck' pm i u
     in
       InferKindOutput i' c

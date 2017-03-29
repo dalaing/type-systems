@@ -78,10 +78,10 @@ prepareNormalize (NormalizeInput nt) =
   NormalizeOutput (mkNormalizeType nt)
 
 -- We use this to keep the kinds happy elsewhere
-type BasicNormalizeConstraint (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a = (() :: Constraint)
+type BasicNormalizeConstraint (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a = (() :: Constraint)
 
 class NormalizeRules (k :: j) where
-  type NormalizeConstraint (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a k :: Constraint
+  type NormalizeConstraint (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a k :: Constraint
 
   normalizeInput :: NormalizeConstraint ki ty a k
                  => Proxy k

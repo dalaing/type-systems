@@ -37,7 +37,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.NonEmpty
 
-data Alt (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data Alt (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
   Alt (k a) (Scope Int k a)
   deriving (Functor, Foldable, Traversable)
 
@@ -76,7 +76,7 @@ instance Bound (Alt ki ty pt) where
 instance Bitransversable (Alt ki ty pt) where
   bitransverse fT fL (Alt pt s) = Alt <$> fT fL pt <*> bitransverse fT fL s
 
-data TmFCase (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFCase (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmCaseF (f a) (NE (Alt ki ty pt f a))
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
@@ -120,17 +120,17 @@ instance Bound (TmFCase ki ty pt) where
 instance Bitransversable (TmFCase ki ty tp) where
   bitransverse fT fL (TmCaseF tm alts) = TmCaseF <$> fT fL tm <*> traverse (bitransverse fT fL) alts
 
-class AstTransversable ki ty pt tm => AsTmCase ki ty pt tm where
+class TmAstTransversable ki ty pt tm => AsTmCase ki ty pt tm where
   _TmCaseP :: Prism' (tm ki ty pt f a) (TmFCase ki ty pt f a)
 
-  _TmCase :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, N.NonEmpty (Alt ki ty pt (Ast ki ty pt tm) (AstVar a)))
-  _TmCase = _Wrapped . _ATerm. _TmCaseP . _TmCaseF . bimapping _Unwrapped _Wrapped
+  _TmCase :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, N.NonEmpty (Alt ki ty pt (TmAst ki ty pt tm) (TmAstVar a)))
+  _TmCase = _Wrapped . _TmAstTerm. _TmCaseP . _TmCaseF . bimapping _Unwrapped _Wrapped
 
-instance (Bitransversable (ty ki), Bitransversable pt) => AsTmCase ki ty pt TmFCase where
+instance (Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmCase ki ty pt TmFCase where
   _TmCaseP = id
 
 instance {-# OVERLAPPABLE #-} (Bitransversable (x ki ty pt), AsTmCase ki ty pt (TmSum xs)) => AsTmCase ki ty pt (TmSum (x ': xs)) where
   _TmCaseP = _TmNext . _TmCaseP
 
-instance {-# OVERLAPPING #-} (Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmCase ki ty pt (TmSum (TmFCase ': xs)) where
+instance {-# OVERLAPPING #-} (Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmCase ki ty pt (TmSum (TmFCase ': xs)) where
   _TmCaseP = _TmNow . _TmCaseP

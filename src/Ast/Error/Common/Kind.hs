@@ -34,61 +34,61 @@ import Data.List.NonEmpty (NonEmpty(..))
 import Ast.Kind
 import Ast.Error
 
-newtype ExpectedKind ki = ExpectedKind ki
+newtype ExpectedKind ki a = ExpectedKind (Kind ki a)
   deriving (Eq, Ord, Show)
 
-newtype ActualKind ki = ActualKind ki
+newtype ActualKind ki a = ActualKind (Kind ki a)
   deriving (Eq, Ord, Show)
 
-data ErrUnexpectedKind ki = ErrUnexpectedKind (ExpectedKind ki ) (ActualKind ki)
+data ErrUnexpectedKind ki a = ErrUnexpectedKind (ExpectedKind ki a) (ActualKind ki a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrUnexpectedKind
 
-class AsUnexpectedKind e ki where -- | e -> ty, e -> a where
-  _UnexpectedKind :: Prism' e (ExpectedKind ki, ActualKind ki)
+class AsUnexpectedKind e ki a where -- | e -> ty, e -> a where
+  _UnexpectedKind :: Prism' e (ExpectedKind ki a, ActualKind ki a)
 
-instance AsUnexpectedKind (ErrUnexpectedKind ki) ki where
+instance AsUnexpectedKind (ErrUnexpectedKind ki a) ki a where
   _UnexpectedKind = _ErrUnexpectedKind
 
-instance {-# OVERLAPPABLE #-} AsUnexpectedKind (ErrSum xs) ki => AsUnexpectedKind (ErrSum (x ': xs)) ki where
+instance {-# OVERLAPPABLE #-} AsUnexpectedKind (ErrSum xs) ki a => AsUnexpectedKind (ErrSum (x ': xs)) ki a where
   _UnexpectedKind = _ErrNext . _UnexpectedKind
 
-instance {-# OVERLAPPING #-} AsUnexpectedKind (ErrSum (ErrUnexpectedKind ki ': xs)) ki where
+instance {-# OVERLAPPING #-} AsUnexpectedKind (ErrSum (ErrUnexpectedKind ki a ': xs)) ki a where
   _UnexpectedKind = _ErrNow . _UnexpectedKind
 
-data ErrExpectedKindEq ki = ErrExpectedKindEq (Kind ki) (Kind ki)
+data ErrExpectedKindEq ki a = ErrExpectedKindEq (Kind ki a) (Kind ki a)
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedKindEq
 
-class AsExpectedKindEq e ki where -- | e -> ty, e -> a where
-  _ExpectedKindEq :: Prism' e (Kind ki, Kind ki)
+class AsExpectedKindEq e ki a where -- | e -> ty, e -> a where
+  _ExpectedKindEq :: Prism' e (Kind ki a, Kind ki a)
 
-instance AsExpectedKindEq (ErrExpectedKindEq ki) ki where
+instance AsExpectedKindEq (ErrExpectedKindEq ki a) ki a where
   _ExpectedKindEq = _ErrExpectedKindEq
 
-instance {-# OVERLAPPABLE #-} AsExpectedKindEq (ErrSum xs) ki => AsExpectedKindEq (ErrSum (x ': xs)) ki where
+instance {-# OVERLAPPABLE #-} AsExpectedKindEq (ErrSum xs) ki a => AsExpectedKindEq (ErrSum (x ': xs)) ki a where
   _ExpectedKindEq = _ErrNext . _ExpectedKindEq
 
-instance {-# OVERLAPPING #-} AsExpectedKindEq (ErrSum (ErrExpectedKindEq ki ': xs)) ki where
+instance {-# OVERLAPPING #-} AsExpectedKindEq (ErrSum (ErrExpectedKindEq ki a ': xs)) ki a where
   _ExpectedKindEq = _ErrNow . _ExpectedKindEq
 
-data ErrExpectedKindAllEq ki = ErrExpectedKindAllEq (NonEmpty (Kind ki))
+data ErrExpectedKindAllEq ki a = ErrExpectedKindAllEq (NonEmpty (Kind ki a))
   deriving (Eq, Ord, Show)
 
 makePrisms ''ErrExpectedKindAllEq
 
-class AsExpectedKindAllEq e ki where -- | e -> ty, e -> a where
-  _ExpectedKindAllEq :: Prism' e (NonEmpty (Kind ki))
+class AsExpectedKindAllEq e ki a where -- | e -> ty, e -> a where
+  _ExpectedKindAllEq :: Prism' e (NonEmpty (Kind ki a))
 
-instance AsExpectedKindAllEq (ErrExpectedKindAllEq ki) ki where
+instance AsExpectedKindAllEq (ErrExpectedKindAllEq ki a) ki a where
   _ExpectedKindAllEq = _ErrExpectedKindAllEq
 
-instance {-# OVERLAPPABLE #-} AsExpectedKindAllEq (ErrSum xs) ki => AsExpectedKindAllEq (ErrSum (x ': xs)) ki where
+instance {-# OVERLAPPABLE #-} AsExpectedKindAllEq (ErrSum xs) ki a => AsExpectedKindAllEq (ErrSum (x ': xs)) ki a where
   _ExpectedKindAllEq = _ErrNext . _ExpectedKindAllEq
 
-instance {-# OVERLAPPING #-} AsExpectedKindAllEq (ErrSum (ErrExpectedKindAllEq ki ': xs)) ki where
+instance {-# OVERLAPPING #-} AsExpectedKindAllEq (ErrSum (ErrExpectedKindAllEq ki a ': xs)) ki a where
   _ExpectedKindAllEq = _ErrNow . _ExpectedKindAllEq
 
 data ErrUnknownKindError = ErrUnknownKindError

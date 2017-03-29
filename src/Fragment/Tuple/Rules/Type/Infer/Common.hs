@@ -48,7 +48,7 @@ import Control.Monad.State (MonadState)
 import Data.Equivalence.Monad (classDesc)
 
 class MkInferType i => TupleInferTypeHelper i where
-  type TupleInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+  type TupleInferTypeHelperConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
 
   unifyTupleRules :: TupleInferTypeHelperConstraint e w s r m ki ty a i
                   => Proxy (MonadProxy e w s r m)

@@ -33,7 +33,7 @@ import Ast.Term
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data TmFPair (k :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
+data TmFPair (k :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) f a =
     TmPairF (f a) (f a)
   | TmFstF (f a)
   | TmSndF (f a)
@@ -91,13 +91,13 @@ class AsTmPair ki ty pt tm where
   _TmPairP :: Prism' (tm ki ty pt f a) (TmFPair ki ty pt f a)
 
   _TmPair :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmPair = _Wrapped . _ATerm . _TmPairP . _TmPairF . bimapping _Unwrapped _Unwrapped
+  _TmPair = _Wrapped . _TmAstTerm . _TmPairP . _TmPairF . bimapping _Unwrapped _Unwrapped
 
   _TmFst :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a)
-  _TmFst = _Wrapped . _ATerm . _TmPairP . _TmFstF . _Unwrapped
+  _TmFst = _Wrapped . _TmAstTerm . _TmPairP . _TmFstF . _Unwrapped
 
   _TmSnd :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a)
-  _TmSnd = _Wrapped . _ATerm . _TmPairP . _TmSndF . _Unwrapped
+  _TmSnd = _Wrapped . _TmAstTerm . _TmPairP . _TmSndF . _Unwrapped
 
 instance AsTmPair ki ty pt TmFPair where
   _TmPairP = id

@@ -21,6 +21,7 @@ import Control.Lens (preview)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Reader (MonadReader)
 
+import Ast.Kind
 import Ast.Type
 import Rules.Kind.Infer.Common
 import Context.Type
@@ -40,7 +41,7 @@ type TyVarInferKindConstraint e w s r m ki ty a i =
 tyVarInferKindInput :: TyVarInferKindConstraint e w s r m ki ty a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a i
+                    -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
 tyVarInferKindInput m i =
   InferKindInput
     []
@@ -53,9 +54,7 @@ inferTyVar :: TyVarInferKindConstraint e w s r m ki ty a i
            -> Proxy a
            -> Proxy i
            -> Type ki ty a
-           -> Maybe (InferKindMonad ki a m i (InferKind ki a i))
-inferTyVar pm pki pty pa pi ty = do
+           -> Maybe (InferKindMonad ki a m i (Kind ki a))
+inferTyVar _ _ _ _ _ ty = do
   v <- preview _TyVar ty
-  return $ do
-    k <- lookupType v
-    return . mkKind pm pki pty pa pi $ k
+  return . lookupType $ v

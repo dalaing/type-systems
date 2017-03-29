@@ -34,7 +34,7 @@ import Data.Bitransversable
 import Data.Functor.Rec
 import Util.Prisms
 
-data TmFSystemF (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
+data TmFSystemF (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) k a =
     TmLamF (k a) (Scope () k a)
   | TmAppF (k a) (k a)
   | TmLamTyF (Scope () k a)
@@ -107,29 +107,26 @@ instance Bitransversable (TmFSystemF ki ty pt) where
   bitransverse fT fL (TmLamTyF s) = TmLamTyF <$> bitransverse fT fL s
   bitransverse fT fL (TmAppTyF x y) = TmAppTyF <$> fT fL x <*> fT fL y
 
-class (AstBound ki ty pt tm, AstTransversable ki ty pt tm) => AsTmSystemF ki ty pt tm where
+class (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm) => AsTmSystemF ki ty pt tm where
   _TmSystemFP :: Prism' (tm ki ty pt f a) (TmFSystemF ki ty pt f a)
 
-  _TmSystemFLink :: Prism' (Term ki ty pt tm a) (TmFSystemF ki ty pt (Ast ki ty pt tm) (AstVar a))
-  _TmSystemFLink = _Wrapped . _ATerm . _TmSystemFP
-
-  _TmLam :: Prism' (Term ki ty pt tm a) (Type ki ty a, Scope () (Ast ki ty pt tm) (AstVar a))
-  _TmLam = _TmSystemFLink . _TmLamF . mkPair _Type id
+  _TmLam :: Prism' (Term ki ty pt tm a) (Type ki ty a, Scope () (TmAst ki ty pt tm) (TmAstVar a))
+  _TmLam = _Wrapped . _TmAstTerm . _TmSystemFP . _TmLamF . mkPair _TmType id
 
   _TmApp :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Term ki ty pt tm a)
-  _TmApp = _TmSystemFLink . _TmAppF . mkPair _Unwrapped _Unwrapped
+  _TmApp = _Wrapped . _TmAstTerm . _TmSystemFP . _TmAppF . mkPair _Unwrapped _Unwrapped
 
-  _TmLamTy :: Prism' (Term ki ty pt tm a) (Scope () (Ast ki ty pt tm) (AstVar a))
-  _TmLamTy = _TmSystemFLink . _TmLamTyF
+  _TmLamTy :: Prism' (Term ki ty pt tm a) (Scope () (TmAst ki ty pt tm) (TmAstVar a))
+  _TmLamTy = _Wrapped . _TmAstTerm . _TmSystemFP . _TmLamTyF
 
   _TmAppTy :: Prism' (Term ki ty pt tm a) (Term ki ty pt tm a, Type ki ty a)
-  _TmAppTy = _TmSystemFLink . _TmAppTyF . mkPair _Unwrapped _Type
+  _TmAppTy = _Wrapped . _TmAstTerm . _TmSystemFP . _TmAppTyF . mkPair _Unwrapped _TmType
 
-instance (Bound (ty ki), Bound pt, Bitransversable (ty ki), Bitransversable pt) => AsTmSystemF ki ty pt TmFSystemF where
+instance (Bound ki, Bound (ty ki), Bound pt, Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmSystemF ki ty pt TmFSystemF where
   _TmSystemFP = id
 
 instance {-# OVERLAPPABLE #-} (Bound (x ki ty pt), Bitransversable (x ki ty pt), AsTmSystemF ki ty pt (TmSum xs)) => AsTmSystemF ki ty pt (TmSum (x ': xs)) where
   _TmSystemFP = _TmNext . _TmSystemFP
 
-instance {-# OVERLAPPING #-} (Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmSystemF ki ty pt (TmSum (TmFSystemF ': xs)) where
+instance {-# OVERLAPPING #-} (Bound ki, Bound (ty ki), Bound pt, Bound (TmSum xs ki ty pt), Bitransversable ki, Bitransversable (ty ki), Bitransversable pt, Bitransversable (TmSum xs ki ty pt)) => AsTmSystemF ki ty pt (TmSum (TmFSystemF ': xs)) where
   _TmSystemFP = _TmNow . _TmSystemFP
