@@ -133,7 +133,3 @@ instance Show1 (KiSum '[]) where
 instance (Show1 x, Show1 (KiSum xs)) => Show1 (KiSum (x ':xs)) where
   liftShowsPrec s sl n (KiNow x) = liftShowsPrec s sl n x
   liftShowsPrec s sl n (KiNext x) = liftShowsPrec s sl n x
-
-
-
-

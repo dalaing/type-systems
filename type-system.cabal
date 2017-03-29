@@ -22,6 +22,7 @@ library
                      , Language.TheLot
                      , Ast
                      , Ast.Kind
+                     , Ast.Kind.Var
                      , Ast.Type
                      , Ast.Type.Var
                      , Ast.Error
@@ -80,6 +81,10 @@ library
                      , Fragment.KiBase.Ast
                      , Fragment.KiBase.Ast.Kind
                      , Fragment.KiBase.Helpers
+                     , Fragment.KiArr
+                     , Fragment.KiArr.Ast
+                     , Fragment.KiArr.Ast.Kind
+                     , Fragment.KiArr.Helpers
                      , Fragment.Int
                      , Fragment.Int.Ast
                      , Fragment.Int.Ast.Type

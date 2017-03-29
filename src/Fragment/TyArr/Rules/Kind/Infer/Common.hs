@@ -37,9 +37,9 @@ tyArrInferKindInput :: TyArrInferKindConstraint e w s r m ki ty a i
 tyArrInferKindInput m i =
   InferKindInput
     []
-    [ InferKindRecurse $ inferTyTyArr m (Proxy :: Proxy ki) (Proxy :: Proxy ty) (Proxy :: Proxy a) i ]
+    [ InferKindRecurse $ inferTyArr m (Proxy :: Proxy ki) (Proxy :: Proxy ty) (Proxy :: Proxy a) i ]
 
-inferTyTyArr :: TyArrInferKindConstraint e w s r m ki ty a i
+inferTyArr :: TyArrInferKindConstraint e w s r m ki ty a i
             => Proxy (MonadProxy e w s r m)
             -> Proxy ki
             -> Proxy ty
@@ -48,7 +48,7 @@ inferTyTyArr :: TyArrInferKindConstraint e w s r m ki ty a i
             -> (Type ki ty a -> InferKindMonad ki a m i (InferKind ki a i))
             -> Type ki ty a
             -> Maybe (InferKindMonad ki a m i (InferKind ki a i))
-inferTyTyArr pm pki pty pa pi inferFn ty = do
+inferTyArr pm pki pty pa pi inferFn ty = do
   (ty1, ty2) <- preview _TyArr ty
   return $ do
     let kib = mkKind pm pki pty pa pi $ review _KiBase ()
