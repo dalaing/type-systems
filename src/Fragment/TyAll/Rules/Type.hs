@@ -12,7 +12,6 @@ module Fragment.TyAll.Rules.Type (
   , tyAllNormalizeRules
   ) where
 
-import Bound (toScope, fromScope)
 import Control.Lens (review, preview)
 
 import Rules.Type
@@ -28,7 +27,7 @@ normalizeAll :: TyAllNormalizeConstraint ki ty a
              -> Maybe (Type ki ty a)
 normalizeAll normalizeFn ty = do
   (k, s) <- preview _TyAll ty
-  return $ review _TyAll (k, toScope . normalizeFn . fromScope $ s)
+  return $ review _TyAll (k, scopeAppTy normalizeFn s)
 
 tyAllNormalizeRules :: TyAllNormalizeConstraint ki ty a
                     => NormalizeInput ki ty a

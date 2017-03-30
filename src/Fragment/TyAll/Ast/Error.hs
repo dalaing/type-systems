@@ -51,7 +51,7 @@ instance {-# OVERLAPPABLE #-} AsExpectedTyAll (ErrSum xs) ki ty a => AsExpectedT
 instance {-# OVERLAPPING #-} AsExpectedTyAll (ErrSum (ErrExpectedTyAll ki ty a ': xs)) ki ty a where
   _ExpectedTyAll = _ErrNow . _ExpectedTyAll
 
-expectTyAll :: (MonadError e m, AsExpectedTyAll e ki ty a, AsTyAll ki ty) => Type ki ty a -> m (Maybe (Kind ki), Scope () (Type ki ty) a)
+expectTyAll :: (MonadError e m, AsExpectedTyAll e ki ty a, AsTyAll ki ty) => Type ki ty a -> m (Maybe (Kind ki a), Scope () (TyAst ki ty) (TyAstVar a))
 expectTyAll ty =
   case preview _TyAll ty of
     Just (k, s) -> return (k, s)

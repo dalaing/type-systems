@@ -262,13 +262,13 @@ library
                      , Fragment.LC.Rules.Term
                      , Fragment.LC.Helpers
 
-                     -- , Fragment.TyAll
-                     -- , Fragment.TyAll.Ast
-                     -- , Fragment.TyAll.Ast.Type
-                     -- , Fragment.TyAll.Ast.Error
+                     , Fragment.TyAll
+                     , Fragment.TyAll.Ast
+                     , Fragment.TyAll.Ast.Type
+                     , Fragment.TyAll.Ast.Error
                      -- , Fragment.TyAll.Rules.Kind.Infer.Common
-                     -- , Fragment.TyAll.Rules.Type
-                     -- , Fragment.TyAll.Helpers
+                     , Fragment.TyAll.Rules.Type
+                     , Fragment.TyAll.Helpers
 
                      , Fragment.Fix
                      , Fragment.Fix.Ast

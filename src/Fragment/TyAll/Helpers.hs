@@ -11,7 +11,6 @@ module Fragment.TyAll.Helpers (
   , tyAllNoAnn
   ) where
 
-import Bound (abstract1)
 import Control.Lens (review)
 
 import Ast.Kind
@@ -19,11 +18,11 @@ import Ast.Type
 
 import Fragment.TyAll.Ast.Type
 
-tyAll :: (Eq a, AsTyAll ki ty) => a -> Maybe (Kind ki) -> Type ki ty a -> Type ki ty a
-tyAll v ki ty = review _TyAll (ki, abstract1 v ty)
+tyAll :: (Eq a, AsTyAll ki ty) => a -> Maybe (Kind ki a) -> Type ki ty a -> Type ki ty a
+tyAll v ki ty = review _TyAll (ki, abstractTy v ty)
 
-tyAllAnn :: (Eq a, AsTyAll ki ty) => a -> Kind ki -> Type ki ty a -> Type ki ty a
-tyAllAnn v ki ty = review _TyAllAnn (ki, abstract1 v ty)
+tyAllAnn :: (Eq a, AsTyAll ki ty) => a -> Kind ki a -> Type ki ty a -> Type ki ty a
+tyAllAnn v ki ty = review _TyAllAnn (ki, abstractTy v ty)
 
 tyAllNoAnn :: (Eq a, AsTyAll ki ty) => a -> Type ki ty a -> Type ki ty a
-tyAllNoAnn v ty = review _TyAllNoAnn (abstract1 v ty)
+tyAllNoAnn v ty = review _TyAllNoAnn (abstractTy v ty)
