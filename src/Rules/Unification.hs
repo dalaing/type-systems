@@ -35,6 +35,7 @@ import Control.Monad (when, unless, zipWithM_)
 import Data.Foldable (asum, toList)
 import Data.Maybe (fromMaybe)
 
+import Bound (Bound(..))
 import Control.Lens (review, preview)
 import Control.Lens.Prism (Prism')
 import Control.Lens.TH (makePrisms)
@@ -46,10 +47,17 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 import Ast.Error
+import Data.Bitransversable
 
 data UConstraint f a =
     UCEq (f a) (f a)
   deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
+
+instance Bound UConstraint where
+  UCEq x y >>>= f = UCEq (x >>= f) (y >>= f)
+
+instance Bitransversable UConstraint where
+  bitransverse fT fL (UCEq x y) = UCEq <$> fT fL x <*> fT fL y
 
 data ErrOccursError f a =
   ErrOccursError a (f a)

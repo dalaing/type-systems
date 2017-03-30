@@ -24,7 +24,9 @@ import Data.Functor.Classes (showsUnaryWith)
 import Text.Show (showListWith)
 
 import Bound (Bound(..))
+import Control.Lens.Iso (mapping, seconding)
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
@@ -82,7 +84,7 @@ class AsTyRecord ki ty where
   _TyRecordP :: Prism' (ty ki j a) (TyFRecord ki j a)
 
   _TyRecord :: Prism' (Type ki ty a) [(T.Text, Type ki ty a)]
-  _TyRecord = _TyTree . _TyRecordP . _TyRecordF
+  _TyRecord = _Wrapped . _TyAstType . _TyRecordP . _TyRecordF . mapping (seconding _Unwrapped)
 
 instance AsTyRecord ki TyFRecord where
   _TyRecordP = id

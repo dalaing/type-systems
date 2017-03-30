@@ -11,17 +11,21 @@ module Fragment.IsoRec.Helpers (
   , tmUnfold
   ) where
 
-import Bound (abstract1)
+import Bound (Bound)
 import Control.Lens (review)
 
 import Ast.Type
 import Ast.Term
+import Data.Bitransversable
 
 import Fragment.IsoRec.Ast.Type
 import Fragment.IsoRec.Ast.Term
 
-tyRec :: (Eq a, AsTyIsoRec ki ty) => a -> Type ki ty a -> Type ki ty a
-tyRec v ty = review _TyRec (abstract1 v ty)
+tyRec :: (Eq a, Bound ki, Bitransversable ki, AsTyIsoRec ki ty)
+      => a
+      -> Type ki ty a
+      -> Type ki ty a
+tyRec v ty = review _TyRec (abstractTy v ty)
 
 tmFold :: AsTmIsoRec ki ty pt tm => Type ki ty a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmFold = curry $ review _TmFold

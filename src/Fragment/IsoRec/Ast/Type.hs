@@ -24,6 +24,7 @@ import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), showsUnaryWith)
 
 import Bound (Bound(..), Scope)
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
@@ -67,8 +68,8 @@ instance Bitransversable (TyFIsoRec ki) where
 class (Bound (ty ki), Bitransversable (ty ki)) => AsTyIsoRec ki ty where
   _TyIsoRecP :: Prism' (ty ki j a) (TyFIsoRec ki j a)
 
-  _TyRec :: Prism' (Type ki ty a) (Scope () (Type ki ty) a)
-  _TyRec = _TyTree . _TyIsoRecP . _TyRecF
+  _TyRec :: Prism' (Type ki ty a) (Scope () (TyAst ki ty) (TyAstVar a))
+  _TyRec = _Wrapped . _TyAstType . _TyIsoRecP . _TyRecF
 
 instance AsTyIsoRec ki TyFIsoRec where
   _TyIsoRecP = id

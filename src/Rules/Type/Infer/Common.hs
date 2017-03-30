@@ -136,7 +136,7 @@ mkPCheck rules x y =
 
 data InferTypeInput e w s r m mi ki ty pt tm a =
   InferTypeInput {
-    iiUnifyRules :: [UnificationRule m (Type ki ty) a]
+    iiUnifyRules :: [UnificationRule m (TyAst ki ty) (TyAstVar a)]
   , iiInferTypeRules :: [InferTypeRule e w s r mi ki ty pt tm a]
   , iiPCheckRules :: [PCheckRule e mi pt ki ty a]
   }

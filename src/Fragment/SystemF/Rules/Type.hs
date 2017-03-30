@@ -12,15 +12,20 @@ module Fragment.SystemF.Rules.Type (
   , systemFNormalizeRules
   ) where
 
-import Bound (toScope, fromScope)
+import Bound (Bound)
 import Control.Lens (review, preview)
 
-import Rules.Type
 import Ast.Type
+import Data.Bitransversable
+import Rules.Type
 
 import Fragment.SystemF.Ast.Type
 
-type SystemFNormalizeConstraint ki ty a = AsTySystemF ki ty
+type SystemFNormalizeConstraint ki ty a =
+  ( AsTySystemF ki ty
+  , Bound ki
+  , Bitransversable ki
+  )
 
 normalizeArr :: SystemFNormalizeConstraint ki ty a
              => (Type ki ty a -> Type ki ty a)
@@ -36,7 +41,7 @@ normalizeAll :: SystemFNormalizeConstraint ki ty a
              -> Maybe (Type ki ty a)
 normalizeAll normalizeFn ty = do
   s <- preview _TyAll ty
-  return $ review _TyAll (toScope . normalizeFn . fromScope $ s)
+  return $ review _TyAll (scopeAppTy normalizeFn s)
 
 systemFNormalizeRules :: SystemFNormalizeConstraint ki ty a
                       => NormalizeInput ki ty a

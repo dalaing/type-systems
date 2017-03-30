@@ -5,6 +5,10 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
@@ -13,81 +17,160 @@ Portability : non-portable
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 module Ast.Type (
-    Type(..)
+    TyAstVar(..)
+  , _TyAstKiVar
+  , _TyAstTyVar
+  , TyAst(..)
+  , TyAstEq
+  , TyAstOrd
+  , TyAstShow
+  , TyAstBound
+  , TyAstTransversable
+  , _TyAstVar
+  , _TyAstKind
+  , _TyAstType
+  , Type(..)
   , _TyVar
-  , _TyTree
   , TySum(..)
   , _TyNow
   , _TyNext
+  , _TyKind
+  , scopeAppTy
+  , abstractTy
+  , instantiateTy
   ) where
 
 import Control.Monad (ap)
+import Data.Functor.Identity (Identity(..))
 import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), showsUnaryWith)
 import Data.Traversable (fmapDefault, foldMapDefault)
+import GHC.Exts (Constraint)
 
-import Bound (Bound(..))
+import Bound (Bound(..), Scope, Var(..), abstract, instantiate, toScope, fromScope)
+import Control.Error (note)
+import Control.Lens (review)
+import Control.Lens.Iso (Iso', iso, from, mapping)
 import Control.Lens.Prism (Prism', prism)
-import Control.Lens.TH (makePrisms)
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
+import Control.Lens.TH (makePrisms, makeWrapped)
+import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1, makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
+import Ast.Kind
 import Data.Bitransversable
 import Data.Functor.Rec
 
-data Type (ki :: (* -> *) -> * -> *) ty a =
-    TyVar a
-  | TyTree (ty ki (Type ki ty) a)
+data TyAstVar a =
+    TyAstKiVar a
+  | TyAstTyVar a
+  deriving (Eq, Ord, Show, Functor, Foldable, Traversable)
 
-makePrisms ''Type
+makePrisms ''TyAstVar
 
-instance Bitransversable (ty ki) => Functor (Type ki ty) where
-  fmap = fmapDefault
+deriveEq1 ''TyAstVar
+deriveOrd1 ''TyAstVar
+deriveShow1 ''TyAstVar
 
-instance Bitransversable (ty ki) => Foldable (Type ki ty) where
-  foldMap = foldMapDefault
+data TyAst (ki :: (* -> *) -> * -> *) ty a =
+    TyAstVar a
+  | TyAstKind (ki (TyAst ki ty ) a)
+  | TyAstType (ty ki (TyAst ki ty) a)
 
-instance Bitransversable (ty ki) => Traversable (Type ki ty) where
-  traverse f (TyVar x) = TyVar <$> f x
-  traverse f (TyTree x) = TyTree <$> traverseDefault f x
+makePrisms ''TyAst
 
-instance (Eq a, EqRec (ty ki)) => Eq (Type ki ty a) where
-  TyVar x == TyVar y = (==) x y
-  TyTree x == TyTree y = eqRec x y
+type TyAstConstraint (k :: ((* -> *) -> * -> *) -> Constraint) ki ty = (k ki, k (ty ki))
+type TyAstTransversable ki ty = TyAstConstraint (Bitransversable) ki ty
+type TyAstBound ki ty = TyAstConstraint Bound ki ty
+type TyAstEq ki ty = TyAstConstraint EqRec ki ty
+type TyAstOrd ki ty = TyAstConstraint OrdRec ki ty
+type TyAstShow ki ty = TyAstConstraint ShowRec ki ty
+
+instance (Eq a, TyAstEq ki ty) => Eq (TyAst ki ty a) where
+  TyAstVar x == TyAstVar y = x == y
+  TyAstKind x == TyAstKind y = eqRec x y
+  TyAstType x == TyAstType y = eqRec x y
   _ == _ = False
 
-instance EqRec (ty ki) => Eq1 (Type ki ty) where
-  liftEq e (TyVar x) (TyVar y) = e x y
-  liftEq e (TyTree x) (TyTree y) = liftEq1Rec e x y
+instance TyAstEq ki ty => Eq1 (TyAst ki ty) where
+  liftEq e (TyAstVar x) (TyAstVar y) = e x y
+  liftEq e (TyAstKind x) (TyAstKind y) = liftEq1Rec e x y
+  liftEq e (TyAstType x) (TyAstType y) = liftEq1Rec e x y
   liftEq _ _ _ = False
 
-instance (Ord a, OrdRec (ty ki)) => Ord (Type ki ty a) where
-  compare (TyVar x) (TyVar y) = compare x y
-  compare (TyVar _) _ = LT
-  compare _ (TyVar _) = GT
-  compare (TyTree x) (TyTree y) = compareRec x y
+instance (Ord a, TyAstOrd ki ty) => Ord (TyAst ki ty a) where
+  compare (TyAstVar x) (TyAstVar y) = compare x y
+  compare (TyAstVar _) _ = LT
+  compare _ (TyAstVar _) = GT
+  compare (TyAstKind x) (TyAstKind y) = compareRec x y
+  compare (TyAstKind _) _ = LT
+  compare _ (TyAstKind _) = GT
+  compare (TyAstType x) (TyAstType y) = compareRec x y
 
-instance OrdRec (ty ki) => Ord1 (Type ki ty) where
-  liftCompare c (TyVar x) (TyVar y) = c x y
-  liftCompare _ (TyVar _) _ = LT
-  liftCompare _ _ (TyVar _) = GT
-  liftCompare c (TyTree x) (TyTree y) = liftCompare1Rec c x y
+instance TyAstOrd ki ty => Ord1 (TyAst ki ty) where
+  liftCompare c (TyAstVar x) (TyAstVar y) = c x y
+  liftCompare _ (TyAstVar _) _ = LT
+  liftCompare _ _ (TyAstVar _) = GT
+  liftCompare c (TyAstKind x) (TyAstKind y) = liftCompare1Rec c x y
+  liftCompare _ (TyAstKind _) _ = LT
+  liftCompare _ _ (TyAstKind _) = GT
+  liftCompare c (TyAstType x) (TyAstType y) = liftCompare1Rec c x y
 
-instance (Show a, ShowRec (ty ki)) => Show (Type ki ty a) where
-  showsPrec n (TyVar x) = showsUnaryWith showsPrec "TyVar" n x
-  showsPrec n (TyTree x) = showsUnaryWith showsPrecRec "TyTree" n x
+instance (Show a, TyAstShow ki ty) => Show (TyAst ki ty a) where
+  showsPrec n (TyAstVar x) = showsUnaryWith showsPrec "TyAstVar" n x
+  showsPrec n (TyAstKind x) = showsUnaryWith showsPrecRec "TyAstKind" n x
+  showsPrec n (TyAstType x) = showsUnaryWith showsPrecRec "TyAstType" n x
 
-instance ShowRec (ty ki) => Show1 (Type ki ty) where
-  liftShowsPrec s _ n (TyVar x) = s n x
-  liftShowsPrec s sl n (TyTree x) = liftShowsPrec1Rec s sl n x
+instance TyAstShow ki ty => Show1 (TyAst ki ty) where
+  liftShowsPrec s _ n (TyAstVar x) = s n x
+  liftShowsPrec s sl n (TyAstKind x) = liftShowsPrec1Rec s sl n x
+  liftShowsPrec s sl n (TyAstType x) = liftShowsPrec1Rec s sl n x
 
-instance (Bound (ty ki), Bitransversable (ty ki)) => Applicative (Type ki ty) where
+instance TyAstTransversable ki ty => Functor (TyAst ki ty) where
+  fmap = fmapDefault
+
+instance TyAstTransversable ki ty => Foldable (TyAst ki ty) where
+  foldMap = foldMapDefault
+
+instance TyAstTransversable ki ty => Traversable (TyAst ki ty) where
+  traverse f (TyAstVar x) = TyAstVar <$> f x
+  traverse f (TyAstKind x) = TyAstKind <$> traverseDefault f x
+  traverse f (TyAstType x) = TyAstType <$> traverseDefault f x
+
+instance (TyAstTransversable ki ty, TyAstBound ki ty) => Applicative (TyAst ki ty) where
   pure = return
   (<*>) = ap
 
-instance (Bound (ty ki), Bitransversable (ty ki)) => Monad (Type ki ty) where
-  return = TyVar
+instance (TyAstTransversable ki ty, TyAstBound ki ty) => Monad (TyAst ki ty) where
+  return = TyAstVar
 
-  TyVar x >>= f = f x
-  TyTree ty >>= f = TyTree (ty >>>= f)
+  TyAstVar x >>= f = f x
+  TyAstKind ki >>= f = TyAstKind (ki >>>= f)
+  TyAstType ty >>= f = TyAstType (ty >>>= f)
+
+newtype Type ki ty a = Type (TyAst ki ty (TyAstVar a))
+  deriving (Eq, Ord, Show)
+
+makeWrapped ''Type
+
+instance TyAstEq ki ty => Eq1 (Type ki ty) where
+  liftEq = $(makeLiftEq ''Type)
+
+instance TyAstOrd ki ty => Ord1 (Type ki ty) where
+  liftCompare = $(makeLiftCompare ''Type)
+
+instance TyAstShow ki ty => Show1 (Type ki ty) where
+  liftShowsPrec = $(makeLiftShowsPrec ''Type)
+
+deriving instance TyAstTransversable ki ty => Functor (Type ki ty)
+deriving instance TyAstTransversable ki ty => Foldable (Type ki ty)
+deriving instance TyAstTransversable ki ty => Traversable (Type ki ty)
+
+_TyVar :: Prism' (Type ki ty a) a
+_TyVar = _Wrapped . _TyAstVar . _TyAstTyVar
 
 data TySum (tys :: [(k1 -> k2 -> k3 -> *)]) (ki :: k1) (h :: k2) (a :: k3) where
   TyNext :: TySum tys ki h a -> TySum (ty ': tys) ki h a
@@ -176,3 +259,74 @@ instance (ShowRec (x ki), ShowRec (TySum xs ki)) => ShowRec (TySum (x ': xs) ki)
     showsUnaryWith (liftShowsPrecRec sR slR s sl) "TySum" m a
   liftShowsPrecRec sR slR s sl m (TyNext n) =
     liftShowsPrecRec sR slR s sl m n
+
+kindToAst :: Bitransversable ki => Kind ki a -> TyAst ki ty (TyAstVar a)
+kindToAst = runIdentity . kindToAst' (Identity . TyAstTyVar)
+
+kindToAst' :: Bitransversable ki => (a -> Identity b) -> Kind ki a -> Identity (TyAst ki ty b)
+kindToAst' fV x = kindToAst'' =<< traverse fV x
+
+kindToAst'' :: Bitransversable ki => Kind ki a -> Identity (TyAst ki ty a)
+kindToAst'' (KiVar x) = Identity (TyAstVar x)
+kindToAst'' (KiTree ty) = fmap TyAstKind . bitransverse kindToAst' pure $ ty
+
+astToKind :: TyAstTransversable ki ty => TyAst ki ty (TyAstVar a) -> Maybe (Kind ki a)
+astToKind = astToKind' fV
+  where
+    fV (TyAstKiVar x) = Just x
+    fV _ = Nothing
+
+astToKind' :: TyAstTransversable ki ty => (a -> Maybe b) -> TyAst ki ty a -> Maybe (Kind ki b)
+astToKind' fV x = astToKind'' =<< traverse fV x
+
+astToKind'' :: TyAstTransversable ki ty => TyAst ki ty a -> Maybe (Kind ki a)
+astToKind'' (TyAstVar x) = Just (KiVar x)
+astToKind'' (TyAstKind ty) = fmap KiTree . bitransverse astToKind' pure $ ty
+astToKind'' _ = Nothing
+
+_TyKind :: TyAstTransversable ki ty => Prism' (TyAst ki ty (TyAstVar a)) (Kind ki a)
+_TyKind = prism kindToAst (\x -> note x . astToKind $ x)
+
+scopeTyVar :: Iso' (Var b (TyAstVar f)) (TyAstVar (Var b f))
+scopeTyVar = iso there back
+  where
+    there (B b) = TyAstTyVar (B b)
+    there (F (TyAstKiVar f)) = TyAstKiVar (F f)
+    there (F (TyAstTyVar f)) = TyAstTyVar (F f)
+
+    back (TyAstKiVar (B b)) = B b
+    back (TyAstKiVar (F f)) = F (TyAstKiVar f)
+    back (TyAstTyVar (B b)) = B b
+    back (TyAstTyVar (F f)) = F (TyAstTyVar f)
+
+scopeAppTy :: (TyAstBound ki ty, TyAstTransversable ki ty)
+           => (forall x. Type ki ty x -> Type ki ty x)
+           -> Scope b (TyAst ki ty) (TyAstVar a)
+           -> Scope b (TyAst ki ty) (TyAstVar a)
+scopeAppTy fn =
+  toScope .
+  review (mapping scopeTyVar . _Unwrapped) .
+  fn .
+  review (_Wrapped . mapping (from scopeTyVar)) .
+  fromScope
+
+abstractTy :: (Eq a, TyAstBound ki ty , TyAstTransversable ki ty)
+           => a
+           -> Type ki ty a
+           -> Scope () (TyAst ki ty) (TyAstVar a)
+abstractTy v (Type ty) = abstract f ty
+  where
+    f (TyAstTyVar x)
+      | v == x = Just ()
+      | otherwise = Nothing
+    f _ = Nothing
+
+instantiateTy :: (TyAstBound ki ty, TyAstTransversable ki ty)
+              => Type ki ty a
+              -> Scope () (TyAst ki ty) (TyAstVar a)
+              -> Type ki ty a
+instantiateTy (Type ty) s = Type . instantiate f $ s
+  where
+    f _ = ty
+
+

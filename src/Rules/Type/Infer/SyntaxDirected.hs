@@ -34,6 +34,7 @@ data ITSyntax
 instance MkInferType ITSyntax where
   type MkInferTypeConstraint e w s r m ki ty a ITSyntax =
     ( Eq a
+    , EqRec ki
     , EqRec (ty ki)
     , MonadError e m
     , AsUnknownTypeError e

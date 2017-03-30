@@ -23,7 +23,9 @@ module Fragment.Tuple.Ast.Type (
 import Data.Functor.Classes (showsUnaryWith)
 
 import Bound (Bound(..))
+import Control.Lens.Iso (mapping)
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
@@ -121,7 +123,7 @@ class AsTyTuple ki ty where
   _TyTupleP :: Prism' (ty ki j a) (TyFTuple ki j a)
 
   _TyTuple :: Prism' (Type ki ty a) [Type ki ty a]
-  _TyTuple = _TyTree . _TyTupleP . _TyTupleF
+  _TyTuple = _Wrapped . _TyAstType . _TyTupleP . _TyTupleF . mapping _Unwrapped
 
 instance AsTyTuple ki TyFTuple where
   _TyTupleP = id

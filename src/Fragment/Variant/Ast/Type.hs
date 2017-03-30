@@ -24,8 +24,9 @@ import Data.Functor.Classes (showsUnaryWith)
 import Text.Show (showListWith)
 
 import Bound (Bound(..))
+import Control.Lens.Iso (mapping, seconding)
 import Control.Lens.Prism (Prism')
-import Control.Lens.Wrapped (_Wrapped)
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
@@ -89,7 +90,7 @@ class AsTyVariant ki ty where
   _TyVariantP :: Prism' (ty ki j a) (TyFVariant ki j a)
 
   _TyVariant :: Prism' (Type ki ty a) (N.NonEmpty (T.Text, Type ki ty a))
-  _TyVariant = _TyTree . _TyVariantP . _TyVariantF . _Wrapped
+  _TyVariant = _Wrapped . _TyAstType . _TyVariantP . _TyVariantF . _Wrapped . mapping (seconding _Unwrapped)
 
 instance AsTyVariant ki TyFVariant where
   _TyVariantP = id

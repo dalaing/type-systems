@@ -23,7 +23,9 @@ module Fragment.SystemF.Ast.Type (
 import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), showsUnaryWith, showsBinaryWith)
 
 import Bound (Bound(..), Scope)
+import Control.Lens.Iso (bimapping)
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
@@ -82,10 +84,10 @@ class (Bound (ty ki), Bitransversable (ty ki)) => AsTySystemF ki ty where
   _TySystemFP :: Prism' (ty ki j a) (TyFSystemF ki j a)
 
   _TyArr :: Prism' (Type ki ty a) (Type ki ty a, Type ki ty a)
-  _TyArr = _TyTree . _TySystemFP . _TyArrF
+  _TyArr = _Wrapped . _TyAstType . _TySystemFP . _TyArrF . bimapping _Unwrapped _Unwrapped
 
-  _TyAll :: Prism' (Type ki ty a) (Scope () (Type ki ty) a)
-  _TyAll = _TyTree . _TySystemFP . _TyAllF
+  _TyAll :: Prism' (Type ki ty a) (Scope () (TyAst ki ty) (TyAstVar a))
+  _TyAll = _Wrapped . _TyAstType . _TySystemFP . _TyAllF
 
 instance AsTySystemF ki TyFSystemF where
   _TySystemFP = id

@@ -23,7 +23,9 @@ module Fragment.Pair.Ast.Type (
 import Data.Functor.Classes (showsBinaryWith)
 
 import Bound (Bound(..))
+import Control.Lens.Iso (bimapping)
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
@@ -65,7 +67,7 @@ class AsTyPair ki ty where
   _TyPairP :: Prism' (ty ki j a) (TyFPair ki j a)
 
   _TyPair :: Prism' (Type ki ty a) (Type ki ty a, Type ki ty a)
-  _TyPair = _TyTree . _TyPairP . _TyPairF
+  _TyPair = _Wrapped . _TyAstType . _TyPairP . _TyPairF . bimapping _Unwrapped _Unwrapped
 
 instance AsTyPair ki TyFPair where
   _TyPairP = id

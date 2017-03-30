@@ -20,6 +20,7 @@ Portability : non-portable
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
 module Ast.Term (
     TmAstVar(..)
   , _TmAstKiVar
@@ -45,6 +46,9 @@ module Ast.Term (
   , _TmKind
   , _TmType
   , _TmPattern
+  , scopeAppTm
+  , abstractTm
+  , instantiateTm
   ) where
 
 import Control.Monad (ap)
@@ -54,10 +58,12 @@ import Data.Traversable (fmapDefault, foldMapDefault)
 import GHC.Exts (Constraint)
 
 import Control.Error (note)
+import Control.Lens (review)
+import Control.Lens.Iso (Iso', iso, from, mapping)
 import Control.Lens.Prism (Prism', prism)
-import Control.Lens.Wrapped (_Wrapped)
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms, makeWrapped)
-import Bound (Bound(..))
+import Bound (Bound(..), Scope, Var(..), abstract, instantiate, toScope, fromScope)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1, makeLiftEq, makeLiftCompare, makeLiftShowsPrec)
 
 import Data.Bitransversable
@@ -329,29 +335,61 @@ astToKind'' _ = Nothing
 _TmKind :: TmAstTransversable ki ty pt tm => Prism' (TmAst ki ty pt tm (TmAstVar a)) (Kind ki a)
 _TmKind = prism kindToAst (\x -> note x . astToKind $ x)
 
-typeToAst :: Bitransversable (ty ki) => Type ki ty a -> TmAst ki ty pt tm (TmAstVar a)
-typeToAst = runIdentity . typeToAst' (Identity . TmAstTyVar)
+tyVarToTmVar :: TyAstVar a -> Identity (TmAstVar a)
+tyVarToTmVar (TyAstKiVar x) = fmap TmAstKiVar . pure $ x
+tyVarToTmVar (TyAstTyVar x) = fmap TmAstTyVar . pure $ x
 
-typeToAst' :: Bitransversable (ty ki) => (a -> Identity b) -> Type ki ty a -> Identity (TmAst ki ty pt tm b)
-typeToAst' fV x = typeToAst'' =<< traverse fV x
+typeToAst' :: TyAstTransversable ki ty
+           => (a -> Identity b)
+           -> TyAst ki ty a
+           -> Identity (TmAst ki ty pt tm b)
+typeToAst' f (TyAstVar x) =
+  fmap TmAstVar . f $ x
+typeToAst' f (TyAstKind ki) =
+  fmap TmAstKind .
+  bitransverse typeToAst' f $
+  ki
+typeToAst' f (TyAstType ty) =
+  fmap TmAstType .
+  bitransverse typeToAst' f $
+  ty
 
-typeToAst'' :: Bitransversable (ty ki) => Type ki ty a -> Identity (TmAst ki ty pt tm a)
-typeToAst'' (TyVar x) = Identity (TmAstVar x)
-typeToAst'' (TyTree ty) = fmap TmAstType . bitransverse typeToAst' pure $ ty
+typeToAst :: TyAstTransversable ki ty
+          => Type ki ty a
+          -> TmAst ki ty pt tm (TmAstVar a)
+typeToAst (Type ty) =
+  runIdentity .
+  typeToAst' tyVarToTmVar $
+  ty
 
-astToType :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm (TmAstVar a) -> Maybe (Type ki ty a)
-astToType = astToType' fV
-  where
-    fV (TmAstTyVar x) = Just x
-    fV _ = Nothing
+tmVarToTyVar :: TmAstVar a -> Maybe (TyAstVar a)
+tmVarToTyVar (TmAstKiVar x) = fmap TyAstKiVar . pure $ x
+tmVarToTyVar (TmAstTyVar x) = fmap TyAstTyVar . pure $ x
+tmVarToTyVar _ = Nothing
 
-astToType' :: TmAstTransversable ki ty pt tm => (a -> Maybe b) -> TmAst ki ty pt tm a -> Maybe (Type ki ty b)
-astToType' fV x = astToType'' =<< traverse fV x
+astToType' :: TmAstTransversable ki ty pt tm
+           => (a -> Maybe b)
+           -> TmAst ki ty pt tm a
+           -> Maybe (TyAst ki ty b)
+astToType' f (TmAstVar x) =
+  fmap TyAstVar . f $ x
+astToType' f (TmAstKind ki) =
+  fmap TyAstKind .
+  bitransverse astToType' f $
+  ki
+astToType' f (TmAstType ty) =
+  fmap TyAstType .
+  bitransverse astToType' f $
+  ty
+astToType' _ _ =
+  Nothing
 
-astToType'' :: TmAstTransversable ki ty pt tm => TmAst ki ty pt tm a -> Maybe (Type ki ty a)
-astToType'' (TmAstVar x) = Just (TyVar x)
-astToType'' (TmAstType ty) = fmap TyTree . bitransverse astToType' pure $ ty
-astToType'' _ = Nothing
+astToType :: TmAstTransversable ki ty pt tm
+          => TmAst ki ty pt tm (TmAstVar a)
+          -> Maybe (Type ki ty a)
+astToType =
+  fmap Type .
+  astToType' tmVarToTyVar
 
 _TmType :: TmAstTransversable ki ty pt tm => Prism' (TmAst ki ty pt tm (TmAstVar a)) (Type ki ty a)
 _TmType = prism typeToAst (\x -> note x . astToType $ x)
@@ -382,3 +420,52 @@ astToPattern'' _ = Nothing
 
 _TmPattern :: TmAstTransversable ki ty pt tm => Prism' (TmAst ki ty pt tm (TmAstVar a)) (Pattern pt a)
 _TmPattern = prism patternToAst (\x -> note x . astToPattern $ x)
+
+
+scopeTmVar :: Iso' (Var b (TmAstVar f)) (TmAstVar (Var b f))
+scopeTmVar = iso there back
+  where
+    there (B b) = TmAstTmVar (B b)
+    there (F (TmAstKiVar f)) = TmAstKiVar (F f)
+    there (F (TmAstTyVar f)) = TmAstTyVar (F f)
+    there (F (TmAstPtVar f)) = TmAstPtVar (F f)
+    there (F (TmAstTmVar f)) = TmAstTmVar (F f)
+
+    back (TmAstKiVar (B b)) = B b
+    back (TmAstKiVar (F f)) = F (TmAstKiVar f)
+    back (TmAstTyVar (B b)) = B b
+    back (TmAstTyVar (F f)) = F (TmAstTyVar f)
+    back (TmAstPtVar (B b)) = B b
+    back (TmAstPtVar (F f)) = F (TmAstPtVar f)
+    back (TmAstTmVar (B b)) = B b
+    back (TmAstTmVar (F f)) = F (TmAstTmVar f)
+
+scopeAppTm :: (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm)
+           => (forall x. Term ki ty pt tm x -> Term ki ty pt tm x)
+           -> Scope b (TmAst ki ty pt tm) (TmAstVar a)
+           -> Scope b (TmAst ki ty pt tm) (TmAstVar a)
+scopeAppTm fn =
+  toScope .
+  review (mapping scopeTmVar . _Unwrapped) .
+  fn .
+  review (_Wrapped . mapping (from scopeTmVar)) .
+  fromScope
+
+abstractTm :: (Eq a, TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm)
+           => a
+           -> Term ki ty pt tm a
+           -> Scope () (TmAst ki ty pt tm) (TmAstVar a)
+abstractTm v (Term tm) = abstract f tm
+  where
+    f (TmAstTmVar x)
+      | v == x = Just ()
+      | otherwise = Nothing
+    f _ = Nothing
+
+instantiateTm :: (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm)
+              => Term ki ty pt tm a
+              -> Scope () (TmAst ki ty pt tm) (TmAstVar a)
+              -> Term ki ty pt tm a
+instantiateTm (Term tm) s = Term . instantiate f $ s
+  where
+    f _ = tm

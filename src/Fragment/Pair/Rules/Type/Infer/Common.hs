@@ -22,6 +22,7 @@ import GHC.Exts (Constraint)
 
 import Bound (Bound)
 import Control.Lens (preview, review)
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 
 import Ast.Type
 import Ast.Type.Var
@@ -52,7 +53,7 @@ class MkInferType i => PairInferTypeHelper i where
   unifyPairRules :: PairInferTypeHelperConstraint e w s r m ki ty a i
                  => Proxy (MonadProxy e w s r m)
                  -> Proxy i
-                 -> [UnificationRule m (Type ki ty) a]
+                 -> [UnificationRule m (TyAst ki ty) (TyAstVar a)]
 
   createPair :: PairInferTypeHelperConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)
@@ -90,26 +91,35 @@ instance PairInferTypeHelper ITOffline where
     , HasTyVarSupply s
     , ToTyVar a
     , Ord a
+    , OrdRec ki
     , OrdRec (ty ki)
     , MonadError e m
     , AsUnknownTypeError e
-    , AsOccursError e (Type ki ty) a
-    , AsUnificationMismatch e (Type ki ty) a
-    , AsUnificationExpectedEq e (Type ki ty) a
+    , AsOccursError e (TyAst ki ty) (TyAstVar a)
+    , AsUnificationMismatch e (TyAst ki ty) (TyAstVar a)
+    , AsUnificationExpectedEq e (TyAst ki ty) (TyAstVar a)
+    , Bound ki
     , Bound (ty ki)
+    , Bitransversable ki
     , Bitransversable (ty ki)
     )
 
   unifyPairRules _ _  =
     let
       unifyPair unifyMany (UCEq ty1 ty2) = do
-        (p1a, p1b) <- preview _TyPair ty1
-        (p2a, p2b) <- preview _TyPair ty2
+        let ty1' = review _Wrapped ty1
+            ty2' = review _Wrapped ty2
+        (p1a, p1b) <- preview _TyPair ty1'
+        (p2a, p2b) <- preview _TyPair ty2'
+        let p1a' = review _Unwrapped p1a
+            p1b' = review _Unwrapped p1b
+            p2a' = review _Unwrapped p2a
+            p2b' = review _Unwrapped p2b
         return $ do
-          c1a <- classDesc p1a
-          c1b <- classDesc p1b
-          c2a <- classDesc p2a
-          c2b <- classDesc p2b
+          c1a <- classDesc p1a'
+          c1b <- classDesc p1b'
+          c2a <- classDesc p2a'
+          c2b <- classDesc p2b'
           unifyMany [c1a, c1b] [c2a, c2b]
     in
       [ UnificationMany unifyPair ]

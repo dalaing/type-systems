@@ -76,12 +76,13 @@ instance TmLamInferTypeHelper ITOffline where
     , HasTyVarSupply s
     , ToTyVar a
     , Ord a
+    , OrdRec ki
     , OrdRec (ty ki)
     , MonadError e m
     , AsUnknownTypeError e
-    , AsOccursError e (Type ki ty) a
-    , AsUnificationMismatch e (Type ki ty) a
-    , AsUnificationExpectedEq e (Type ki ty) a
+    , AsOccursError e (TyAst ki ty) (TyAstVar a)
+    , AsUnificationMismatch e (TyAst ki ty) (TyAstVar a)
+    , AsUnificationExpectedEq e (TyAst ki ty) (TyAstVar a)
     )
 
   expectTmLam m i tm = do

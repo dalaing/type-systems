@@ -22,6 +22,7 @@ module Fragment.Bool.Ast.Type (
 
 import Bound (Bound(..))
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
@@ -58,7 +59,7 @@ class AsTyBool ki ty where
   _TyBoolP :: Prism' (ty ki j a) (TyFBool ki j a)
 
   _TyBool :: Prism' (Type ki ty a) ()
-  _TyBool = _TyTree . _TyBoolP . _TyBoolF
+  _TyBool = _Wrapped . _TyAstType . _TyBoolP . _TyBoolF
 
 instance AsTyBool ki TyFBool where
   _TyBoolP = id

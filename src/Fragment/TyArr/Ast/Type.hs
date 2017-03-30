@@ -23,7 +23,9 @@ module Fragment.TyArr.Ast.Type (
 import Data.Functor.Classes (showsBinaryWith)
 
 import Bound (Bound(..))
+import Control.Lens.Iso (bimapping)
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
@@ -64,7 +66,7 @@ class AsTyArr ki ty where
   _TyArrP :: Prism' (ty ki j a) (TyFArr ki j a)
 
   _TyArr :: Prism' (Type ki ty a) (Type ki ty a, Type ki ty a)
-  _TyArr = _TyTree . _TyArrP . _TyArrF
+  _TyArr = _Wrapped . _TyAstType . _TyArrP . _TyArrF . bimapping _Unwrapped _Unwrapped
 
 instance AsTyArr ki TyFArr where
   _TyArrP = id

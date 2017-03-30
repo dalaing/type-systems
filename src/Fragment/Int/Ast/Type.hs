@@ -22,6 +22,7 @@ module Fragment.Int.Ast.Type (
 
 import Bound (Bound(..))
 import Control.Lens.Prism (Prism')
+import Control.Lens.Wrapped (_Wrapped)
 import Control.Lens.TH (makePrisms)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 
@@ -58,7 +59,7 @@ class AsTyInt ki ty where
   _TyIntP :: Prism' (ty ki j a) (TyFInt ki j a)
 
   _TyInt :: Prism' (Type ki ty a) ()
-  _TyInt = _TyTree . _TyIntP . _TyIntF
+  _TyInt = _Wrapped . _TyAstType . _TyIntP . _TyIntF
 
 instance AsTyInt ki TyFInt where
   _TyIntP = id

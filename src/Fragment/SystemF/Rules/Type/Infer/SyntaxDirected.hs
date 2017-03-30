@@ -73,7 +73,7 @@ inferTmLamTy _ inferFn tm = do
   return $ do
     v <- freshTyVar
     ty <- inferFn (review _Wrapped . instantiate1 (review (_TmAstVar . _TmAstTyVar) v) $ tmF)
-    return . review _TyAll . abstract1 v $ ty
+    return . review _TyAll . abstractTy v $ ty
 
 inferTmAppTy :: SystemFInferTypeConstraint e w s r m ki ty pt tm a
              => Proxy (MonadProxy e w s r m)
@@ -85,9 +85,9 @@ inferTmAppTy _ inferFn tm = do
   return $ do
     tyF <- inferFn tmF
     s <- expectTyAll tyF
-    return $ instantiate1 tyX s
+    return $ instantiateTy tyX s
 
-type SystemFInferTypeConstraint e w s r m ki ty pt tm a = (Ord a, EqRec (ty ki), MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ki ty a, AsTySystemF ki ty, MonadError e m, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemF ki ty pt tm, AsUnknownTypeError e, AsUnexpectedType e ki ty a, AsExpectedTypeAllEq e ki ty a)
+type SystemFInferTypeConstraint e w s r m ki ty pt tm a = (Ord a, EqRec ki, EqRec (ty ki), MonadState s m, HasTmVarSupply s, ToTmVar a, HasTyVarSupply s, ToTyVar a, MonadReader r m, HasTermContext r ki ty a, AsTySystemF ki ty, MonadError e m, AsExpectedTypeEq e ki ty a, AsExpectedTyArr e ki ty a, AsExpectedTyAll e ki ty a, AsTmSystemF ki ty pt tm, AsUnknownTypeError e, AsUnexpectedType e ki ty a, AsExpectedTypeAllEq e ki ty a)
 
 systemFInferTypeInput :: SystemFInferTypeConstraint e w s r m ki ty pt tm a
                       => Proxy (MonadProxy e w s r m)

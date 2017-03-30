@@ -14,12 +14,13 @@ module Fragment.SystemF.Helpers (
   , tmAppTy
   ) where
 
-import Bound (abstract1)
+import Bound (Bound, abstract1)
 import Control.Lens (review)
 import Control.Lens.Wrapped (_Unwrapped)
 
 import Ast.Type
 import Ast.Term
+import Data.Bitransversable
 
 import Fragment.SystemF.Ast.Type
 import Fragment.SystemF.Ast.Term
@@ -27,8 +28,11 @@ import Fragment.SystemF.Ast.Term
 tyArr :: AsTySystemF ki ty => Type ki ty a -> Type ki ty a -> Type ki ty a
 tyArr = curry $ review _TyArr
 
-tyAll :: (Eq a, AsTySystemF ki ty) => a -> Type ki ty a -> Type ki ty a
-tyAll v ty = review _TyAll (abstract1 v ty)
+tyAll :: (Eq a, Bound ki, Bitransversable ki, AsTySystemF ki ty)
+      => a
+      -> Type ki ty a
+      -> Type ki ty a
+tyAll v ty = review _TyAll (abstractTy v ty)
 
 tmLam :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Type ki ty a -> Term ki ty pt tm a -> Term ki ty pt tm a
 tmLam v ty tm = review _TmLam (ty, abstract1 (review _TmAstTmVar v) . review _Unwrapped $ tm)

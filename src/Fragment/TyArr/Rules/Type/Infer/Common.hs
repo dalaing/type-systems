@@ -22,6 +22,7 @@ import GHC.Exts (Constraint)
 
 import Bound (Bound)
 import Control.Lens (preview, review)
+import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
 import Control.Monad.State (MonadState)
 import Control.Monad.Except (MonadError)
 import Data.Equivalence.Monad (classDesc)
@@ -47,7 +48,7 @@ class MkInferType i => TyArrInferTypeHelper i where
   unifyTyArrRules :: TyArrInferTypeHelperConstraint e w s r m ki ty a i
                  => Proxy (MonadProxy e w s r m)
                  -> Proxy i
-                 -> [UnificationRule m (Type ki ty) a]
+                 -> [UnificationRule m (TyAst ki ty) (TyAstVar a)]
 
   expectArr :: TyArrInferTypeHelperConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)
@@ -76,26 +77,35 @@ instance TyArrInferTypeHelper ITOffline where
     , HasTyVarSupply s
     , ToTyVar a
     , Ord a
+    , OrdRec ki
     , OrdRec (ty ki)
     , MonadError e m
     , AsUnknownTypeError e
-    , AsOccursError e (Type ki ty) a
-    , AsUnificationMismatch e (Type ki ty) a
-    , AsUnificationExpectedEq e (Type ki ty) a
+    , AsOccursError e (TyAst ki ty) (TyAstVar a)
+    , AsUnificationMismatch e (TyAst ki ty) (TyAstVar a)
+    , AsUnificationExpectedEq e (TyAst ki ty) (TyAstVar a)
+    , Bound ki
     , Bound (ty ki)
+    , Bitransversable ki
     , Bitransversable (ty ki)
     )
 
   unifyTyArrRules _ _  =
     let
       unifyTyArr unifyMany (UCEq ty1 ty2) = do
-        (p1a, p1b) <- preview _TyArr ty1
-        (p2a, p2b) <- preview _TyArr ty2
+        let ty1' = review _Wrapped ty1
+            ty2' = review _Wrapped ty2
+        (p1a, p1b) <- preview _TyArr ty1'
+        (p2a, p2b) <- preview _TyArr ty2'
+        let p1a' = review _Unwrapped p1a
+            p1b' = review _Unwrapped p1b
+            p2a' = review _Unwrapped p2a
+            p2b' = review _Unwrapped p2b
         return $ do
-          c1a <- classDesc p1a
-          c1b <- classDesc p1b
-          c2a <- classDesc p2a
-          c2b <- classDesc p2b
+          c1a <- classDesc p1a'
+          c1b <- classDesc p1b'
+          c2a <- classDesc p2a'
+          c2b <- classDesc p2b'
           unifyMany [c1a, c1b] [c2a, c2b]
     in
       [ UnificationMany unifyTyArr ]
