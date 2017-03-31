@@ -13,19 +13,17 @@ Portability : non-portable
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 module Fragment.TyAll.Rules.Kind.Infer.Common (
-    TyAllInferTypeConstraint
-  , TyAllInferTypeHelper(..)
-  , tyAllInferTypeInput
+    TyAllInferKindConstraint
+  , TyAllInferKindHelper(..)
+  , tyAllInferKindInput
   ) where
 
 import Data.Proxy (Proxy(..))
 import GHC.Exts (Constraint)
 
-import Data.Functor.Classes (Ord1)
-
 import Bound (Scope, instantiate1)
 import Control.Lens (preview, review, (%~))
-import Control.Lens.Wrapped (_Wrapped)
+import Control.Lens.Wrapped (_Wrapped, )
 import Control.Monad.Reader (MonadReader, local)
 import Control.Monad.State (MonadState)
 import Control.Monad.Except (MonadError)
@@ -50,7 +48,7 @@ import Rules.Kind.Infer.Offline (IKOffline)
 import Rules.Unification
 
 class MkInferKind i => TyAllInferKindHelper i where
-  type TyAllInferKindHelperConstraint e w s r (m :: * -> *) (ki :: * -> *) (ty :: (* -> *) -> (* -> *) -> * -> *) a i :: Constraint
+  type TyAllInferKindHelperConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
 
   expectAll :: TyAllInferKindHelperConstraint e w s r m ki ty a i
             => Proxy (MonadProxy e w s r m)
@@ -59,7 +57,7 @@ class MkInferKind i => TyAllInferKindHelper i where
             -> Proxy a
             -> Proxy i
             -> Type ki ty a
-            -> Maybe (InferKindMonad ki a m i (InferKind ki a i, Scope () (Type ki ty) a))
+            -> Maybe (InferKindMonad ki a m i (Kind ki a, Scope () (TyAst ki ty) (TyAstVar a)))
 
 instance TyAllInferKindHelper IKSyntax where
   type TyAllInferKindHelperConstraint e w s r m ki ty a IKSyntax =
@@ -82,24 +80,23 @@ instance TyAllInferKindHelper IKOffline where
     , HasKiVarSupply s
     , ToKiVar a
     , Ord a
-    , Ord1 ki
+    , OrdRec ki
     , OrdRec (ty ki)
-    , Traversable ki
     , MonadError e m
     , AsUnknownKindError e
     , AsUnboundTypeVariable e a
-    , AsOccursError e (UnifyKind ki) a
-    , AsUnificationMismatch e (UnifyKind ki) a
-    , AsUnificationExpectedEq e (UnifyKind ki) a
+    , AsOccursError e (Kind ki) a
+    , AsUnificationMismatch e (Kind ki) a
+    , AsUnificationExpectedEq e (Kind ki) a
     )
 
   expectAll pm pki pty pa pi ty = do
     (mki, s) <- preview _TyAll ty
     return $ do
-      kiV <- fmap (review _UnifyKindVar) freshKiVar
+      kiV <- fmap (review _KiVar) freshKiVar
       case mki of
         Nothing -> return ()
-        Just ki -> expectKind pm pki pty pa pi (ExpectedKind $ mkKind pm pki pty pa pi ki) (ActualKind kiV)
+        Just ki -> expectKind pm pki pty pa pi (ExpectedKind ki) (ActualKind kiV)
       return (kiV, s)
 
 type TyAllInferKindConstraint e w s r m ki ty a i =
@@ -110,7 +107,7 @@ type TyAllInferKindConstraint e w s r m ki ty a i =
   , AsKiArr ki
   , Ord a
   , MonadReader r (InferKindMonad ki a m i)
-  , HasTypeContext r (InferKind ki a i) a
+  , HasTypeContext r ki a
   , MonadState s (InferKindMonad ki a m i)
   , HasKiVarSupply s
   , ToKiVar a
@@ -124,23 +121,22 @@ inferTyAll :: TyAllInferKindConstraint e w s r m ki ty a i
            -> Proxy ty
            -> Proxy a
            -> Proxy i
-           -> (Type ki ty a -> InferKindMonad ki a m i (InferKind ki a i))
+           -> (Type ki ty a -> InferKindMonad ki a m i (Kind ki a))
            -> Type ki ty a
-           -> Maybe (InferKindMonad ki a m i (InferKind ki a i))
-inferTyAll pm pki pty pa pi inferFn tm = do
-  act <- expectAll pm pki pty pa pi tm
+           -> Maybe (InferKindMonad ki a m i (Kind ki a))
+inferTyAll pm pki pty pa pi inferFn ty = do
+  act <- expectAll pm pki pty pa pi ty
   return $ do
     (kiArg, s) <- act
     v <- freshTyVar
-    let tyF = instantiate1 (review _TyVar v) s
+    let tyF = review _Wrapped $ instantiate1 (review (_TyAstVar . _TyAstTyVar) v) s
     kiRet <- local (typeContext %~ insertType v kiArg) $ inferFn tyF
-    return . mkKind pm pki pty pa pi . review _KiArr $ _
-    -- return . mkKind pm pki pty pa pi $ review _KiArr (kiArg, kiRet)
+    return . review _KiArr $ (kiArg, kiRet)
 
 tyAllInferKindInput :: TyAllInferKindConstraint e w s r m ki ty a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a i
+                    -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
 tyAllInferKindInput m i =
   InferKindInput
     []

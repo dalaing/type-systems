@@ -84,6 +84,7 @@ library
                      , Fragment.KiArr
                      , Fragment.KiArr.Ast
                      , Fragment.KiArr.Ast.Kind
+                     , Fragment.KiArr.Rules.Kind.Infer.Common
                      , Fragment.KiArr.Helpers
                      , Fragment.Int
                      , Fragment.Int.Ast
