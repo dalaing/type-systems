@@ -82,13 +82,7 @@ class (TmAstBound ki ty pt tm, TmAstTransversable ki ty pt tm) => AsTmLam ki ty 
   _TmLamAnn = _Wrapped . _TmAstTerm . _TmLamP . _TmLamF . mkPair (_Just . _TmType) id
 
   _TmLamNoAnn :: Prism' (Term ki ty pt tm a) (Scope () (TmAst ki ty pt tm) (TmAstVar a))
-  _TmLamNoAnn =
-    let
-      capFst = iso
-        (\((), x) -> x)
-        (\x -> ((), x))
-    in
-      _Wrapped . _TmAstTerm . _TmLamP . _TmLamF . mkPair _Nothing id . capFst
+  _TmLamNoAnn = _Wrapped . _TmAstTerm . _TmLamP . _TmLamF . mkPair _Nothing id . capFst
 
 
 instance (Bound ki, Bound (ty ki), Bound pt, Bitransversable ki, Bitransversable (ty ki), Bitransversable pt) => AsTmLam ki ty pt TmFLam where

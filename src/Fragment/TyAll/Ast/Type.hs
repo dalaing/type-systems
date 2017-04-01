@@ -82,13 +82,7 @@ class (TyAstBound ki ty, TyAstTransversable ki ty) => AsTyAll ki ty where
   _TyAllAnn = _Wrapped . _TyAstType . _TyAllP . _TyAllF . mkPair (_Just . _TyKind) id
 
   _TyAllNoAnn :: Prism' (Type ki ty a) (Scope () (TyAst ki ty) (TyAstVar a))
-  _TyAllNoAnn =
-    let
-      capFst = iso
-        (\((), x) -> x)
-        (\x -> ((), x))
-    in
-      _Wrapped . _TyAstType . _TyAllP . _TyAllF . mkPair _Nothing id . capFst
+  _TyAllNoAnn = _Wrapped . _TyAstType . _TyAllP . _TyAllF . mkPair _Nothing id . capFst
 
 instance (Bound ki, Bitransversable ki) => AsTyAll ki TyFAll where
   _TyAllP = id

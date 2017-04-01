@@ -6,42 +6,30 @@ Stability   : experimental
 Portability : non-portable
 -}
 module Fragment.SystemF.Helpers (
-    tyArr
-  , tyAll
-  , tmLam
-  , tmApp
-  , tmLamTy
+    tmLamTy
+  , tmLamTyAnn
+  , tmLamTyNoAnn
   , tmAppTy
   ) where
 
-import Bound (Bound, abstract1)
+import Bound (abstract1)
 import Control.Lens (review)
 import Control.Lens.Wrapped (_Unwrapped)
 
+import Ast.Kind
 import Ast.Type
 import Ast.Term
-import Data.Bitransversable
 
-import Fragment.SystemF.Ast.Type
 import Fragment.SystemF.Ast.Term
 
-tyArr :: AsTySystemF ki ty => Type ki ty a -> Type ki ty a -> Type ki ty a
-tyArr = curry $ review _TyArr
+tmLamTy :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Maybe (Kind ki a) -> Term ki ty pt tm a -> Term ki ty pt tm a
+tmLamTy v ki tm = review _TmLamTy (ki, abstract1 (review _TmAstTyVar v) . review _Unwrapped $ tm)
 
-tyAll :: (Eq a, Bound ki, Bitransversable ki, AsTySystemF ki ty)
-      => a
-      -> Type ki ty a
-      -> Type ki ty a
-tyAll v ty = review _TyAll (abstractTy v ty)
+tmLamTyAnn :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Kind ki a -> Term ki ty pt tm a -> Term ki ty pt tm a
+tmLamTyAnn v ki tm = review _TmLamTyAnn (ki, abstract1 (review _TmAstTyVar v) . review _Unwrapped $ tm)
 
-tmLam :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Type ki ty a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmLam v ty tm = review _TmLam (ty, abstract1 (review _TmAstTmVar v) . review _Unwrapped $ tm)
-
-tmApp :: AsTmSystemF ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmApp = curry $ review _TmApp
-
-tmLamTy :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmLamTy v tm = review _TmLamTy (abstract1 (review _TmAstTyVar v) . review _Unwrapped $ tm)
+tmLamTyNoAnn :: (Eq a, AsTmSystemF ki ty pt tm) => a -> Term ki ty pt tm a -> Term ki ty pt tm a
+tmLamTyNoAnn v tm = review _TmLamTyNoAnn (abstract1 (review _TmAstTyVar v) . review _Unwrapped $ tm)
 
 tmAppTy :: AsTmSystemF ki ty pt tm => Term ki ty pt tm a -> Type ki ty a -> Term ki ty pt tm a
 tmAppTy = curry $ review _TmAppTy

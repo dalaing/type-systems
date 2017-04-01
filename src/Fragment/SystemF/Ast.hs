@@ -9,6 +9,4 @@ module Fragment.SystemF.Ast (
     module X
   ) where
 
-import Fragment.SystemF.Ast.Type as X
-import Fragment.SystemF.Ast.Error as X
 import Fragment.SystemF.Ast.Term as X

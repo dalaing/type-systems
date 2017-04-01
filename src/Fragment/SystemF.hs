@@ -15,55 +15,44 @@ module Fragment.SystemF (
   ) where
 
 import Ast
-import Rules.Type
 import Rules.Type.Infer.Common
-import Rules.Type.Infer.SyntaxDirected
 import Rules.Term
 
 import Fragment.SystemF.Ast as X
 import Fragment.SystemF.Helpers as X
 
-import Fragment.SystemF.Rules.Type
-import Fragment.SystemF.Rules.Type.Infer.SyntaxDirected
+import Fragment.KiBase.Ast.Kind
+import Fragment.KiArr.Ast.Kind
+import Fragment.TyArr.Ast.Type
+import Fragment.TyAll.Ast.Type
+import Fragment.TyAll.Ast.Error
+import Fragment.TmLam.Ast.Term
+import Fragment.TmApp.Ast.Term
+
+import Fragment.SystemF.Rules.Type.Infer.Common
 import Fragment.SystemF.Rules.Term
 
 data SystemFTag
 
 instance AstIn SystemFTag where
-  type KindList SystemFTag = '[]
-  type TypeList SystemFTag = '[TyFSystemF]
+  type KindList SystemFTag = '[KiFBase, KiFArr]
+  type TypeList SystemFTag = '[TyFArr, TyFAll]
   type PatternList SystemFTag = '[]
-  type TermList SystemFTag = '[TmFSystemF]
+  type TermList SystemFTag = '[TmFLam, TmFApp, TmFSystemF]
 
-instance EvalRules EStrict SystemFTag where
-  type EvalConstraint ki ty pt tm a EStrict SystemFTag =
+instance EvalRules e SystemFTag where
+  type EvalConstraint ki ty pt tm a e SystemFTag =
     SystemFEvalConstraint ki ty pt tm a
 
   evalInput _ _ =
-    systemFEvalRulesStrict
+    systemFEvalRules
 
-instance EvalRules ELazy SystemFTag where
-  type EvalConstraint ki ty pt tm a ELazy SystemFTag =
-    SystemFEvalConstraint ki ty pt tm a
-
-  evalInput _ _ =
-    systemFEvalRulesLazy
-
-instance NormalizeRules SystemFTag where
-  type NormalizeConstraint ki ty a SystemFTag =
-    SystemFNormalizeConstraint ki ty a
-
-  normalizeInput _ =
-    systemFNormalizeRules
-
-instance InferTypeRules ITSyntax SystemFTag where
-  type InferTypeConstraint e w s r m ki ty pt tm a ITSyntax SystemFTag =
-    SystemFInferTypeConstraint e w s r m ki ty pt tm a
-  type InferTypeErrorList ki ty pt tm a ITSyntax SystemFTag =
-    '[ ErrExpectedTyArr ki ty a
-     , ErrExpectedTyAll ki ty a
-     ]
-  type InferTypeWarningList ki ty pt tm a ITSyntax SystemFTag =
+instance MkInferType i => InferTypeRules i SystemFTag where
+  type InferTypeConstraint e w s r m ki ty pt tm a i SystemFTag =
+    SystemFInferTypeConstraint e w s r m ki ty pt tm a i
+  type InferTypeErrorList ki ty pt tm a i SystemFTag =
+    '[ ErrExpectedTyAll ki ty a ]
+  type InferTypeWarningList ki ty pt tm a i SystemFTag =
     '[]
 
   inferTypeInput m i _ =

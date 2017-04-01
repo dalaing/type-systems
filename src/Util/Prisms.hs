@@ -9,6 +9,7 @@ Portability : non-portable
 module Util.Prisms (
     mkPair
   , mkTriple
+  , capFst
   ) where
 
 import Control.Lens
@@ -28,3 +29,8 @@ mkTriple p1 p2 p3 = prism f g
     g (x, y, z) = case (\a b c -> (a, b, c)) <$> preview p1 x <*> preview p2 y <*> preview p3 z of
       Just a -> Right a
       Nothing -> Left (x, y, z)
+
+capFst :: Iso' ((), b) b
+capFst = iso
+        (\((), x) -> x)
+        (\x -> ((), x))

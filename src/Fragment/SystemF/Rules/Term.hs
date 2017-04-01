@@ -8,34 +8,22 @@ Portability : non-portable
 {-# LANGUAGE ConstraintKinds #-}
 module Fragment.SystemF.Rules.Term (
     SystemFEvalConstraint
-  , systemFEvalRulesStrict
-  , systemFEvalRulesLazy
+  , systemFEvalRules
   ) where
 
 import Bound (Bound, instantiate1)
 import Control.Lens (review, preview)
-import Control.Lens.Wrapped (_Wrapped, _Unwrapped)
+import Control.Lens.Wrapped (_Wrapped)
 
 import Rules.Term
 import Ast.Term
 
 import Fragment.SystemF.Ast.Term
 
-valTmLam :: AsTmSystemF ki ty pt tm => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
-valTmLam tm = do
-  _ <- preview _TmLam tm
-  return  tm
-
 valTmLamTy :: AsTmSystemF ki ty pt tm => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
 valTmLamTy tm = do
   _ <- preview _TmLamTy tm
-  return  tm
-
-stepTmApp1 :: AsTmSystemF ki ty pt tm => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
-stepTmApp1 evalFn tm = do
-  (f, x) <- preview _TmApp tm
-  f' <- evalFn f
-  return $ review _TmApp (f', x)
+  return tm
 
 stepTmAppTy1 :: AsTmSystemF ki ty pt tm => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
 stepTmAppTy1 evalFn tm = do
@@ -43,60 +31,21 @@ stepTmAppTy1 evalFn tm = do
   f' <- evalFn f
   return $ review _TmAppTy (f', x)
 
-stepTmLamAppLazy :: (TmAstBound ki ty pt tm, AsTmSystemF ki ty pt tm) => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
-stepTmLamAppLazy tm = do
-  (tmF, tmX) <- preview _TmApp tm
-  (_, s) <- preview _TmLam tmF
-  return . review _Wrapped . instantiate1 (review _Unwrapped tmX) $ s
-
-stepTmLamAppStrict :: (TmAstBound ki ty pt tm, AsTmSystemF ki ty pt tm) => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
-stepTmLamAppStrict valueFn tm = do
-  (tmF, tmX) <- preview _TmApp tm
-  (_, s) <- preview _TmLam tmF
-  vX <- valueFn tmX
-  return . review _Wrapped . instantiate1 (review _Unwrapped vX) $ s
-
 stepTmLamTyAppTy :: (Bound ki, Bound (ty ki), Bound pt, Bound (tm ki ty pt)) => AsTmSystemF ki ty pt tm => Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
 stepTmLamTyAppTy tm = do
   (tmF, tyX) <- preview _TmAppTy tm
-  s <- preview _TmLamTy tmF
+  (_, s) <- preview _TmLamTy tmF
   return . review _Wrapped . instantiate1 (review _TmType tyX) $ s
-
-stepTmApp2 :: AsTmSystemF ki ty pt tm => (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> (Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)) -> Term ki ty pt tm a -> Maybe (Term ki ty pt tm a)
-stepTmApp2 valueFn stepFn tm = do
-  (tmF, tmX) <- preview _TmApp tm
-  vF <- valueFn tmF
-  tmX' <- stepFn tmX
-  return $ review _TmApp (vF, tmX')
 
 type SystemFEvalConstraint ki ty pt tm a =
   AsTmSystemF ki ty pt tm
 
-systemFEvalRulesStrict :: SystemFEvalConstraint ki ty pt tm a
-                       => EvalInput ki ty pt tm a
-systemFEvalRulesStrict =
+systemFEvalRules :: SystemFEvalConstraint ki ty pt tm a
+                 => EvalInput ki ty pt tm a
+systemFEvalRules =
   EvalInput
-  [ ValueBase valTmLam
-  , ValueBase valTmLamTy
-  ]
-  [ StepRecurse stepTmApp1
-  , StepRecurse stepTmAppTy1
-  , StepValue stepTmLamAppStrict
-  , StepBase stepTmLamTyAppTy
-  , StepValueRecurse stepTmApp2
-  ]
-  []
-
-systemFEvalRulesLazy :: SystemFEvalConstraint ki ty pt tm a
-                     => EvalInput ki ty pt tm a
-systemFEvalRulesLazy =
-  EvalInput
-  [ ValueBase valTmLam
-  , ValueBase valTmLamTy
-  ]
-  [ StepRecurse stepTmApp1
-  , StepRecurse stepTmAppTy1
-  , StepBase stepTmLamAppLazy
+  [ ValueBase valTmLamTy ]
+  [ StepRecurse stepTmAppTy1
   , StepBase stepTmLamTyAppTy
   ]
   []
