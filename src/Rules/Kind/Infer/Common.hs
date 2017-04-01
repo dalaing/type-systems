@@ -36,9 +36,6 @@ import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy(..))
 import GHC.Exts (Constraint)
 
-import Data.Functor.Classes
-
-import Control.Lens.TH (makePrisms)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
 
@@ -118,7 +115,7 @@ data InferKindOutput e w s r m ki ty a =
 class MkInferKind i where
   type MkInferKindConstraint (e :: *) (w :: *) (s :: *) (r :: *) (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
 
-  type InferKindMonad (ki :: (* -> *) -> * -> *) a (m :: * -> *) i :: (* -> *)
+  type InferKindMonad (m :: * -> *) (ki :: (* -> *) -> * -> *) a i :: (* -> *)
 
   type MkInferKindErrorList (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: [*]
   type MkInferKindWarningList (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: [*]
@@ -131,7 +128,7 @@ class MkInferKind i where
              -> Proxy i
              -> ExpectedKind ki a
              -> ActualKind ki a
-             -> InferKindMonad ki a m i ()
+             -> InferKindMonad m ki a i ()
 
   expectKindEq :: MkInferKindConstraint e w s r m ki ty a i
                => Proxy (MonadProxy e w s r m)
@@ -141,7 +138,7 @@ class MkInferKind i where
                -> Proxy i
                -> Kind ki a
                -> Kind ki a
-               -> InferKindMonad ki a m i ()
+               -> InferKindMonad m ki a i ()
 
   expectKindAllEq :: MkInferKindConstraint e w s r m ki ty a i
                   => Proxy (MonadProxy e w s r m)
@@ -150,7 +147,7 @@ class MkInferKind i where
                   -> Proxy a
                   -> Proxy i
                   -> NonEmpty (Kind ki a)
-                  -> InferKindMonad ki a m i (Kind ki a)
+                  -> InferKindMonad m ki a i (Kind ki a)
 
   mkCheckKind :: MkInferKindConstraint e w s r m ki ty a i
               => Proxy (MonadProxy e w s r m)
@@ -158,10 +155,10 @@ class MkInferKind i where
               -> Proxy ty
               -> Proxy a
               -> Proxy i
-              -> (Type ki ty a -> InferKindMonad ki a m i (Kind ki a))
+              -> (Type ki ty a -> InferKindMonad m ki a i (Kind ki a))
               -> Type ki ty a
               -> Kind ki a
-              -> InferKindMonad ki a m i ()
+              -> InferKindMonad m ki a i ()
 
   prepareInferKind :: MkInferKindConstraint e w s r m ki ty a i
                    => Proxy (MonadProxy e w s r m)
@@ -169,12 +166,12 @@ class MkInferKind i where
                    -> Proxy ty
                    -> Proxy a
                    -> Proxy i
-                   -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
+                   -> InferKindInput e w s r m (InferKindMonad m ki a i) ki ty a
                    -> InferKindOutput e w s r m ki ty a
 
 type BasicInferKindConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i =
   ( MkInferKind i
-  , Monad (InferKindMonad ki a m i)
+  , Monad (InferKindMonad m ki a i)
   , MkInferKindConstraint e w s r m ki ty a i
   )
 
@@ -188,7 +185,7 @@ class MkInferKind i => InferKindRules i (k :: j) where
                  => Proxy (MonadProxy e w s r m)
                  -> Proxy i
                  -> Proxy k
-                 -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
+                 -> InferKindInput e w s r m (InferKindMonad m ki a i) ki ty a
 
 instance MkInferKind i => InferKindRules i '[] where
   type InferKindConstraint e w s r m ki ty a i '[] =

@@ -59,13 +59,13 @@ class MkInferType i => RecordInferTypeHelper i where
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
              -> [(T.Text, Type ki ty a)]
-             -> InferTypeMonad ki ty a m i (Type ki ty a)
+             -> InferTypeMonad m ki ty a i (Type ki ty a)
 
   expectRecord :: RecordInferTypeHelperConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
              -> Type ki ty a
-             -> InferTypeMonad ki ty a m i [(T.Text, Type ki ty a)]
+             -> InferTypeMonad m ki ty a i [(T.Text, Type ki ty a)]
 
 
 instance RecordInferTypeHelper ITSyntax where
@@ -149,7 +149,7 @@ type RecordInferConstraint e w s r m ki ty pt tm a i =
   , RecordInferTypeHelperConstraint e w s r m ki ty a i
   , AsTmRecord ki ty pt tm
   , AsTyRecord ki ty
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsRecordNotFound e
   )
 
@@ -159,14 +159,14 @@ type RecordCheckConstraint e w s r m ki ty pt tm a i =
   , RecordInferTypeHelperConstraint e w s r m ki ty a i
   , AsPtRecord pt
   , AsTyRecord ki ty
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsRecordNotFound e
   )
 
 recordInferTypeInput :: RecordInferTypeConstraint e w s r m ki ty pt tm a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                   -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 recordInferTypeInput m i =
   InferTypeInput
     (unifyRecordRules m i)
@@ -178,9 +178,9 @@ recordInferTypeInput m i =
 inferTmRecord :: RecordInferConstraint e w s r m ki ty pt tm a i
               => Proxy (MonadProxy e w s r m)
               -> Proxy i
-              -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+              -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
               -> Term ki ty pt tm a
-              -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+              -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmRecord m i inferFn tm = do
   tms <- preview _TmRecord tm
   return $ do
@@ -190,9 +190,9 @@ inferTmRecord m i inferFn tm = do
 inferTmRecordIx :: RecordInferConstraint e w s r m ki ty pt tm a i
                 => Proxy (MonadProxy e w s r m)
                 -> Proxy i
-                -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+                -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
                 -> Term ki ty pt tm a
-                -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+                -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmRecordIx m i inferFn tm = do
   (tmT, ix) <- preview _TmRecordIx tm
   return $ do
@@ -203,10 +203,10 @@ inferTmRecordIx m i inferFn tm = do
 checkRecord :: RecordCheckConstraint e w s r m ki ty pt tm a i
             => Proxy (MonadProxy e w s r m)
             -> Proxy i
-            -> (Pattern pt a -> Type ki ty a -> InferTypeMonad ki ty a m i [Type ki ty a])
+            -> (Pattern pt a -> Type ki ty a -> InferTypeMonad m ki ty a i [Type ki ty a])
             -> Pattern pt a
             -> Type ki ty a
-            -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+            -> Maybe (InferTypeMonad m ki ty a i [Type ki ty a])
 checkRecord m i checkFn p ty = do
   ps <- preview _PtRecord p
   return $ do

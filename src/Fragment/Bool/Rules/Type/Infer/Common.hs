@@ -45,7 +45,7 @@ class MkInferType i => BoolInferTypeHelper i where
   createBool :: BoolInferTypeHelperConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
-             -> InferTypeMonad ki ty a m i (Type ki ty a)
+             -> InferTypeMonad m ki ty a i (Type ki ty a)
 
 instance BoolInferTypeHelper ITSyntax where
   type BoolInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
@@ -88,7 +88,7 @@ type BoolCheckConstraint e w s r m ki ty pt tm a i =
 boolInferTypeInput :: BoolInferTypeConstraint e w s r m ki ty pt tm a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                   -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 boolInferTypeInput m i =
   InferTypeInput
     []
@@ -102,7 +102,7 @@ inferTmBool :: BoolInferConstraint e w s r m ki ty pt tm a i
             => Proxy (MonadProxy e w s r m)
             -> Proxy i
             -> Term ki ty pt tm a
-            -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+            -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmBool _ _ tm = do
   _ <- preview _TmBool tm
   return . return . review _TyBool $ ()
@@ -110,9 +110,9 @@ inferTmBool _ _ tm = do
 inferTmAnd :: BoolInferConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmAnd m i inferFn tm = do
   (tm1, tm2) <- preview _TmAnd tm
   return $ do
@@ -128,9 +128,9 @@ inferTmAnd m i inferFn tm = do
 inferTmOr :: BoolInferConstraint e w s r m ki ty pt tm a i
           => Proxy (MonadProxy e w s r m)
           -> Proxy i
-          -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+          -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
           -> Term ki ty pt tm a
-          -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+          -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmOr m i inferFn tm = do
   (tm1, tm2) <- preview _TmOr tm
   return $ do
@@ -148,7 +148,7 @@ checkBool :: BoolCheckConstraint e w s r m ki ty pt tm a i
           -> Proxy i
           -> Pattern pt a
           -> Type ki ty a
-          -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+          -> Maybe (InferTypeMonad m ki ty a i [Type ki ty a])
 checkBool m i p ty = do
   _ <- preview _PtBool p
   return $ do

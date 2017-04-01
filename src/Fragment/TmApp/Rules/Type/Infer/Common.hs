@@ -40,9 +40,9 @@ type TmAppInferTypeConstraint e w s r m ki ty pt tm a i =
 inferTmApp :: TmAppInferTypeConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmApp m i inferFn tm = do
   (tmF, tmX) <- preview _TmApp tm
   return $ do
@@ -55,7 +55,7 @@ inferTmApp m i inferFn tm = do
 tmAppInferTypeInput :: TmAppInferTypeConstraint e w s r m ki ty pt tm a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                    -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 tmAppInferTypeInput m i =
   InferTypeInput
     []

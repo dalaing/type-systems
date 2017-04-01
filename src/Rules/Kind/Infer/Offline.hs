@@ -22,10 +22,8 @@ import Data.Foldable (toList)
 import Data.List (tails)
 import Data.Proxy (Proxy(..))
 
-import Data.Functor.Classes (Ord1)
 
 import Bound (Bound)
-import Control.Lens (review, preview)
 import Control.Monad.Error.Lens (throwing)
 import Control.Monad.Except (MonadError)
 import Control.Monad.Writer (MonadWriter(..), WriterT, execWriterT, runWriterT)
@@ -89,7 +87,7 @@ instance MkInferKind IKOffline where
     , Bound (ty ki)
     , Bitransversable (ty ki)
     )
-  type InferKindMonad ki a m IKOffline =
+  type InferKindMonad m ki a IKOffline =
     UnifyT ki a m
   type MkInferKindErrorList ki ty a IKOffline =
     '[ ErrOccursError (Kind ki) a

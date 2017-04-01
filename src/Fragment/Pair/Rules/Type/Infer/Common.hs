@@ -60,13 +60,13 @@ class MkInferType i => PairInferTypeHelper i where
              -> Proxy i
              -> Type ki ty a
              -> Type ki ty a
-             -> InferTypeMonad ki ty a m i (Type ki ty a)
+             -> InferTypeMonad m ki ty a i (Type ki ty a)
 
   expectPair :: PairInferTypeHelperConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
              -> Type ki ty a
-             -> InferTypeMonad ki ty a m i (Type ki ty a, Type ki ty a)
+             -> InferTypeMonad m ki ty a i (Type ki ty a, Type ki ty a)
 
 instance PairInferTypeHelper ITSyntax where
   type PairInferTypeHelperConstraint e w s r m ki ty a ITSyntax =
@@ -159,7 +159,7 @@ type PairCheckConstraint e w s r m ki ty pt tm a i =
 pairInferTypeInput :: PairInferTypeConstraint e w s r m ki ty pt tm a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                   -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 pairInferTypeInput m i =
   InferTypeInput
     (unifyPairRules m i)
@@ -173,9 +173,9 @@ pairInferTypeInput m i =
 inferTmPair :: PairInferConstraint e w s r m ki ty pt tm a i
             => Proxy (MonadProxy e w s r m)
             -> Proxy i
-            -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+            -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
             -> Term ki ty pt tm a
-            -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+            -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmPair m i inferFn tm = do
   (tm1, tm2) <- preview _TmPair tm
   return $ do
@@ -186,9 +186,9 @@ inferTmPair m i inferFn tm = do
 inferTmFst :: PairInferConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m  i(Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmFst m i inferFn tm = do
   tmP <- preview _TmFst tm
   return $ do
@@ -199,9 +199,9 @@ inferTmFst m i inferFn tm = do
 inferTmSnd :: PairInferConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmSnd m i inferFn tm = do
   tmP <- preview _TmFst tm
   return $ do
@@ -212,10 +212,10 @@ inferTmSnd m i inferFn tm = do
 checkPair :: PairCheckConstraint e w s r m ki ty pt tm a i
           => Proxy (MonadProxy e w s r m)
           -> Proxy i
-          -> (Pattern pt a -> Type ki ty a -> InferTypeMonad ki ty a m i [Type ki ty a])
+          -> (Pattern pt a -> Type ki ty a -> InferTypeMonad m ki ty a i [Type ki ty a])
           -> Pattern pt a
           -> Type ki ty a
-          -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+          -> Maybe (InferTypeMonad m ki ty a i [Type ki ty a])
 checkPair m i checkFn p ty = do
   (p1, p2) <- preview _PtPair p
   return $ do

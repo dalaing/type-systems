@@ -86,7 +86,7 @@ type KiArrInferKindConstraint e w s r m ki ty a i =
 kiArrInferKindInput :: KiArrInferKindConstraint e w s r m ki ty a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
+                    -> InferKindInput e w s r m (InferKindMonad m ki a i) ki ty a
 kiArrInferKindInput m i =
   InferKindInput
     (unifyKiArrRules m i)

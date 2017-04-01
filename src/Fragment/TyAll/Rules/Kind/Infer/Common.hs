@@ -57,7 +57,7 @@ class MkInferKind i => TyAllInferKindHelper i where
             -> Proxy a
             -> Proxy i
             -> Type ki ty a
-            -> Maybe (InferKindMonad ki a m i (Kind ki a, Scope () (TyAst ki ty) (TyAstVar a)))
+            -> Maybe (InferKindMonad m ki a i (Kind ki a, Scope () (TyAst ki ty) (TyAstVar a)))
 
 instance TyAllInferKindHelper IKSyntax where
   type TyAllInferKindHelperConstraint e w s r m ki ty a IKSyntax =
@@ -106,9 +106,9 @@ type TyAllInferKindConstraint e w s r m ki ty a i =
   , AsTyAll ki ty
   , AsKiArr ki
   , Ord a
-  , MonadReader r (InferKindMonad ki a m i)
+  , MonadReader r (InferKindMonad m ki a i)
   , HasTypeContext r ki a
-  , MonadState s (InferKindMonad ki a m i)
+  , MonadState s (InferKindMonad m ki a i)
   , HasKiVarSupply s
   , ToKiVar a
   , HasTyVarSupply s
@@ -121,9 +121,9 @@ inferTyAll :: TyAllInferKindConstraint e w s r m ki ty a i
            -> Proxy ty
            -> Proxy a
            -> Proxy i
-           -> (Type ki ty a -> InferKindMonad ki a m i (Kind ki a))
+           -> (Type ki ty a -> InferKindMonad m ki a i (Kind ki a))
            -> Type ki ty a
-           -> Maybe (InferKindMonad ki a m i (Kind ki a))
+           -> Maybe (InferKindMonad m ki a i (Kind ki a))
 inferTyAll pm pki pty pa pi inferFn ty = do
   act <- expectAll pm pki pty pa pi ty
   return $ do
@@ -136,7 +136,7 @@ inferTyAll pm pki pty pa pi inferFn ty = do
 tyAllInferKindInput :: TyAllInferKindConstraint e w s r m ki ty a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
+                    -> InferKindInput e w s r m (InferKindMonad m ki a i) ki ty a
 tyAllInferKindInput m i =
   InferKindInput
     []

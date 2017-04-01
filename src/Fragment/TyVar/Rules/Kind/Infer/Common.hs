@@ -32,16 +32,16 @@ type TyVarInferKindConstraint e w s r m ki ty a i =
   ( BasicInferKindConstraint e w s r m ki ty a i
   , Ord a
   , AsKiBase ki
-  , MonadReader r (InferKindMonad ki a m i)
+  , MonadReader r (InferKindMonad m ki a i)
   , HasTypeContext r ki a
-  , MonadError e (InferKindMonad ki a m i)
+  , MonadError e (InferKindMonad m ki a i)
   , AsUnboundTypeVariable e a
   )
 
 tyVarInferKindInput :: TyVarInferKindConstraint e w s r m ki ty a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferKindInput e w s r m (InferKindMonad ki a m i) ki ty a
+                    -> InferKindInput e w s r m (InferKindMonad m ki a i) ki ty a
 tyVarInferKindInput m i =
   InferKindInput
     []
@@ -54,7 +54,7 @@ inferTyVar :: TyVarInferKindConstraint e w s r m ki ty a i
            -> Proxy a
            -> Proxy i
            -> Type ki ty a
-           -> Maybe (InferKindMonad ki a m i (Kind ki a))
+           -> Maybe (InferKindMonad m ki a i (Kind ki a))
 inferTyVar _ _ _ _ _ ty = do
   v <- preview _TyVar ty
   return . lookupType $ v

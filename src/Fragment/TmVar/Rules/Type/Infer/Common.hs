@@ -28,9 +28,9 @@ import Rules.Type.Infer.Common
 type TmVarInferTypeConstraint e w s r m ki ty pt tm a i =
   ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
   , Ord a
-  , MonadReader r (InferTypeMonad ki ty a m i)
+  , MonadReader r (InferTypeMonad m ki ty a i)
   , HasTermContext r ki ty a
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsUnboundTermVariable e a
   )
 
@@ -38,7 +38,7 @@ inferTmVar :: TmVarInferTypeConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmVar _ _ tm = do
   v <- preview _TmVar tm
   return $ lookupTerm v
@@ -46,6 +46,6 @@ inferTmVar _ _ tm = do
 tmVarInferTypeInput :: TmVarInferTypeConstraint e w s r m ki ty pt tm a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                    -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 tmVarInferTypeInput m i =
   InferTypeInput [] [ InferTypeBase $ inferTmVar m i ] []

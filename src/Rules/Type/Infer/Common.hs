@@ -159,7 +159,7 @@ data InferTypeOutput e w s r m ki ty pt tm a =
 
 class MkInferType i where
   type MkInferTypeConstraint (e :: *) (w :: *) (s :: *) (r :: *) (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: Constraint
-  type InferTypeMonad (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a (m :: * -> *) i :: (* -> *)
+  type InferTypeMonad (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) a i :: (* -> *)
 
   type MkInferTypeErrorList (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: [*]
   type MkInferTypeWarningList (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i :: [*]
@@ -169,39 +169,39 @@ class MkInferType i where
              -> Proxy i
              -> ExpectedType ki ty a
              -> ActualType ki ty a
-             -> InferTypeMonad ki ty a m i ()
+             -> InferTypeMonad m ki ty a i ()
 
   expectTypeEq :: MkInferTypeConstraint e w s r m ki ty a i
                => Proxy (MonadProxy e w s r m)
                -> Proxy i
                -> Type ki ty a
                -> Type ki ty a
-               -> InferTypeMonad ki ty a m i ()
+               -> InferTypeMonad m ki ty a i ()
 
   expectTypeAllEq :: MkInferTypeConstraint e w s r m ki ty a i
                   => Proxy (MonadProxy e w s r m)
                   -> Proxy i
                   -> NonEmpty (Type ki ty a)
-                  -> InferTypeMonad ki ty a m i (Type ki ty a)
+                  -> InferTypeMonad m ki ty a i (Type ki ty a)
 
   mkCheckType :: MkInferTypeConstraint e w s r m ki ty a i
               => Proxy (MonadProxy e w s r m)
               -> Proxy i
-              -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+              -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
               -> Term ki ty pt tm a
               -> Type ki ty a
-              -> InferTypeMonad ki ty a m i ()
+              -> InferTypeMonad m ki ty a i ()
 
   prepareInferType :: MkInferTypeConstraint e w s r m ki ty a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> (Type ki ty a -> InferTypeMonad ki ty a m i (Kind ki a))
+                   -> (Type ki ty a -> InferTypeMonad m ki ty a i (Kind ki a))
                    -> (Type ki ty a -> Type ki ty a)
-                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                   -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
                    -> InferTypeOutput e w s r m ki ty pt tm a
 
 type BasicInferTypeConstraint e w s r (m :: * -> *) (ki :: (* -> *) -> * -> *) (ty :: ((* -> *) -> * -> *) -> (* -> *) -> * -> *) (pt :: (* -> *) -> * -> *) (tm :: (((* -> *) -> * -> *) -> (((* -> *) -> * -> *) -> (* -> *) -> * -> *) -> ((* -> *) -> * -> *) -> (* -> *) -> * -> *)) a i = ( MkInferType i
-      , Monad (InferTypeMonad ki ty a m i)
+      , Monad (InferTypeMonad m ki ty a i)
       , MkInferTypeConstraint e w s r m ki ty a i
       )
 
@@ -215,7 +215,7 @@ class MkInferType i => InferTypeRules i (k :: j) where
                  => Proxy (MonadProxy e w s r m)
                  -> Proxy i
                  -> Proxy k
-                 -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                 -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 
 instance MkInferType i => InferTypeRules i '[] where
   type InferTypeConstraint e w s r m ki ty pt tm a i '[] =
@@ -268,7 +268,7 @@ inferTypeOutput :: (MkInferTypeConstraint e w s r m ki ty a i, InferTypeRules i 
                 => Proxy (MonadProxy e w s r m)
                 -> Proxy i
                 -> Proxy k
-                -> (Type ki ty a -> InferTypeMonad ki ty a m i (Kind ki a))
+                -> (Type ki ty a -> InferTypeMonad m ki ty a i (Kind ki a))
                 -> (Type ki ty a -> Type ki ty a)
                 -> InferTypeOutput e w s r m ki ty pt tm a
 inferTypeOutput m i k inferKindFn normalizeTypeFn =

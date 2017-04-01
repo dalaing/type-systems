@@ -54,7 +54,7 @@ class MkInferType i => TyArrInferTypeHelper i where
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
              -> Type ki ty a
-             -> InferTypeMonad ki ty a m i (Type ki ty a, Type ki ty a)
+             -> InferTypeMonad m ki ty a i (Type ki ty a, Type ki ty a)
 
 
 instance TyArrInferTypeHelper ITSyntax where
@@ -125,6 +125,6 @@ type TyArrInferTypeConstraint e w s r m ki ty pt tm a i =
 tyArrInferTypeInput :: TyArrInferTypeConstraint e w s r m ki ty pt tm a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                    -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 tyArrInferTypeInput m i =
   InferTypeInput (unifyTyArrRules m i) [] []

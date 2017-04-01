@@ -60,13 +60,13 @@ class MkInferType i => TupleInferTypeHelper i where
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
              -> [Type ki ty a]
-             -> InferTypeMonad ki ty a m i (Type ki ty a)
+             -> InferTypeMonad m ki ty a i (Type ki ty a)
 
   expectTuple :: TupleInferTypeHelperConstraint e w s r m ki ty a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
              -> Type ki ty a
-             -> InferTypeMonad ki ty a m i [Type ki ty a]
+             -> InferTypeMonad m ki ty a i [Type ki ty a]
 
 
 instance TupleInferTypeHelper ITSyntax where
@@ -149,7 +149,7 @@ type TupleInferConstraint e w s r m ki ty pt tm a i =
   , TupleInferTypeHelperConstraint e w s r m ki ty a i
   , AsTmTuple ki ty pt tm
   , AsTyTuple ki ty
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsTupleOutOfBounds e
   )
 
@@ -164,7 +164,7 @@ type TupleCheckConstraint e w s r m ki ty pt tm a i =
 tupleInferTypeInput :: TupleInferTypeConstraint e w s r m ki ty pt tm a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                   -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 tupleInferTypeInput m i =
   InferTypeInput
     (unifyTupleRules m i)
@@ -176,9 +176,9 @@ tupleInferTypeInput m i =
 inferTmTuple :: TupleInferConstraint e w s r m ki ty pt tm a i
             => Proxy (MonadProxy e w s r m)
             -> Proxy i
-            -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+            -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
             -> Term ki ty pt tm a
-            -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+            -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmTuple m i inferFn tm = do
   tms <- preview _TmTuple tm
   return $ do
@@ -188,9 +188,9 @@ inferTmTuple m i inferFn tm = do
 inferTmTupleIx :: TupleInferConstraint e w s r m ki ty pt tm a i
           => Proxy (MonadProxy e w s r m)
           -> Proxy i
-          -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+          -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
           -> Term ki ty pt tm a
-          -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+          -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmTupleIx m i inferFn tm = do
   (tmT, ix) <- preview _TmTupleIx tm
   return $ do
@@ -201,10 +201,10 @@ inferTmTupleIx m i inferFn tm = do
 checkTuple :: TupleCheckConstraint e w s r m ki ty pt tm a i
           => Proxy (MonadProxy e w s r m)
           -> Proxy i
-          -> (Pattern pt a -> Type ki ty a -> InferTypeMonad ki ty a m i [Type ki ty a])
+          -> (Pattern pt a -> Type ki ty a -> InferTypeMonad m ki ty a i [Type ki ty a])
           -> Pattern pt a
           -> Type ki ty a
-          -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+          -> Maybe (InferTypeMonad m ki ty a i [Type ki ty a])
 checkTuple m i checkFn p ty = do
   pts <- preview _PtTuple p
   return $ do

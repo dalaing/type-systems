@@ -35,14 +35,14 @@ type FixInferTypeConstraint e w s r m ki ty pt tm a i =
   , AsTyArr ki ty
   , TyArrInferTypeHelper i
   , TyArrInferTypeHelperConstraint e w s r m ki ty a i
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsExpectedTyArr e ki ty a
   )
 
 fixInferTypeInput :: FixInferTypeConstraint e w s r m ki ty pt tm a i
                   => Proxy (MonadProxy e w s r m)
                   -> Proxy i
-                  -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                  -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 fixInferTypeInput m i =
   InferTypeInput
     [] [ InferTypeRecurse $ inferTmFix m i] []
@@ -50,9 +50,9 @@ fixInferTypeInput m i =
 inferTmFix :: FixInferTypeConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m )
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmFix m i inferFn tm = do
   tmF <- preview _TmFix tm
   return $ do

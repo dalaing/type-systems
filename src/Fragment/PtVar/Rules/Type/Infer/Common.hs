@@ -30,7 +30,7 @@ checkVar :: PtVarInferTypeConstraint e w s r m ki ty pt tm a i
          -> Proxy i
          -> Pattern pt a
          -> Type ki ty a
-         -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+         -> Maybe (InferTypeMonad m ki ty a i [Type ki ty a])
 checkVar _ _ p ty = do
   _ <- preview _PtVar p
   return $
@@ -39,7 +39,7 @@ checkVar _ _ p ty = do
 ptVarInferTypeInput :: PtVarInferTypeConstraint e w s r m ki ty pt tm a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                    -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 ptVarInferTypeInput m i =
   InferTypeInput [] [] [ PCheckBase $ checkVar m i ]
 

@@ -19,11 +19,9 @@ import Control.Monad (unless)
 
 import Control.Monad.Except (MonadError)
 import Control.Monad.Error.Lens (throwing)
-import Data.Functor.Classes (Eq1(..))
 
 import Data.List.NonEmpty (NonEmpty(..))
 
-import Ast.Kind
 import Ast.Error.Common
 import Data.Functor.Rec
 
@@ -41,7 +39,7 @@ instance MkInferKind IKSyntax where
     , AsExpectedKindEq e ki a
     , AsExpectedKindAllEq e ki a
     )
-  type InferKindMonad ki a m IKSyntax =
+  type InferKindMonad m ki a IKSyntax =
     m
   type MkInferKindErrorList ki ty a IKSyntax =
     '[]

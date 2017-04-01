@@ -51,7 +51,7 @@ class MkInferType i => IntInferTypeHelper i where
   createInt :: IntInferTypeHelperConstraint e w s r m ki ty a i
             => Proxy (MonadProxy e w s r m)
             -> Proxy i
-            -> InferTypeMonad ki ty a m i (Type ki ty a)
+            -> InferTypeMonad m ki ty a i (Type ki ty a)
 
 data ISyntaxInt
 
@@ -96,7 +96,7 @@ type IntCheckConstraint e w s r m ki ty pt tm a i =
 intInferTypeInput :: IntInferTypeConstraint e w s r m ki ty pt tm a i
                    => Proxy (MonadProxy e w s r m)
                    -> Proxy i
-                   -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                   -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 intInferTypeInput m i =
   InferTypeInput
     []
@@ -111,7 +111,7 @@ inferTmInt :: IntInferConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmInt _ _ tm = do
   _ <- preview _TmInt tm
   return . return . review _TyInt $ ()
@@ -119,9 +119,9 @@ inferTmInt _ _ tm = do
 inferTmAdd :: IntInferConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmAdd m i inferFn tm = do
   (tm1, tm2) <- preview _TmAdd tm
   return $ do
@@ -137,9 +137,9 @@ inferTmAdd m i inferFn tm = do
 inferTmSub :: IntInferConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmSub m i inferFn tm = do
   (tm1, tm2) <- preview _TmSub tm
   return $ do
@@ -155,9 +155,9 @@ inferTmSub m i inferFn tm = do
 inferTmMul :: IntInferConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmMul m i inferFn tm = do
   (tm1, tm2) <- preview _TmMul tm
   return $ do
@@ -175,7 +175,7 @@ checkInt :: IntCheckConstraint e w s r m ki ty pt tm a i
          -> Proxy i
          -> Pattern pt a
          -> Type ki ty a
-         -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+         -> Maybe (InferTypeMonad m ki ty a i [Type ki ty a])
 checkInt m i p ty = do
   _ <- preview _PtInt p
   return $ do

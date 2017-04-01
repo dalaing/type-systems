@@ -107,7 +107,7 @@ instance MkInferType ITOffline where
     , Bitransversable ki
     , Bitransversable (ty ki)
     )
-  type InferTypeMonad ki ty a m ITOffline =
+  type InferTypeMonad m ki ty a ITOffline =
     UnifyT ki ty a m
   type MkInferTypeErrorList ki ty pt tm a ITOffline =
     '[ ErrOccursError (TyAst ki ty) (TyAstVar a)

@@ -38,20 +38,20 @@ type SystemFInferTypeConstraint e w s r m ki ty pt tm a i =
   , MkInferTypeConstraint e w s r m ki ty a i
   , AsTmSystemF ki ty pt tm
   , AsTyAll ki ty
-  , MonadState s (InferTypeMonad ki ty a m i)
+  , MonadState s (InferTypeMonad m ki ty a i)
   , HasTyVarSupply s
   , ToTyVar a
   , Eq a
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsExpectedTyAll e ki ty a
   )
 
 inferTmLamTy :: SystemFInferTypeConstraint e w s r m ki ty pt tm a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
-             -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+             -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
              -> Term ki ty pt tm a
-             -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+             -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmLamTy _ _ inferFn tm = do
   (mki, tmF) <- preview _TmLamTy tm
   return $ do
@@ -62,9 +62,9 @@ inferTmLamTy _ _ inferFn tm = do
 inferTmAppTy :: SystemFInferTypeConstraint e w s r m ki ty pt tm a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
-             -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+             -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
              -> Term ki ty pt tm a
-             -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+             -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmAppTy _ _ inferFn tm = do
   (tmF, tyX) <- preview _TmAppTy tm
   return $ do
@@ -75,7 +75,7 @@ inferTmAppTy _ _ inferFn tm = do
 systemFInferTypeInput :: SystemFInferTypeConstraint e w s r m ki ty pt tm a i
                       => Proxy (MonadProxy e w s r m)
                       -> Proxy i
-                      -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                      -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 systemFInferTypeInput m i =
   InferTypeInput
     []

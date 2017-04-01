@@ -53,7 +53,7 @@ class MkInferType i => TmLamInferTypeHelper i where
               => Proxy (MonadProxy e w s r m)
               -> Proxy i
               -> Term ki ty pt tm a
-              -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a, Scope () (TmAst ki ty pt tm) (TmAstVar a)))
+              -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a, Scope () (TmAst ki ty pt tm) (TmAstVar a)))
 
 instance TmLamInferTypeHelper ITSyntax where
   type TmLamInferTypeHelperConstraint e w s r m ki ty pt tm a ITSyntax =
@@ -101,9 +101,9 @@ type TmLamInferTypeConstraint e w s r m ki ty pt tm a i =
   , AsTmLam ki ty pt tm
   , AsTyArr ki ty
   , Ord a
-  , MonadReader r (InferTypeMonad ki ty a m i)
+  , MonadReader r (InferTypeMonad m ki ty a i)
   , HasTermContext r ki ty a
-  , MonadState s (InferTypeMonad ki ty a m i)
+  , MonadState s (InferTypeMonad m ki ty a i)
   , HasTmVarSupply s
   , ToTmVar a
   )
@@ -111,9 +111,9 @@ type TmLamInferTypeConstraint e w s r m ki ty pt tm a i =
 inferTmLam :: TmLamInferTypeConstraint e w s r m ki ty pt tm a i
            => Proxy (MonadProxy e w s r m)
            -> Proxy i
-           -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+           -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
            -> Term ki ty pt tm a
-           -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+           -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmLam m i inferFn tm = do
   act <- expectTmLam m i tm
   return $ do
@@ -126,7 +126,7 @@ inferTmLam m i inferFn tm = do
 tmLamInferTypeInput :: TmLamInferTypeConstraint e w s r m ki ty pt tm a i
                     => Proxy (MonadProxy e w s r m)
                     -> Proxy i
-                    -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                    -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 tmLamInferTypeInput m i =
   InferTypeInput
     []

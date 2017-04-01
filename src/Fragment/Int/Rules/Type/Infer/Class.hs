@@ -26,4 +26,4 @@ class MkInferType i => IntInferTypeHelper i t where
             => Proxy (MonadProxy e w s r m)
             -> Proxy i
             -> Proxy t
-            -> InferTypeMonad ki ty a m i (Type ki ty a)
+            -> InferTypeMonad m ki ty a i (Type ki ty a)

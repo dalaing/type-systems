@@ -38,7 +38,7 @@ type VariantInferConstraint e w s r m ki ty pt tm a i =
   ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
   , AsTmVariant ki ty pt tm
   , AsTyVariant ki ty
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsExpectedTyVariant e ki ty a
   , AsVariantNotFound e
   )
@@ -47,7 +47,7 @@ type VariantCheckConstraint e w s r m ki ty pt tm a i =
   ( BasicInferTypeConstraint e w s r m ki ty pt tm a i
   , AsPtVariant pt
   , AsTyVariant ki ty
-  , MonadError e (InferTypeMonad ki ty a m i)
+  , MonadError e (InferTypeMonad m ki ty a i)
   , AsExpectedTyVariant e ki ty a
   , AsVariantNotFound e
   )
@@ -55,7 +55,7 @@ type VariantCheckConstraint e w s r m ki ty pt tm a i =
 variantInferTypeInput :: VariantInferTypeConstraint e w s r m ki ty pt tm a i
                       => Proxy (MonadProxy e w s r m)
                       -> Proxy i
-                      -> InferTypeInput e w s r m (InferTypeMonad ki ty a m i) ki ty pt tm a
+                      -> InferTypeInput e w s r m (InferTypeMonad m ki ty a i) ki ty pt tm a
 variantInferTypeInput m i =
   InferTypeInput
     []
@@ -65,9 +65,9 @@ variantInferTypeInput m i =
 inferTmVariant :: VariantInferConstraint e w s r m ki ty pt tm a i
                => Proxy (MonadProxy e w s r m)
                -> Proxy i
-               -> (Term ki ty pt tm a -> InferTypeMonad ki ty a m i (Type ki ty a))
+               -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
                -> Term ki ty pt tm a
-               -> Maybe (InferTypeMonad ki ty a m i (Type ki ty a))
+               -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
 inferTmVariant m i inferFn tm = do
   (l, tmV, ty) <- preview _TmVariant tm
   return $ do
@@ -80,10 +80,10 @@ inferTmVariant m i inferFn tm = do
 checkVariant :: VariantCheckConstraint e w s r m ki ty pt tm a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
-             -> (Pattern pt a -> Type ki ty a -> InferTypeMonad ki ty a m i [Type ki ty a])
+             -> (Pattern pt a -> Type ki ty a -> InferTypeMonad m ki ty a i [Type ki ty a])
              -> Pattern pt a
              -> Type ki ty a
-             -> Maybe (InferTypeMonad ki ty a m i [Type ki ty a])
+             -> Maybe (InferTypeMonad m ki ty a i [Type ki ty a])
 checkVariant _ _ checkFn p ty = do
   (lV, pV) <- preview _PtVariant p
   return $ do

@@ -42,7 +42,7 @@ instance MkInferType ITSyntax where
     , AsExpectedTypeEq e ki ty a
     , AsExpectedTypeAllEq e ki ty a
     )
-  type InferTypeMonad ki ty a m ITSyntax =
+  type InferTypeMonad m ki ty a ITSyntax =
     m
   type MkInferTypeErrorList ki ty pt tm a ITSyntax =
     '[]
