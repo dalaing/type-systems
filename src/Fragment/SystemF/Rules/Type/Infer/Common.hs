@@ -9,12 +9,13 @@ Portability : non-portable
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE PolyKinds #-}
 module Fragment.SystemF.Rules.Type.Infer.Common (
     SystemFInferTypeConstraint
   , systemFInferTypeInput
   ) where
 
-import Data.Proxy (Proxy)
+import Data.Proxy (Proxy(..))
 
 import Bound (instantiate1)
 import Control.Lens (review, preview)
@@ -22,9 +23,11 @@ import Control.Lens.Wrapped (_Wrapped)
 import Control.Monad.Except (MonadError)
 import Control.Monad.State (MonadState)
 
+import Ast.Kind
 import Ast.Term
 import Ast.Type
 import Ast.Type.Var
+import Rules.Kind.Infer.Common
 import Rules.Type.Infer.Common
 
 import Fragment.TyAll.Ast.Type
@@ -37,6 +40,8 @@ type SystemFInferTypeConstraint e w s r m ki ty pt tm a i =
   , MkInferType i
   , MkInferTypeConstraint e w s r m ki ty a i
   , AsTmSystemF ki ty pt tm
+  , MkInferKind i
+  , MkInferKindConstraint e w s r m ki ty a i
   , AsTyAll ki ty
   , MonadState s (InferTypeMonad m ki ty a i)
   , HasTyVarSupply s
@@ -44,6 +49,7 @@ type SystemFInferTypeConstraint e w s r m ki ty pt tm a i =
   , Eq a
   , MonadError e (InferTypeMonad m ki ty a i)
   , AsExpectedTyAll e ki ty a
+  , InferTypeMonad m ki ty a i ~ InferKindMonad m ki a i
   )
 
 inferTmLamTy :: SystemFInferTypeConstraint e w s r m ki ty pt tm a i
@@ -62,14 +68,18 @@ inferTmLamTy _ _ inferFn tm = do
 inferTmAppTy :: SystemFInferTypeConstraint e w s r m ki ty pt tm a i
              => Proxy (MonadProxy e w s r m)
              -> Proxy i
+             -> (Type ki ty a -> InferKindMonad m ki a i (Kind ki a))
              -> (Term ki ty pt tm a -> InferTypeMonad m ki ty a i (Type ki ty a))
              -> Term ki ty pt tm a
              -> Maybe (InferTypeMonad m ki ty a i (Type ki ty a))
-inferTmAppTy _ _ inferFn tm = do
+inferTmAppTy m i inferKindFn inferTypeFn tm = do
   (tmF, tyX) <- preview _TmAppTy tm
   return $ do
-    tyF <- inferFn tmF
-    (_ , s) <- expectTyAll tyF
+    tyF <- inferTypeFn tmF
+    (mki , s) <- expectTyAll tyF
+    case mki of
+      Nothing -> return ()
+      Just ki -> mkCheckKind m (Proxy :: Proxy ki) (Proxy :: Proxy ty) (Proxy :: Proxy a) i inferKindFn tyX ki
     return $ instantiateTy tyX s
 
 systemFInferTypeInput :: SystemFInferTypeConstraint e w s r m ki ty pt tm a i
@@ -80,6 +90,6 @@ systemFInferTypeInput m i =
   InferTypeInput
     []
     [ InferTypeRecurse $ inferTmLamTy m i
-    , InferTypeRecurse $ inferTmAppTy m i
+    , InferTypeRecurseKind $ inferTmAppTy m i
     ]
     []

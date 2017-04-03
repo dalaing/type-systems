@@ -84,6 +84,7 @@ library
                      , Fragment.KiArr
                      , Fragment.KiArr.Ast
                      , Fragment.KiArr.Ast.Kind
+                     , Fragment.KiArr.Ast.Error
                      , Fragment.KiArr.Rules.Kind.Infer.Common
                      , Fragment.KiArr.Helpers
                      , Fragment.Int
@@ -294,18 +295,18 @@ library
                      , Fragment.SystemF.Rules.Term
                      , Fragment.SystemF.Helpers
 
-                     -- , Fragment.SystemFw
-                     -- , Fragment.SystemFw.Ast
+                     , Fragment.SystemFw
+                     , Fragment.SystemFw.Ast
                      -- , Fragment.SystemFw.Ast.Kind
-                     -- , Fragment.SystemFw.Ast.Type
-                     -- , Fragment.SystemFw.Ast.Error
+                     , Fragment.SystemFw.Ast.Type
+                     , Fragment.SystemFw.Ast.Error
                      -- , Fragment.SystemFw.Ast.Term
                      -- -- , Fragment.SystemFw.Rules
-                     -- -- , Fragment.SystemFw.Rules.Kind.Infer.SyntaxDirected
+                     , Fragment.SystemFw.Rules.Kind.Infer.Common
                      -- , Fragment.SystemFw.Rules.Type.Infer.SyntaxDirected
-                     -- , Fragment.SystemFw.Rules.Type
+                     , Fragment.SystemFw.Rules.Type
                      -- , Fragment.SystemFw.Rules.Term
-                     -- , Fragment.SystemFw.Helpers
+                     , Fragment.SystemFw.Helpers
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

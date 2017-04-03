@@ -34,32 +34,6 @@ import Fragment.SystemFw.Ast.Kind
 import Fragment.SystemFw.Ast.Type
 import Fragment.SystemFw.Ast.Error
 
-inferTyArr :: (MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsTySystemFw ki ty)
-            => (Type ki ty a -> m (Kind ki))
-            -> Type ki ty a
-            -> Maybe (m (Kind ki))
-inferTyArr inferFn ty = do
-  (ty1, ty2) <- preview _TyArr ty
-  return $ do
-    let ki = review _KiBase()
-    mkCheckKind inferFn ty1 ki
-    mkCheckKind inferFn ty2 ki
-    return . review _KiBase $ ()
-
-inferTyAll :: (Ord a, MonadReader r m, HasTypeContext r ki a, MonadState s m, HasTyVarSupply s, ToTyVar a, MonadError e m, AsUnexpectedKind e ki, Eq1 ki, AsKiBase ki, AsKiSystemFw ki, AsTySystemFw ki ty)
-            => (Type ki ty a -> m (Kind ki))
-            -> Type ki ty a
-            -> Maybe (m (Kind ki))
-inferTyAll inferFn ty = do
-  (ki, s) <- preview _TyAll ty
-  return $ do
-    let kiBase = review _KiBase ()
-    v <- freshTyVar
-    ki' <- local (typeContext %~ insertType v ki) (inferFn (instantiate1 (review _TyVar v) s))
-    unless (kiBase == ki') $
-      throwing _UnexpectedKind (ExpectedKind kiBase, ActualKind ki')
-    return kiBase
-
 inferTyLam :: (Ord a, Bound (ty ki), MonadState s m, HasTyVarSupply s, ToTyVar a, MonadReader r m, AsKiSystemFw ki, AsTySystemFw ki ty, HasTypeContext r ki a)
            => (Type ki ty a -> m (Kind ki))
            -> Type ki ty a

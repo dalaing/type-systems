@@ -67,7 +67,7 @@ lookupType v = do
   TypeContext m <- view typeContext
   case M.lookup v m of
     Nothing -> throwing _UnboundTypeVariable v
-    Just ty -> return ty
+    Just ki -> return ki
 
 insertType :: Ord a => a -> Kind ki a -> TypeContext ki a -> TypeContext ki a
-insertType v ty (TypeContext m) = TypeContext (M.insert v ty m)
+insertType v ki (TypeContext m) = TypeContext (M.insert v ki m)

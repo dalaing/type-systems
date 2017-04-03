@@ -10,3 +10,4 @@ module Fragment.KiArr.Ast (
   ) where
 
 import Fragment.KiArr.Ast.Kind as X
+import Fragment.KiArr.Ast.Error as X

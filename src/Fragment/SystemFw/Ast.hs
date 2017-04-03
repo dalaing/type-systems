@@ -9,7 +9,4 @@ module Fragment.SystemFw.Ast (
     module X
   ) where
 
-import Fragment.SystemFw.Ast.Kind as X
 import Fragment.SystemFw.Ast.Type as X
-import Fragment.SystemFw.Ast.Error as X
-import Fragment.SystemFw.Ast.Term as X

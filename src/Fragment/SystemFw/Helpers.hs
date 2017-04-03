@@ -6,52 +6,27 @@ Stability   : experimental
 Portability : non-portable
 -}
 module Fragment.SystemFw.Helpers (
-    kiArr
-  , tyArr
-  , tyAll
-  , tyLam
+    tyLam
+  , tyLamAnn
+  , tyLamNoAnn
   , tyApp
-  , tmLam
-  , tmApp
-  , tmLamTy
-  , tmAppTy
   ) where
 
-import Bound (abstract1)
 import Control.Lens (review)
-import Control.Lens.Wrapped (_Unwrapped)
 
 import Ast.Kind
 import Ast.Type
-import Ast.Term
 
-import Fragment.SystemFw.Ast.Kind
 import Fragment.SystemFw.Ast.Type
-import Fragment.SystemFw.Ast.Term
 
-kiArr :: AsKiSystemFw ki => Kind ki -> Kind ki -> Kind ki
-kiArr = curry $ review _KiArr
+tyLam :: (Eq a, AsTySystemFw ki ty) => a -> Maybe (Kind ki a) -> Type ki ty a -> Type ki ty a
+tyLam v ki ty = review _TyLam (ki, abstractTy v ty)
 
-tyArr :: AsTySystemFw ki ty => Type ki ty a -> Type ki ty a -> Type ki ty a
-tyArr = curry $ review _TyArr
+tyLamAnn :: (Eq a, AsTySystemFw ki ty) => a -> Kind ki a -> Type ki ty a -> Type ki ty a
+tyLamAnn v ki ty = review _TyLamAnn (ki, abstractTy v ty)
 
-tyAll :: (Eq a, AsTySystemFw ki ty) => a -> Kind ki -> Type ki ty a -> Type ki ty a
-tyAll v ki ty = review _TyAll (ki, abstract1 v ty)
-
-tyLam :: (Eq a, AsTySystemFw ki ty) => a -> Kind ki -> Type ki ty a -> Type ki ty a
-tyLam v ki ty = review _TyLam (ki, abstract1 v ty)
+tyLamNoAnn :: (Eq a, AsTySystemFw ki ty) => a -> Type ki ty a -> Type ki ty a
+tyLamNoAnn v ty = review _TyLamNoAnn (abstractTy v ty)
 
 tyApp :: AsTySystemFw ki ty => Type ki ty a -> Type ki ty a -> Type ki ty a
 tyApp = curry $ review _TyApp
-
-tmLam :: (Eq a, AsTmSystemFw ki ty pt tm) => a -> Type ki ty a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmLam v ty tm = review _TmLam (ty, abstract1 (review _ATmVar v) . review _Unwrapped $ tm)
-
-tmApp :: AsTmSystemFw ki ty pt tm => Term ki ty pt tm a -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmApp = curry $ review _TmApp
-
-tmLamTy :: (Eq a, AsTmSystemFw ki ty pt tm) => a -> Kind ki -> Term ki ty pt tm a -> Term ki ty pt tm a
-tmLamTy v ki tm = review _TmLamTy (ki, abstract1 (review _ATyVar v) . review _Unwrapped $ tm)
-
-tmAppTy :: AsTmSystemFw ki ty pt tm => Term ki ty pt tm a -> Type ki ty a -> Term ki ty pt tm a
-tmAppTy = curry $ review _TmAppTy

@@ -5,105 +5,34 @@ Maintainer  : dave.laing.80@gmail.com
 Stability   : experimental
 Portability : non-portable
 -}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Fragment.SystemFw.Ast.Error (
-    ErrExpectedTyArr(..)
-  , AsExpectedTyArr(..)
-  , expectTyArr
-  , ErrExpectedTyAll(..)
-  , AsExpectedTyAll(..)
-  , expectTyAll
-  , ErrExpectedKiArr(..)
-  , AsExpectedKiArr(..)
-  , expectKiArr
+    ErrExpectedTyLamAnnotation(..)
+  , AsExpectedTyLamAnnotation(..)
   ) where
 
-import Bound (Scope)
-import Control.Monad.Except (MonadError)
-import Control.Monad.Error.Lens (throwing)
-import Control.Lens (preview)
 import Control.Lens.Prism (Prism')
 import Control.Lens.TH (makePrisms)
 
-import Ast.Kind
-import Ast.Type
 import Ast.Error
 
-import Fragment.SystemFw.Ast.Kind
-import Fragment.SystemFw.Ast.Type
-
-data ErrExpectedTyArr ki ty a = ErrExpectedTyArr (Type ki ty a)
+data ErrExpectedTyLamAnnotation = ErrExpectedTyLamAnnotation
   deriving (Eq, Ord, Show)
 
-makePrisms ''ErrExpectedTyArr
+makePrisms ''ErrExpectedTyLamAnnotation
 
-class AsExpectedTyArr e ki ty a where -- | e -> ty, e -> a where
-  _ExpectedTyArr :: Prism' e (Type ki ty a)
+class AsExpectedTyLamAnnotation e where -- | e -> ty, e -> a where
+  _ExpectedTyLamAnnotation :: Prism' e ()
 
-instance AsExpectedTyArr (ErrExpectedTyArr ki ty a) ki ty a where
-  _ExpectedTyArr = _ErrExpectedTyArr
+instance AsExpectedTyLamAnnotation ErrExpectedTyLamAnnotation where
+  _ExpectedTyLamAnnotation = _ErrExpectedTyLamAnnotation
 
-instance {-# OVERLAPPABLE #-} AsExpectedTyArr (ErrSum xs) ki ty a => AsExpectedTyArr (ErrSum (x ': xs)) ki ty a where
-  _ExpectedTyArr = _ErrNext . _ExpectedTyArr
+instance {-# OVERLAPPABLE #-} AsExpectedTyLamAnnotation (ErrSum xs) => AsExpectedTyLamAnnotation (ErrSum (x ': xs)) where
+  _ExpectedTyLamAnnotation = _ErrNext . _ExpectedTyLamAnnotation
 
-instance {-# OVERLAPPING #-} AsExpectedTyArr (ErrSum (ErrExpectedTyArr ki ty a ': xs)) ki ty a where
-  _ExpectedTyArr = _ErrNow . _ExpectedTyArr
-
-expectTyArr :: (MonadError e m, AsExpectedTyArr e ki ty a, AsTySystemFw ki ty) => Type ki ty a -> m (Type ki ty a, Type ki ty a)
-expectTyArr ty =
-  case preview _TyArr ty of
-    Just (tyArg, tyRet) -> return (tyArg, tyRet)
-    _ -> throwing _ExpectedTyArr ty
-
-data ErrExpectedTyAll ki ty a = ErrExpectedTyAll (Type ki ty a)
-  deriving (Eq, Ord, Show)
-
-makePrisms ''ErrExpectedTyAll
-
-class AsExpectedTyAll e ki ty a where -- | e -> ty, e -> a where
-  _ExpectedTyAll :: Prism' e (Type ki ty a)
-
-instance AsExpectedTyAll (ErrExpectedTyAll ki ty a) ki ty a where
-  _ExpectedTyAll = _ErrExpectedTyAll
-
-instance {-# OVERLAPPABLE #-} AsExpectedTyAll (ErrSum xs) ki ty a => AsExpectedTyAll (ErrSum (x ': xs)) ki ty a where
-  _ExpectedTyAll = _ErrNext . _ExpectedTyAll
-
-instance {-# OVERLAPPING #-} AsExpectedTyAll (ErrSum (ErrExpectedTyAll ki ty a ': xs)) ki ty a where
-  _ExpectedTyAll = _ErrNow . _ExpectedTyAll
-
-expectTyAll :: (MonadError e m, AsExpectedTyAll e ki ty a, AsTySystemFw ki ty) => Type ki ty a -> m (Kind ki, Scope () (Type ki ty) a)
-expectTyAll ty =
-  case preview _TyAll ty of
-    Just (k, s) -> return (k, s)
-    _ -> throwing _ExpectedTyAll ty
-
-data ErrExpectedKiArr ki = ErrExpectedKiArr (Kind ki)
-  deriving (Eq, Ord, Show)
-
-makePrisms ''ErrExpectedKiArr
-
-class AsExpectedKiArr e ki where -- | e -> ty, e -> a where
-  _ExpectedKiArr :: Prism' e (Kind ki)
-
-instance AsExpectedKiArr (ErrExpectedKiArr ki) ki where
-  _ExpectedKiArr = _ErrExpectedKiArr
-
-instance {-# OVERLAPPABLE #-} AsExpectedKiArr (ErrSum xs) ki => AsExpectedKiArr (ErrSum (x ': xs)) ki where
-  _ExpectedKiArr = _ErrNext . _ExpectedKiArr
-
-instance {-# OVERLAPPING #-} AsExpectedKiArr (ErrSum (ErrExpectedKiArr ki ': xs)) ki where
-  _ExpectedKiArr = _ErrNow . _ExpectedKiArr
-
-expectKiArr :: (MonadError e m, AsExpectedKiArr e ki , AsKiSystemFw ki) => Kind ki -> m (Kind ki, Kind ki)
-expectKiArr ty =
-  case preview _KiArr ty of
-    Just (tyArg, tyRet) -> return (tyArg, tyRet)
-    _ -> throwing _ExpectedKiArr ty
+instance {-# OVERLAPPING #-} AsExpectedTyLamAnnotation (ErrSum (ErrExpectedTyLamAnnotation ': xs)) where
+  _ExpectedTyLamAnnotation = _ErrNow . _ExpectedTyLamAnnotation
