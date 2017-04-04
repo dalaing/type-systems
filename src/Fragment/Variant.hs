@@ -15,6 +15,7 @@ module Fragment.Variant (
   ) where
 
 import Ast
+import Rules.Kind.Infer.Common
 import Rules.Type
 import Rules.Type.Infer.Common
 import Rules.Term
@@ -23,6 +24,7 @@ import Fragment.KiBase.Ast.Kind
 import Fragment.Variant.Ast as X
 import Fragment.Variant.Helpers as X
 
+import Fragment.Variant.Rules.Kind.Infer.Common
 import Fragment.Variant.Rules.Type
 import Fragment.Variant.Rules.Type.Infer.Common
 import Fragment.Variant.Rules.Term
@@ -61,3 +63,14 @@ instance MkInferType i => InferTypeRules i VariantTag where
 
   inferTypeInput m i _ =
     variantInferTypeInput m i
+
+instance MkInferKind i => InferKindRules i VariantTag where
+  type InferKindConstraint e w s r m ki ty a i VariantTag =
+    VariantInferKindConstraint e w s r m ki ty a i
+  type InferKindErrorList ki ty a i VariantTag =
+    '[]
+  type InferKindWarningList ki ty a i VariantTag =
+    '[]
+
+  inferKindInput m i _ =
+    variantInferKindInput m i

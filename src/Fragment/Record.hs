@@ -15,6 +15,7 @@ module Fragment.Record (
   ) where
 
 import Ast
+import Rules.Kind.Infer.Common
 import Rules.Type
 import Rules.Type.Infer.Common
 import Rules.Term
@@ -23,6 +24,7 @@ import Fragment.KiBase.Ast.Kind
 import Fragment.Record.Ast as X
 import Fragment.Record.Helpers as X
 
+import Fragment.Record.Rules.Kind.Infer.Common
 import Fragment.Record.Rules.Type
 import Fragment.Record.Rules.Type.Infer.Common
 import Fragment.Record.Rules.Term
@@ -68,3 +70,14 @@ instance MkInferType i => InferTypeRules i RecordTag where
 
   inferTypeInput m i _ =
     recordInferTypeInput m i
+
+instance MkInferKind i => InferKindRules i RecordTag where
+  type InferKindConstraint e w s r m ki ty a i RecordTag =
+    RecordInferKindConstraint e w s r m ki ty a i
+  type InferKindErrorList ki ty a i RecordTag =
+    '[]
+  type InferKindWarningList ki ty a i RecordTag =
+    '[]
+
+  inferKindInput m i _ =
+    recordInferKindInput m i

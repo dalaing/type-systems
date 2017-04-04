@@ -163,7 +163,7 @@ library
                      , Fragment.Record.Ast.Term
                      -- -- , Fragment.Record.Rules
                      -- , Fragment.Record.Rules.Kind.Infer.SyntaxDirected
-                     -- -- , Fragment.Record.Rules.Type.Infer.SyntaxDirected
+                     , Fragment.Record.Rules.Kind.Infer.Common
                      -- -- , Fragment.Record.Rules.Type.Infer.Offline
                      , Fragment.Record.Rules.Type.Infer.Common
                      , Fragment.Record.Rules.Type
@@ -177,7 +177,7 @@ library
                      , Fragment.Variant.Ast.Pattern
                      , Fragment.Variant.Ast.Term
                      -- -- , Fragment.Variant.Rules
-                     -- , Fragment.Variant.Rules.Kind.Infer.SyntaxDirected
+                     , Fragment.Variant.Rules.Kind.Infer.Common
                      -- -- , Fragment.Variant.Rules.Type.Infer.SyntaxDirected
                      -- -- , Fragment.Variant.Rules.Type.Infer.Offline
                      , Fragment.Variant.Rules.Type.Infer.Common
