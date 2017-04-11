@@ -34,6 +34,7 @@ data VariantTag
 instance AstIn VariantTag where
   type KindList VariantTag = '[KiFBase]
   type TypeList VariantTag = '[TyFVariant]
+  type TypeSchemeList VariantTag = '[]
   type PatternList VariantTag = '[PtFVariant]
   type TermList VariantTag = '[TmFVariant]
 

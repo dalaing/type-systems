@@ -34,6 +34,7 @@ data PairTag
 instance AstIn PairTag where
   type KindList PairTag = '[KiFBase]
   type TypeList PairTag = '[TyFPair]
+  type TypeSchemeList PairTag = '[]
   type PatternList PairTag = '[PtFPair]
   type TermList PairTag = '[TmFPair]
 

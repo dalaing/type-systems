@@ -33,6 +33,7 @@ data IfTag
 instance AstIn IfTag where
   type KindList IfTag = '[]
   type TypeList IfTag = '[TyFBool]
+  type TypeSchemeList IfTag = '[]
   type PatternList IfTag = '[]
   type TermList IfTag = '[TmFBool, TmFIf]
 

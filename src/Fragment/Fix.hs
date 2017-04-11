@@ -36,6 +36,7 @@ data FixTag
 instance AstIn FixTag where
   type KindList FixTag = '[]
   type TypeList FixTag = '[TyFArr]
+  type TypeSchemeList FixTag = '[]
   type PatternList FixTag = '[]
   type TermList FixTag = '[TmFFix, TmFLam]
 

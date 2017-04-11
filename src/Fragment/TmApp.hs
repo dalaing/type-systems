@@ -35,6 +35,7 @@ data TmAppTag
 instance AstIn TmAppTag where
   type KindList TmAppTag = '[]
   type TypeList TmAppTag = '[TyFArr]
+  type TypeSchemeList TmAppTag = '[]
   type PatternList TmAppTag = '[]
   type TermList TmAppTag = '[TmFApp]
 

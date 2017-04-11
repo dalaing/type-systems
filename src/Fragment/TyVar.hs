@@ -32,6 +32,7 @@ data TyVarTag
 instance AstIn TyVarTag where
   type KindList TyVarTag = '[]
   type TypeList TyVarTag = '[]
+  type TypeSchemeList TyVarTag = '[]
   type PatternList TyVarTag = '[]
   type TermList TyVarTag = '[]
 

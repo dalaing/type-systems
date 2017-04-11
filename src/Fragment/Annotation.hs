@@ -32,6 +32,7 @@ data AnnotationTag
 instance AstIn AnnotationTag where
   type KindList AnnotationTag = '[]
   type TypeList AnnotationTag = '[]
+  type TypeSchemeList AnnotationTag = '[]
   type PatternList AnnotationTag = '[]
   type TermList AnnotationTag = '[TmFAnnotation]
 

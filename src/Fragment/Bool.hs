@@ -34,6 +34,7 @@ data BoolTag
 instance AstIn BoolTag where
   type KindList BoolTag = '[KiFBase]
   type TypeList BoolTag = '[TyFBool]
+  type TypeSchemeList BoolTag = '[]
   type PatternList BoolTag = '[PtFBool]
   type TermList BoolTag = '[TmFBool]
 

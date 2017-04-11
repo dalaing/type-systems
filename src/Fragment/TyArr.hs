@@ -35,6 +35,7 @@ data TyArrTag
 instance AstIn TyArrTag where
   type KindList TyArrTag = '[KiFBase]
   type TypeList TyArrTag = '[TyFArr]
+  type TypeSchemeList TyArrTag = '[]
   type PatternList TyArrTag = '[]
   type TermList TyArrTag = '[]
 

@@ -31,6 +31,7 @@ data TyAllTag
 instance AstIn TyAllTag where
   type KindList TyAllTag = '[KiFArr]
   type TypeList TyAllTag = '[TyFAll]
+  type TypeSchemeList TyAllTag = '[]
   type PatternList TyAllTag = '[]
   type TermList TyAllTag = '[]
 

@@ -32,6 +32,7 @@ data PtWildTag
 instance AstIn PtWildTag where
   type KindList PtWildTag = '[]
   type TypeList PtWildTag = '[]
+  type TypeSchemeList PtWildTag = '[]
   type PatternList PtWildTag = '[PtFWild]
   type TermList PtWildTag = '[]
 

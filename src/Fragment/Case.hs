@@ -32,6 +32,7 @@ data CaseTag
 instance AstIn CaseTag where
   type KindList CaseTag = '[]
   type TypeList CaseTag = '[]
+  type TypeSchemeList CaseTag = '[]
   type PatternList CaseTag = '[]
   type TermList CaseTag = '[TmFCase]
 

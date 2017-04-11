@@ -31,6 +31,7 @@ data PtVarTag
 instance AstIn PtVarTag where
   type KindList PtVarTag = '[]
   type TypeList PtVarTag = '[]
+  type TypeSchemeList PtVarTag = '[]
   type PatternList PtVarTag = '[]
   type TermList PtVarTag = '[]
 

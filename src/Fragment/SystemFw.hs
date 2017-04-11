@@ -17,7 +17,6 @@ module Fragment.SystemFw (
 import Ast
 import Rules.Type
 import Rules.Kind.Infer.Common
-import Rules.Term
 
 import Fragment.SystemFw.Ast as X
 import Fragment.SystemFw.Helpers as X
@@ -26,7 +25,6 @@ import Fragment.KiBase.Ast.Kind
 import Fragment.KiArr.Ast.Kind
 import Fragment.TyArr.Ast.Type
 import Fragment.TyAll.Ast.Type
-import Fragment.TyAll.Ast.Error
 import Fragment.TmLam.Ast.Term
 import Fragment.TmApp.Ast.Term
 import Fragment.SystemF.Ast.Term
@@ -39,6 +37,7 @@ data SystemFwTag
 instance AstIn SystemFwTag where
   type KindList SystemFwTag = '[KiFBase, KiFArr]
   type TypeList SystemFwTag = '[TyFArr, TyFAll, TyFSystemFw]
+  type TypeSchemeList SystemFwTag = '[]
   type PatternList SystemFwTag = '[]
   type TermList SystemFwTag = '[TmFLam, TmFApp, TmFSystemF]
 

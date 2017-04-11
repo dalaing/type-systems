@@ -37,6 +37,7 @@ data IntTag
 instance AstIn IntTag where
   type KindList IntTag = '[KiFBase]
   type TypeList IntTag = '[TyFInt]
+  type TypeSchemeList IntTag = '[]
   type PatternList IntTag = '[PtFInt]
   type TermList IntTag = '[TmFInt]
 

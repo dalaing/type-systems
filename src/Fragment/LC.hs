@@ -33,6 +33,7 @@ data LCTag
 instance AstIn LCTag where
   type KindList LCTag = '[]
   type TypeList LCTag = '[]
+  type TypeSchemeList LCTag = '[]
   type PatternList LCTag = '[]
   type TermList LCTag = '[TmFLam, TmFApp]
 
@@ -65,5 +66,5 @@ instance MkInferType i => InferTypeRules i LCTag where
   type InferTypeWarningList ki ty pt tm a i LCTag =
     '[]
 
-  inferTypeInput m i _ =
+  inferTypeInput _ _ _ =
     mempty

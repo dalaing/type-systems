@@ -27,6 +27,7 @@ data KiArrTag
 instance AstIn KiArrTag where
   type KindList KiArrTag = '[KiFArr]
   type TypeList KiArrTag = '[]
+  type TypeSchemeList KiArrTag = '[]
   type PatternList KiArrTag = '[]
   type TermList KiArrTag = '[]
 

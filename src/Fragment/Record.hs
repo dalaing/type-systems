@@ -34,6 +34,7 @@ data RecordTag
 instance AstIn RecordTag where
   type KindList RecordTag = '[KiFBase]
   type TypeList RecordTag = '[TyFRecord]
+  type TypeSchemeList RecordTag = '[]
   type PatternList RecordTag = '[PtFRecord]
   type TermList RecordTag = '[TmFRecord]
 

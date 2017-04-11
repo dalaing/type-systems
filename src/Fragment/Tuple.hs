@@ -34,6 +34,7 @@ data TupleTag
 instance AstIn TupleTag where
   type KindList TupleTag = '[KiFBase]
   type TypeList TupleTag = '[TyFTuple]
+  type TypeSchemeList TupleTag = '[]
   type PatternList TupleTag = '[PtFTuple]
   type TermList TupleTag = '[TmFTuple]
 

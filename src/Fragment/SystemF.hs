@@ -37,6 +37,7 @@ data SystemFTag
 instance AstIn SystemFTag where
   type KindList SystemFTag = '[KiFBase, KiFArr]
   type TypeList SystemFTag = '[TyFArr, TyFAll]
+  type TypeSchemeList SystemFTag = '[]
   type PatternList SystemFTag = '[]
   type TermList SystemFTag = '[TmFLam, TmFApp, TmFSystemF]
 
