@@ -33,7 +33,7 @@ library
                      , Ast.Pattern
                      , Ast.Term
                      , Ast.Term.Var
-                     , Context
+                     -- , Context
                      , Context.Term
                      , Context.Term.Error
                      , Context.Type
@@ -314,16 +314,16 @@ library
                      , transformers >= 0.5 && < 0.6
                      , containers >= 0.5 && < 0.6
                      , unordered-containers >= 0.2 && < 0.3
-                     , errors >= 2.1 && < 2.2
+                     , errors >= 2.1 && < 2.3
                      , safe >= 0.3 && < 0.4
                      , text >= 1.2 && < 1.3
                      , semigroups >= 0.18 && < 0.19
-                     , semigroupoids >= 5.1 && < 5.2
-                     , lens >= 4.14 && < 4.15
+                     , semigroupoids >= 5.1 && < 5.3
+                     , lens >= 4.14 && < 5.0
                      , parsers >= 0.12 && < 0.13
                      , trifecta >= 1.6 && < 1.7
                      , ansi-wl-pprint >= 0.6 && < 0.7
-                     , bound >= 1.0 && < 2.0
+                     , bound >= 2.0 && < 3.0
                      , deriving-compat >= 0.3.5 && < 0.4
                      , equivalence >= 0.3 && < 0.4
   hs-source-dirs:      src
